@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import Jewelry from '../models/Jewelry';
 import mongoose from 'mongoose';
+import { uploadBufferToGridFS, deleteFileFromGridFS } from '../utils/gridFsHelper';
 
 // @desc    Get all jewelry items with optional filters
 // @route   GET /api/jewelry
@@ -90,7 +91,7 @@ export const getUniqueHashtags = async (req: Request, res: Response) => {
 export const createJewelryItem = async (req: Request, res: Response) => {
     try {
         console.log('Received data for new jewelry item:', req.body);
-        console.log('Uploaded file:', req.file);
+        console.log('Uploaded file:', !!req.file);
         
         const jewelryData = { ...req.body };
         
@@ -104,10 +105,10 @@ export const createJewelryItem = async (req: Request, res: Response) => {
             }
         }
         
-        // Si se subió una imagen, generar las URLs
-        if (req.file) {
-            const baseUrl = `${req.protocol}://${req.get('host')}`;
-            const imageUrl = `${baseUrl}/uploads/jewelry/${req.file.filename}`;
+        // Si se subió una imagen, guardar en GridFS
+        if (req.file && req.file.buffer) {
+            const fileId = await uploadBufferToGridFS(req.file.buffer, req.file.originalname, req.file.mimetype);
+            const imageUrl = `/api/uploads/${fileId}`;
             jewelryData.imageUrl = imageUrl;
             jewelryData.overlayAssetUrl = imageUrl; // Usar la misma imagen para overlay
         }
@@ -128,7 +129,7 @@ export const updateJewelryItem = async (req: Request, res: Response) => {
     try {
         console.log('UPDATE - Received data for jewelry ID:', req.params.id);
         console.log('UPDATE - Request body:', JSON.stringify(req.body, null, 2));
-        console.log('UPDATE - Uploaded file:', req.file);
+        console.log('UPDATE - Uploaded file:', !!req.file);
         
          if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
             return res.status(404).json({ message: 'Jewelry not found' });
@@ -146,12 +147,25 @@ export const updateJewelryItem = async (req: Request, res: Response) => {
             }
         }
         
-        // Si se subió una nueva imagen, actualizar las URLs
-        if (req.file) {
-            const baseUrl = `${req.protocol}://${req.get('host')}`;
-            const imageUrl = `${baseUrl}/uploads/jewelry/${req.file.filename}`;
+        // Si se subió una nueva imagen, guardarla en GridFS y eliminar la anterior
+        if (req.file && req.file.buffer) {
+            const fileId = await uploadBufferToGridFS(req.file.buffer, req.file.originalname, req.file.mimetype);
+            const imageUrl = `/api/uploads/${fileId}`;
             updateData.imageUrl = imageUrl;
-            updateData.overlayAssetUrl = imageUrl; // Usar la misma imagen para overlay
+            updateData.overlayAssetUrl = imageUrl;
+
+            // Si el documento original tenía imageUrl apuntando a GridFS, eliminar el fichero antiguo
+            const original = await Jewelry.findById(req.params.id);
+            if (original && original.imageUrl && original.imageUrl.startsWith('/api/uploads/')) {
+                const oldId = original.imageUrl.split('/api/uploads/')[1];
+                if (oldId) {
+                    try {
+                        await deleteFileFromGridFS(oldId);
+                    } catch (e) {
+                        console.warn('Failed to delete old GridFS file', e);
+                    }
+                }
+            }
         }
         
         const updatedItem = await Jewelry.findByIdAndUpdate(req.params.id, updateData, { new: true });
@@ -165,21 +179,42 @@ export const updateJewelryItem = async (req: Request, res: Response) => {
     }
 };
 
-// @desc    Delete a jewelry item
-// @route   DELETE /api/jewelry/:id
-// @access  Private/Admin
-export const deleteJewelryItem = async (req: Request, res: Response) => {
+// Serve GridFS files
+export const getUploadById = async (req: Request, res: Response) => {
     try {
-         if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
-            return res.status(404).json({ message: 'Jewelry not found' });
+        const db = mongoose.connection.db;
+        if (!db) {
+            return res.status(500).json({ message: 'Database not ready' });
         }
-        const deletedItem = await Jewelry.findByIdAndDelete(req.params.id);
-        if (deletedItem) {
-            res.status(204).send();
-        } else {
-            res.status(404).json({ message: 'Jewelry not found' });
-        }
-    } catch (error) {
-        res.status(500).json({ message: 'Server Error' });
+        const bucket = new mongoose.mongo.GridFSBucket(db, { bucketName: 'jewelry' });
+        const fileId = new mongoose.Types.ObjectId(req.params.id);
+        const filesCollection = db.collection('jewelry.files');
+        const fileDoc = await filesCollection.findOne({ _id: fileId });
+        if (!fileDoc) return res.status(404).json({ message: 'File not found' });
+
+        res.setHeader('Content-Type', fileDoc.contentType || 'application/octet-stream');
+        const downloadStream = bucket.openDownloadStream(fileId);
+        downloadStream.on('error', (err) => {
+            console.error('GridFS download error', err);
+            res.status(500).end();
+        });
+        downloadStream.pipe(res);
+    } catch (e) {
+        console.error('Error serving file from GridFS', e);
+        res.status(500).json({ message: 'Error serving file' });
+    }
+};
+
+export const deleteUploadById = async (req: Request, res: Response) => {
+    try {
+        const db = mongoose.connection.db;
+        if (!db) return res.status(500).json({ message: 'Database not ready' });
+        const bucket = new mongoose.mongo.GridFSBucket(db, { bucketName: 'jewelry' });
+        const fileId = new mongoose.Types.ObjectId(req.params.id);
+        await bucket.delete(fileId);
+        res.status(204).send();
+    } catch (e) {
+        console.error('Error deleting file from GridFS', e);
+        res.status(500).json({ message: 'Error deleting file' });
     }
 };

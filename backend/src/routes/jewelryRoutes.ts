@@ -7,7 +7,9 @@ import {
     getUniqueHashtags,
     createJewelryItem,
     updateJewelryItem,
-    deleteJewelryItem
+    deleteJewelryItem,
+    getUploadById,
+    deleteUploadById
 } from '../controllers/jewelryController';
 import { protect } from '../middleware/authMiddleware';
 import upload from '../middleware/uploadMiddleware';
@@ -19,6 +21,10 @@ router.get('/', getJewelryItems);
 router.get('/featured', getFeaturedJewelryItems);
 router.get('/slug/:slug', getJewelryBySlug);
 router.get('/:id', getJewelryById);
+
+// File routes served via GridFSBucket
+router.get('/uploads/:id', getUploadById);
+router.delete('/uploads/:id', protect, deleteUploadById);
 
 // This is a bit of a hack to put this here, but it works for a small app.
 // The /api/hashtags route will be handled by this router.

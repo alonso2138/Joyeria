@@ -100,3 +100,13 @@ export const deleteJewelryItem = async (id: string, token: string): Promise<{ su
     });
     return { success: true };
 };
+
+export const getFullImageUrl = (imageUrl?: string): string => {
+  if (!imageUrl) return '';
+  try {
+    const isRelative = imageUrl.startsWith('/');
+    return isRelative ? `${API_BASE_URL.replace(/\/api$/, '')}${imageUrl}` : imageUrl;
+  } catch (e) {
+    return imageUrl;
+  }
+};
