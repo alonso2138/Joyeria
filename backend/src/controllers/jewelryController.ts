@@ -1,7 +1,8 @@
 import { Request, Response } from 'express';
 import Jewelry from '../models/Jewelry';
 import mongoose from 'mongoose';
-import { uploadBufferToGridFS, deleteFileFromGridFS } from '../utils/gridFsHelper';
+import { getGridFSBucket } from '../middleware/gridfsMiddleware';
+import { Readable } from 'stream';
 
 // @desc    Get all jewelry items with optional filters
 // @route   GET /api/jewelry
@@ -90,9 +91,6 @@ export const getUniqueHashtags = async (req: Request, res: Response) => {
 // @access  Private/Admin
 export const createJewelryItem = async (req: Request, res: Response) => {
     try {
-        console.log('Received data for new jewelry item:', req.body);
-        console.log('Uploaded file:', !!req.file);
-        
         const jewelryData = { ...req.body };
         
         // Parsear hashtags si vienen como JSON string
@@ -105,12 +103,27 @@ export const createJewelryItem = async (req: Request, res: Response) => {
             }
         }
         
-        // Si se subió una imagen, guardar en GridFS
-        if (req.file && req.file.buffer) {
-            const fileId = await uploadBufferToGridFS(req.file.buffer, req.file.originalname, req.file.mimetype);
-            const imageUrl = `/api/uploads/${fileId}`;
-            jewelryData.imageUrl = imageUrl;
-            jewelryData.overlayAssetUrl = imageUrl; // Usar la misma imagen para overlay
+        // Si se subió una imagen, guardarla en GridFS
+        if (req.file) {
+            const bucket = getGridFSBucket();
+            const readableStream = Readable.from(req.file.buffer);
+            const uploadStream = bucket.openUploadStream(req.file.originalname, {
+                contentType: req.file.mimetype,
+                metadata: {
+                    originalName: req.file.originalname
+                }
+            });
+            
+            await new Promise((resolve, reject) => {
+                readableStream.pipe(uploadStream)
+                    .on('finish', resolve)
+                    .on('error', reject);
+            });
+            
+            // Guardar el ID del archivo en GridFS
+            jewelryData.imageFileId = uploadStream.id.toString();
+            jewelryData.imageUrl = `/api/jewelry/image/${uploadStream.id.toString()}`;
+            jewelryData.overlayAssetUrl = `/api/jewelry/image/${uploadStream.id.toString()}`;
         }
         
         const newItem = new Jewelry(jewelryData);
@@ -127,10 +140,6 @@ export const createJewelryItem = async (req: Request, res: Response) => {
 // @access  Private/Admin
 export const updateJewelryItem = async (req: Request, res: Response) => {
     try {
-        console.log('UPDATE - Received data for jewelry ID:', req.params.id);
-        console.log('UPDATE - Request body:', JSON.stringify(req.body, null, 2));
-        console.log('UPDATE - Uploaded file:', !!req.file);
-        
          if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
             return res.status(404).json({ message: 'Jewelry not found' });
         }
@@ -147,25 +156,38 @@ export const updateJewelryItem = async (req: Request, res: Response) => {
             }
         }
         
-        // Si se subió una nueva imagen, guardarla en GridFS y eliminar la anterior
-        if (req.file && req.file.buffer) {
-            const fileId = await uploadBufferToGridFS(req.file.buffer, req.file.originalname, req.file.mimetype);
-            const imageUrl = `/api/uploads/${fileId}`;
-            updateData.imageUrl = imageUrl;
-            updateData.overlayAssetUrl = imageUrl;
-
-            // Si el documento original tenía imageUrl apuntando a GridFS, eliminar el fichero antiguo
-            const original = await Jewelry.findById(req.params.id);
-            if (original && original.imageUrl && original.imageUrl.startsWith('/api/uploads/')) {
-                const oldId = original.imageUrl.split('/api/uploads/')[1];
-                if (oldId) {
-                    try {
-                        await deleteFileFromGridFS(oldId);
-                    } catch (e) {
-                        console.warn('Failed to delete old GridFS file', e);
-                    }
+        // Si se subió una nueva imagen, guardarla en GridFS
+        if (req.file) {
+            const bucket = getGridFSBucket();
+            const readableStream = Readable.from(req.file.buffer);
+            const uploadStream = bucket.openUploadStream(req.file.originalname, {
+                contentType: req.file.mimetype,
+                metadata: {
+                    originalName: req.file.originalname
+                }
+            });
+            
+            await new Promise((resolve, reject) => {
+                readableStream.pipe(uploadStream)
+                    .on('finish', resolve)
+                    .on('error', reject);
+            });
+            
+            // Si había una imagen anterior, eliminarla
+            const existingItem = await Jewelry.findById(req.params.id);
+            if (existingItem && existingItem.imageFileId) {
+                try {
+                    const oldFileId = new mongoose.Types.ObjectId(existingItem.imageFileId);
+                    await bucket.delete(oldFileId);
+                } catch (err) {
+                    console.error('Error deleting old image:', err);
                 }
             }
+            
+            // Guardar el ID del nuevo archivo en GridFS
+            updateData.imageFileId = uploadStream.id.toString();
+            updateData.imageUrl = `/api/jewelry/image/${uploadStream.id.toString()}`;
+            updateData.overlayAssetUrl = `/api/jewelry/image/${uploadStream.id.toString()}`;
         }
         
         const updatedItem = await Jewelry.findByIdAndUpdate(req.params.id, updateData, { new: true });
@@ -179,42 +201,69 @@ export const updateJewelryItem = async (req: Request, res: Response) => {
     }
 };
 
-// Serve GridFS files
-export const getUploadById = async (req: Request, res: Response) => {
+// @desc    Delete a jewelry item
+// @route   DELETE /api/jewelry/:id
+// @access  Private/Admin
+export const deleteJewelryItem = async (req: Request, res: Response) => {
     try {
-        const db = mongoose.connection.db;
-        if (!db) {
-            return res.status(500).json({ message: 'Database not ready' });
+         if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+            return res.status(404).json({ message: 'Jewelry not found' });
         }
-        const bucket = new mongoose.mongo.GridFSBucket(db, { bucketName: 'jewelry' });
-        const fileId = new mongoose.Types.ObjectId(req.params.id);
-        const filesCollection = db.collection('jewelry.files');
-        const fileDoc = await filesCollection.findOne({ _id: fileId });
-        if (!fileDoc) return res.status(404).json({ message: 'File not found' });
-
-        res.setHeader('Content-Type', fileDoc.contentType || 'application/octet-stream');
-        const downloadStream = bucket.openDownloadStream(fileId);
-        downloadStream.on('error', (err) => {
-            console.error('GridFS download error', err);
-            res.status(500).end();
-        });
-        downloadStream.pipe(res);
-    } catch (e) {
-        console.error('Error serving file from GridFS', e);
-        res.status(500).json({ message: 'Error serving file' });
+        
+        const item = await Jewelry.findById(req.params.id);
+        if (!item) {
+            return res.status(404).json({ message: 'Jewelry not found' });
+        }
+        
+        // Si tiene una imagen en GridFS, eliminarla
+        if (item.imageFileId) {
+            try {
+                const bucket = getGridFSBucket();
+                const fileId = new mongoose.Types.ObjectId(item.imageFileId);
+                await bucket.delete(fileId);
+            } catch (err) {
+                console.error('Error deleting image from GridFS:', err);
+            }
+        }
+        
+        await Jewelry.findByIdAndDelete(req.params.id);
+        res.status(204).send();
+    } catch (error) {
+        res.status(500).json({ message: 'Server Error' });
     }
 };
 
-export const deleteUploadById = async (req: Request, res: Response) => {
+// @desc    Get image from GridFS
+// @route   GET /api/jewelry/image/:fileId
+// @access  Public
+export const getImage = async (req: Request, res: Response) => {
     try {
-        const db = mongoose.connection.db;
-        if (!db) return res.status(500).json({ message: 'Database not ready' });
-        const bucket = new mongoose.mongo.GridFSBucket(db, { bucketName: 'jewelry' });
-        const fileId = new mongoose.Types.ObjectId(req.params.id);
-        await bucket.delete(fileId);
-        res.status(204).send();
-    } catch (e) {
-        console.error('Error deleting file from GridFS', e);
-        res.status(500).json({ message: 'Error deleting file' });
+        const bucket = getGridFSBucket();
+        const fileId = new mongoose.Types.ObjectId(req.params.fileId);
+        
+        // Buscar el archivo en GridFS
+        const files = await bucket.find({ _id: fileId }).toArray();
+        
+        if (!files || files.length === 0) {
+            return res.status(404).json({ message: 'Image not found' });
+        }
+        
+        const file = files[0];
+        
+        // Configurar headers
+        res.set('Content-Type', file.contentType || 'image/jpeg');
+        res.set('Cache-Control', 'public, max-age=31536000'); // Cache por 1 año
+        
+        // Stream de la imagen
+        const downloadStream = bucket.openDownloadStream(fileId);
+        downloadStream.pipe(res);
+        
+        downloadStream.on('error', (error) => {
+            console.error('Error streaming image:', error);
+            res.status(500).json({ message: 'Error streaming image' });
+        });
+    } catch (error) {
+        console.error('Error getting image:', error);
+        res.status(500).json({ message: 'Server Error' });
     }
 };

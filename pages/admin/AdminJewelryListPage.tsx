@@ -1,7 +1,8 @@
+
 import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { JewelryItem } from '../../types';
-import { getJewelryItems, deleteJewelryItem, getFullImageUrl } from '../../services/api';
+import { getJewelryItems, deleteJewelryItem, getImageUrl } from '../../services/api';
 import { useAuth } from '../../hooks/useAuth';
 import Button from '../../components/ui/Button';
 import Spinner from '../../components/ui/Spinner';
@@ -64,7 +65,7 @@ const AdminJewelryListPage: React.FC = () => {
                     <tbody>
                         {items.map(item => (
                             <tr key={item.id} className="border-b border-gray-800 hover:bg-gray-800 transition-colors">
-                                <td className="p-4"><img src={getFullImageUrl(item.imageUrl)} alt={item.name} className="w-16 h-16 object-cover rounded-md"/></td>
+                                <td className="p-4"><img src={getImageUrl(item.imageUrl)} alt={item.name} className="w-16 h-16 object-cover rounded-md"/></td>
                                 <td className="p-4 font-semibold">{item.name}</td>
                                 <td className="p-4 text-gray-400">{item.sku}</td>
                                 <td className="p-4">{new Intl.NumberFormat('es-ES', { style: 'currency', currency: item.currency }).format(item.price)}</td>

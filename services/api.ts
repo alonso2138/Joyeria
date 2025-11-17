@@ -1,7 +1,27 @@
 import { JewelryItem, AnalyticsEvent, EventType, AdminUserCredentials } from '../types';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
-console.log('API BASE URL:', API_BASE_URL);
+
+// Helper para construir URLs de imágenes correctamente
+export const getImageUrl = (imageUrl: string | undefined): string => {
+  if (!imageUrl) return '/placeholder-image.jpg';
+  
+  // Si la URL ya es absoluta (http:// o https://), devolverla tal cual
+  if (imageUrl.startsWith('http://') || imageUrl.startsWith('https://')) {
+    return imageUrl;
+  }
+  
+  // Si la URL es relativa (empieza con /api/), construir la URL completa
+  if (imageUrl.startsWith('/api/')) {
+    // Remover /api del principio ya que API_BASE_URL ya lo incluye
+    const relativePath = imageUrl.replace('/api/', '/');
+    return `${API_BASE_URL}${relativePath}`;
+  }
+  
+  // Para cualquier otro caso, asumir que es una ruta relativa
+  return `${API_BASE_URL}${imageUrl}`;
+};
+
 // --- HELPER FOR API REQUESTS ---
 const apiRequest = async (endpoint: string, options: RequestInit = {}) => {
   const response = await fetch(`${API_BASE_URL}${endpoint}`, options);
@@ -99,14 +119,4 @@ export const deleteJewelryItem = async (id: string, token: string): Promise<{ su
         },
     });
     return { success: true };
-};
-
-export const getFullImageUrl = (imageUrl?: string): string => {
-  if (!imageUrl) return '';
-  try {
-    const isRelative = imageUrl.startsWith('/');
-    return isRelative ? `${API_BASE_URL.replace(/\/api$/, '')}${imageUrl}` : imageUrl;
-  } catch (e) {
-    return imageUrl;
-  }
 };

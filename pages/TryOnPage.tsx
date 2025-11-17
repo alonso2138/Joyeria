@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { JewelryItem, EventType } from '../types';
-import { getJewelryBySlug, logEvent } from '../services/api';
+import { getJewelryBySlug, logEvent, getImageUrl } from '../services/api';
 import { generateTryOnImage } from '../services/geminiService';
 import Spinner from '../components/ui/Spinner';
 import Button from '../components/ui/Button';
@@ -72,7 +72,7 @@ const TryOnPage: React.FC = () => {
             context?.drawImage(video, 0, 0, video.videoWidth, video.videoHeight);
             
             const userImageBase64 = canvas.toDataURL('image/jpeg');
-            const composedImage = await generateTryOnImage(userImageBase64, item.overlayAssetUrl);
+            const composedImage = await generateTryOnImage(userImageBase64, getImageUrl(item.overlayAssetUrl));
             
             setResultImage(composedImage);
             logEvent(EventType.TRYON_SUCCESS, item.id);

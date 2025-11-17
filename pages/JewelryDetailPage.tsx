@@ -1,8 +1,9 @@
+
 import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { JewelryItem, EventType } from '../types';
-import { getJewelryBySlug, logEvent, getFullImageUrl } from '../services/api';
+import { getJewelryBySlug, logEvent, getImageUrl } from '../services/api';
 import Spinner from '../components/ui/Spinner';
 import Button from '../components/ui/Button';
 
@@ -45,8 +46,6 @@ const JewelryDetailPage: React.FC = () => {
     return <div className="h-screen flex items-center justify-center text-2xl font-serif">Joya no encontrada.</div>;
   }
 
-  const imageSrc = getFullImageUrl(item.imageUrl);
-
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -62,7 +61,7 @@ const JewelryDetailPage: React.FC = () => {
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.7 }}
         >
-          <img src={imageSrc} alt={item.name} className="w-full h-full object-cover" />
+          <img src={getImageUrl(item.imageUrl)} alt={item.name} className="w-full h-full object-cover" />
         </motion.div>
 
         <motion.div

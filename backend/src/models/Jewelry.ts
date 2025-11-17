@@ -9,6 +9,7 @@ const jewelrySchema = new mongoose.Schema({
     category: { type: String, required: true, enum: ['Anillo', 'Collar', 'Pulsera', 'Pendiente', 'Reloj'] },
     imageUrl: { type: String, required: false },
     overlayAssetUrl: { type: String, required: false },
+    imageFileId: { type: String, required: false }, // ID del archivo en GridFS
     hashtags: { type: [String], required: true },
     sku: { type: String, required: false, unique: true, sparse: true },
     isFeatured: { type: Boolean, required: true, default: false },
