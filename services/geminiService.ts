@@ -50,9 +50,6 @@ export const generateTryOnImage = async (
   jewelryOverlayUrl: string
 ): Promise<string> => {
   console.log('GEMINI SERVICE: Initiating virtual try-on with gemini-2.5-flash-image.');
-
-  console.log(import.meta.env.VITE_API_KEY)
-
   try {
     const ai = new GoogleGenAI({ apiKey: import.meta.env.VITE_API_KEY });
 

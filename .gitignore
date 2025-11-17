@@ -12,6 +12,20 @@ dist
 dist-ssr
 *.local
 
+# Environment variables - NUNCA subir al repositorio
+.env
+.env.local
+.env.development
+.env.production
+.env.*.local
+backend/.env
+backend/.env.local
+backend/.env.production
+
+# Uploads (ya no se usan, ahora está en GridFS)
+uploads/
+backend/uploads/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
