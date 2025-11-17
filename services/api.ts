@@ -1,7 +1,7 @@
 import { JewelryItem, AnalyticsEvent, EventType, AdminUserCredentials } from '../types';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
-
+console.log('API BASE URL:', API_BASE_URL);
 // --- HELPER FOR API REQUESTS ---
 const apiRequest = async (endpoint: string, options: RequestInit = {}) => {
   const response = await fetch(`${API_BASE_URL}${endpoint}`, options);
