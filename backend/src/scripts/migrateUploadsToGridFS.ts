@@ -1,59 +1,129 @@
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
+import Jewelry from '../models/Jewelry';
+import { getGridFSBucket } from '../middleware/gridfsMiddleware';
+import connectDB from '../config/db';
 import fs from 'fs';
 import path from 'path';
-import fetch from 'node-fetch';
-import Jewelry from '../models/Jewelry';
-import connectDB from '../config/db';
-import { uploadBufferToGridFS, deleteFileFromGridFS } from '../utils/gridFsHelper';
+import { Readable } from 'stream';
 
 dotenv.config();
 
-const migrate = async () => {
-    await connectDB();
-    const items = await Jewelry.find({});
-    console.log('Found', items.length, 'items');
-
-    for (const item of items) {
-        if (item.imageUrl && item.imageUrl.includes('/uploads/')) {
-            console.log('Migrating item', item.slug);
-            let buffer: Buffer | null = null;
-            const url = item.imageUrl;
+/**
+ * Script para migrar imágenes del sistema de archivos local a GridFS
+ * Solo migra joyas que NO tengan imageFileId (es decir, que usen URLs locales)
+ */
+async function migrateToGridFS() {
+    try {
+        await connectDB();
+        
+        console.log('🔍 Buscando joyas con imágenes locales...');
+        
+        // Buscar joyas que no tengan imageFileId (usan sistema antiguo)
+        const items = await Jewelry.find({ 
+            imageFileId: { $exists: false },
+            imageUrl: { $exists: true }
+        });
+        
+        console.log(`📦 Encontradas ${items.length} joyas para migrar`);
+        
+        if (items.length === 0) {
+            console.log('✅ No hay joyas para migrar');
+            process.exit(0);
+        }
+        
+        const bucket = getGridFSBucket();
+        let migrated = 0;
+        let skipped = 0;
+        
+        for (const item of items) {
             try {
-                if (url.startsWith('http')) {
-                    const resp = await fetch(url);
-                    if (!resp.ok) throw new Error('Failed to fetch remote file');
-                    const arrayBuffer = await resp.arrayBuffer();
-                    buffer = Buffer.from(arrayBuffer);
-                } else {
-                    // local file path
-                    const localPath = path.join(process.cwd(), 'uploads', url.replace('/uploads/', ''));
-                    if (fs.existsSync(localPath)) {
-                        buffer = fs.readFileSync(localPath);
+                // Extraer el nombre del archivo de la URL
+                const imageUrl = item.imageUrl;
+                if (!imageUrl) {
+                    skipped++;
+                    continue;
+                }
+                
+                // Si es una URL HTTP, skip (no podemos migrar desde URLs externas)
+                if (imageUrl.startsWith('http://') || imageUrl.startsWith('https://')) {
+                    console.log(`⏭️  Skipping ${item.name} - URL externa: ${imageUrl}`);
+                    skipped++;
+                    continue;
+                }
+                
+                // Intentar encontrar el archivo en uploads/jewelry/
+                const uploadsDir = path.join(__dirname, '../../../uploads/jewelry');
+                const filename = path.basename(imageUrl);
+                const filepath = path.join(uploadsDir, filename);
+                
+                if (!fs.existsSync(filepath)) {
+                    console.log(`⚠️  Archivo no encontrado para ${item.name}: ${filepath}`);
+                    skipped++;
+                    continue;
+                }
+                
+                // Leer el archivo
+                const fileBuffer = fs.readFileSync(filepath);
+                const readableStream = Readable.from(fileBuffer);
+                
+                // Determinar el tipo MIME
+                const ext = path.extname(filename).toLowerCase();
+                const mimeTypes: Record<string, string> = {
+                    '.jpg': 'image/jpeg',
+                    '.jpeg': 'image/jpeg',
+                    '.png': 'image/png',
+                    '.gif': 'image/gif',
+                    '.webp': 'image/webp'
+                };
+                const contentType = mimeTypes[ext] || 'image/jpeg';
+                
+                // Subir a GridFS
+                const uploadStream = bucket.openUploadStream(filename, {
+                    contentType,
+                    metadata: {
+                        originalName: filename,
+                        migratedFrom: imageUrl
                     }
-                }
-
-                if (buffer) {
-                    const fileId = await uploadBufferToGridFS(buffer, `${item.slug}.jpg`, 'image/jpeg');
-                    item.imageUrl = `/api/uploads/${fileId}`;
-                    item.overlayAssetUrl = `/api/uploads/${fileId}`;
-                    await item.save();
-                    console.log('Migrated:', item.slug, '->', item.imageUrl);
-                    // Optionally delete local file
-                    // fs.unlinkSync(localPath);
-                } else {
-                    console.warn('No buffer found for', item.slug);
-                }
-            } catch (err) {
-                console.error('Failed migration for', item.slug, err);
+                });
+                
+                await new Promise((resolve, reject) => {
+                    readableStream.pipe(uploadStream)
+                        .on('finish', resolve)
+                        .on('error', reject);
+                });
+                
+                // Actualizar el documento de la joya
+                item.imageFileId = uploadStream.id.toString();
+                item.imageUrl = `/api/jewelry/image/${uploadStream.id.toString()}`;
+                item.overlayAssetUrl = `/api/jewelry/image/${uploadStream.id.toString()}`;
+                await item.save();
+                
+                console.log(`✅ Migrado: ${item.name} -> ${uploadStream.id.toString()}`);
+                migrated++;
+                
+            } catch (error) {
+                console.error(`❌ Error migrando ${item.name}:`, error);
+                skipped++;
             }
         }
+        
+        console.log('\n📊 Resumen de migración:');
+        console.log(`   Migradas: ${migrated}`);
+        console.log(`   Omitidas: ${skipped}`);
+        console.log(`   Total: ${items.length}`);
+        
+        process.exit(0);
+        
+    } catch (error) {
+        console.error('❌ Error en la migración:', error);
+        process.exit(1);
     }
+}
 
-    process.exit(0);
-};
+// Ejecutar si se llama directamente
+if (require.main === module) {
+    migrateToGridFS();
+}
 
-migrate().catch(err => {
-    console.error(err);
-    process.exit(1);
-});
+export default migrateToGridFS;
