@@ -1,4 +1,6 @@
 
+import { images } from '../utils/images';
+
 export const brandingConfig = {
   tenantId: 'aurora-jewels',
   brandName: "Joyería Aurora",
@@ -8,8 +10,8 @@ export const brandingConfig = {
   accentColor: "#FFFFFF", // white
   backgroundGradient: "linear-gradient(135deg, #050509, #1C1C24)",
   fontFamily: "'Playfair Display', serif",
-  logoLightUrl: "/logo.png", // Directamente desde public/
-  logoDarkUrl: "/logo-dark.png", // Directamente desde public/
+  logoLightUrl: images.logos.light,
+  logoDarkUrl: images.logos.dark,
   hero: {
     title: "Joyas que cuentan tu historia",
     subtitle: "Descubre cómo brillan en tu piel antes de entrar en la tienda.",

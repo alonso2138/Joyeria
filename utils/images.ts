@@ -1,35 +1,12 @@
 // Helper para manejar rutas de imágenes
 export const getImageUrl = (imagePath: string): string => {
-  // Para imágenes en la carpeta public, eliminar /public/ si existe
-  if (imagePath.startsWith('/public/')) {
-    return imagePath.replace('/public/', '/');
-  }
-  
-  // Para imágenes que ya están en formato correcto
+  // Para imágenes en la carpeta public
   if (imagePath.startsWith('/')) {
     return imagePath;
   }
   
-  // Para rutas relativas, agregar la barra inicial
-  return `/${imagePath}`;
-};
-
-// Función específica para limpiar URLs problemáticas
-export const cleanImageUrl = (url: string): string => {
-  if (!url) return '';
-  
-  // Eliminar múltiples barras
-  url = url.replace(/\/+/g, '/');
-  
-  // Eliminar /public/ si aparece en la URL
-  url = url.replace('/public/', '/');
-  
-  // Asegurar que empiece con / para rutas locales
-  if (!url.startsWith('http') && !url.startsWith('/')) {
-    url = '/' + url;
-  }
-  
-  return url;
+  // Para imágenes en assets (importadas)
+  return new URL(`../assets/images/${imagePath}`, import.meta.url).href;
 };
 
 // Rutas de imágenes comunes
