@@ -1,0 +1,7 @@
+{
+  "name": "Luxury Jewelry Virtual Try-On",
+  "description": "An elegant web application for luxury jewelry brands, featuring a product catalog and a virtual try-on experience powered by AI.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
