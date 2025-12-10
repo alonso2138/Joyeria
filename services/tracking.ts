@@ -12,7 +12,7 @@ const storeTrackingId = (id: string) => {
 };
 
 const fireTracking = async (id: string, estado: string) => {
-  const url = `${WEBHOOK_BASE}?email=${encodeURIComponent(id)}&estado=${encodeURIComponent(estado)}`;
+  const url = `${WEBHOOK_BASE}?id=${encodeURIComponent(id)}&estado=${encodeURIComponent(estado)}`;
   try {
     await fetch(url, { method: 'GET', mode: 'no-cors' });
   } catch (err) {
