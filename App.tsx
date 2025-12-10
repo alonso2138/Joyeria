@@ -4,6 +4,7 @@ import { HashRouter, Routes, Route, useLocation } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
 
 import { brandingConfig } from './config/branding';
+import { captureTrackingIdFromUrl } from './services/tracking';
 
 import Header from './components/layout/Header';
 import Footer from './components/layout/Footer';
@@ -11,12 +12,15 @@ import HomePage from './pages/HomePage';
 import CatalogPage from './pages/CatalogPage';
 import JewelryDetailPage from './pages/JewelryDetailPage';
 import TryOnPage from './pages/TryOnPage';
+import CustomizePage from './pages/CustomizePage';
+import CustomResultPage from './pages/CustomResultPage';
 
 // Admin Pages
 import AdminLayout from './pages/admin/AdminLayout';
 import AdminLoginPage from './pages/admin/AdminLoginPage';
 import AdminJewelryListPage from './pages/admin/AdminJewelryListPage';
 import AdminJewelryEditPage from './pages/admin/AdminJewelryEditPage';
+import AdminCustomRequestsPage from './pages/admin/AdminCustomRequestsPage';
 import { AuthProvider } from './hooks/useAuth';
 
 const PageLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -36,6 +40,7 @@ const PageLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 
 const App: React.FC = () => {
   useEffect(() => {
+    captureTrackingIdFromUrl();
     document.documentElement.style.setProperty('--primary-color', brandingConfig.primaryColor);
     document.documentElement.style.setProperty('--secondary-color', brandingConfig.secondaryColor);
     document.documentElement.style.setProperty('--accent-color', brandingConfig.accentColor);
@@ -47,11 +52,14 @@ const App: React.FC = () => {
       <HashRouter>
         <Routes>
           <Route path="/try-on/:slug" element={<TryOnPage />} />
+          <Route path="/personalizar" element={<PageLayout><CustomizePage /></PageLayout>} />
+          <Route path="/personalizar/resultado" element={<CustomResultPage />} />
           <Route path="/admin/login" element={<AdminLoginPage />} />
           <Route path="/admin" element={<AdminLayout><AdminJewelryListPage /></AdminLayout>} />
           <Route path="/admin/jewelry" element={<AdminLayout><AdminJewelryListPage /></AdminLayout>} />
           <Route path="/admin/jewelry/new" element={<AdminLayout><AdminJewelryEditPage /></AdminLayout>} />
           <Route path="/admin/jewelry/edit/:id" element={<AdminLayout><AdminJewelryEditPage /></AdminLayout>} />
+          <Route path="/admin/custom-requests" element={<AdminLayout><AdminCustomRequestsPage /></AdminLayout>} />
 
           <Route path="*" element={
             <PageLayout>
@@ -59,6 +67,8 @@ const App: React.FC = () => {
                 <Route path="/" element={<HomePage />} />
                 <Route path="/catalog" element={<CatalogPage />} />
                 <Route path="/jewelry/:slug" element={<JewelryDetailPage />} />
+                <Route path="/personalizar" element={<CustomizePage />} />
+                <Route path="/personalizar/resultado" element={<CustomResultPage />} />
               </Routes>
             </PageLayout>
           }/>

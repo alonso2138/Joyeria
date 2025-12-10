@@ -4,6 +4,7 @@ import cors from 'cors';
 import connectDB from './config/db';
 import jewelryRoutes from './routes/jewelryRoutes';
 import authRoutes from './routes/authRoutes';
+import customRequestRoutes from './routes/customRequestRoutes';
 
 // Load environment variables
 dotenv.config();
@@ -20,6 +21,7 @@ app.use(express.json());
 // API Routes
 app.use('/api/jewelry', jewelryRoutes);
 app.use('/api/auth', authRoutes);
+app.use('/api/custom-requests', customRequestRoutes);
 
 const PORT = process.env.PORT || 5000;
 

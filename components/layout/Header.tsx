@@ -22,6 +22,7 @@ const Header: React.FC = () => {
           <nav className="hidden md:flex items-center space-x-8 text-sm font-medium tracking-widest uppercase">
             <Link to="/" className="hover:text-[var(--primary-color)] transition-colors duration-300">Home</Link>
             <Link to="/catalog" className="hover:text-[var(--primary-color)] transition-colors duration-300">Colección</Link>
+            <Link to="/catalog" className="hover:text-[var(--primary-color)] transition-colors duration-300">Probador virtual</Link>
           </nav>
           <Link to="/admin/login" title="Admin Login" className="md:ml-8 text-gray-400 hover:text-white transition-colors">
             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">

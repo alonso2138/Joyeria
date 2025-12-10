@@ -1,9 +1,9 @@
-
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { JewelryItem, EventType } from '../types';
 import { getJewelryBySlug, logEvent, getImageUrl } from '../services/api';
+import { trackIfAvailable } from '../services/tracking';
 import { generateTryOnImage } from '../services/geminiService';
 import Spinner from '../components/ui/Spinner';
 import Button from '../components/ui/Button';
@@ -17,6 +17,7 @@ const TryOnPage: React.FC = () => {
     const [step, setStep] = useState<TryOnStep>('loading_item');
     const [resultImage, setResultImage] = useState<string | null>(null);
     const [showDetails, setShowDetails] = useState(false);
+    const [isProcessingAI, setIsProcessingAI] = useState(false);
     
     const videoRef = useRef<HTMLVideoElement>(null);
     const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -36,14 +37,22 @@ const TryOnPage: React.FC = () => {
         fetchItem();
     }, [slug, navigate]);
     
+    const stopCamera = useCallback(() => {
+        if (videoRef.current && videoRef.current.srcObject) {
+            const stream = videoRef.current.srcObject as MediaStream;
+            stream.getTracks().forEach(track => track.stop());
+            videoRef.current.srcObject = null;
+        }
+    }, []);
+
     const startCamera = useCallback(async () => {
         if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia && videoRef.current) {
             try {
                 const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } });
                 videoRef.current.srcObject = stream;
             } catch (err) {
-                console.error("Error accessing camera: ", err);
-                alert("No se pudo acceder a la cámara. Por favor, revisa los permisos.");
+                console.error('Error accessing camera: ', err);
+                alert('No se pudo acceder a la cámara. Por favor, revisa los permisos.');
                 navigate(`/jewelry/${slug}`);
             }
         }
@@ -52,32 +61,60 @@ const TryOnPage: React.FC = () => {
     useEffect(() => {
         if(step === 'camera') {
             startCamera();
+        } else {
+            stopCamera();
         }
         return () => { // Cleanup: stop camera stream
-             if (videoRef.current && videoRef.current.srcObject) {
-                const stream = videoRef.current.srcObject as MediaStream;
-                stream.getTracks().forEach(track => track.stop());
-            }
-        }
-    }, [step, startCamera]);
+            stopCamera();
+        };
+    }, [step, startCamera, stopCamera]);
     
+    const captureToBase64 = (video: HTMLVideoElement, canvas: HTMLCanvasElement) => {
+        const maxWidth = 1280;
+        const maxHeight = 720;
+        const { videoWidth, videoHeight } = video;
+        if (!videoWidth || !videoHeight) return null;
+        const aspect = videoWidth / videoHeight;
+        let targetWidth = maxWidth;
+        let targetHeight = Math.round(targetWidth / aspect);
+        if (targetHeight > maxHeight) {
+            targetHeight = maxHeight;
+            targetWidth = Math.round(targetHeight * aspect);
+        }
+        
+        canvas.width = targetWidth;
+        canvas.height = targetHeight;
+        const context = canvas.getContext('2d');
+        context?.drawImage(video, 0, 0, targetWidth, targetHeight);
+        return canvas.toDataURL('image/jpeg', 0.7);
+    };
+
     const capturePhoto = async () => {
-        if (videoRef.current && canvasRef.current && item) {
+        if (videoRef.current && canvasRef.current && item && step !== 'processing') {
             setStep('processing');
-            const video = videoRef.current;
-            const canvas = canvasRef.current;
-            canvas.width = video.videoWidth;
-            canvas.height = video.videoHeight;
-            const context = canvas.getContext('2d');
-            context?.drawImage(video, 0, 0, video.videoWidth, video.videoHeight);
-            
-            const userImageBase64 = canvas.toDataURL('image/jpeg');
-            const composedImage = await generateTryOnImage(userImageBase64, getImageUrl(item.overlayAssetUrl));
-            
-            setResultImage(composedImage);
-            logEvent(EventType.TRYON_SUCCESS, item.id);
-            setStep('result');
-            setTimeout(() => setShowDetails(true), 500); // Auto-show details after a moment
+            setIsProcessingAI(true);
+            try {
+                const video = videoRef.current;
+                const canvas = canvasRef.current;
+                const userImageBase64 = captureToBase64(video, canvas);
+                stopCamera(); // stop immediately after capture
+                if (!userImageBase64) {
+                    throw new Error('No se pudo capturar la imagen.');
+                }
+                const composedImage = await generateTryOnImage(userImageBase64, getImageUrl(item.overlayAssetUrl));
+                
+                setResultImage(composedImage);
+                logEvent(EventType.TRYON_SUCCESS, item.id);
+                trackIfAvailable('try-on');
+                setStep('result');
+                setTimeout(() => setShowDetails(true), 500); // Auto-show details after a moment
+            } catch (err) {
+                console.error(err);
+                alert('No se pudo procesar la imagen. Intenta de nuevo.');
+                setStep('camera');
+            } finally {
+                setIsProcessingAI(false);
+            }
         }
     };
 
@@ -101,7 +138,7 @@ const TryOnPage: React.FC = () => {
             case 'processing':
                 return (
                     <div className="h-full flex flex-col items-center justify-center text-center p-4">
-                        <Spinner text="Aplicando la joya..." />
+                        <Spinner text={isProcessingAI ? 'Aplicando la joya...' : 'Capturando...'} />
                         <p className="mt-4 text-gray-300">Nuestra IA está creando tu imagen personalizada.</p>
                     </div>
                 );
@@ -112,10 +149,10 @@ const TryOnPage: React.FC = () => {
                         <AnimatePresence>
                         {showDetails && (
                             <motion.div
-                                initial={{ y: "100%" }}
+                                initial={{ y: '100%' }}
                                 animate={{ y: 0 }}
-                                exit={{ y: "100%" }}
-                                transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                                exit={{ y: '100%' }}
+                                transition={{ type: 'spring', stiffness: 300, damping: 30 }}
                                 className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-80 backdrop-blur-lg p-6 rounded-t-2xl"
                                 onPanEnd={(event, info) => { if (info.offset.y > 100) setShowDetails(false); }}
                             >
@@ -135,11 +172,16 @@ const TryOnPage: React.FC = () => {
                     </div>
                 );
         }
-    }
+    };
+
+    const handleBack = () => {
+        stopCamera();
+        navigate(-1);
+    };
 
     return (
         <div className="fixed inset-0 bg-gray-900 z-50">
-            <button onClick={() => navigate(-1)} className="absolute top-4 left-4 z-20 text-white bg-black bg-opacity-50 rounded-full p-2">
+            <button onClick={handleBack} className="absolute top-4 left-4 z-20 text-white bg-black bg-opacity-50 rounded-full p-2">
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
             </button>
             {renderContent()}

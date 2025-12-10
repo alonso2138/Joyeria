@@ -1,4 +1,4 @@
-import { JewelryItem, AnalyticsEvent, EventType, AdminUserCredentials } from '../types';
+import { JewelryItem, AnalyticsEvent, EventType, AdminUserCredentials, CustomRequest, CustomRequestPayload } from '../types';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
 
@@ -59,7 +59,7 @@ export const getJewelryById = async (id: string): Promise<JewelryItem | undefine
 };
 
 export const getUniqueHashtags = async (): Promise<string[]> => {
-    return apiRequest('/hashtags');
+    return apiRequest('/jewelry/hashtags');
 };
 
 let sessionId = `session_${Date.now()}_${Math.random().toString(36).substring(2)}`;
@@ -119,4 +119,21 @@ export const deleteJewelryItem = async (id: string, token: string): Promise<{ su
         },
     });
     return { success: true };
+};
+
+// --- CUSTOM REQUESTS (PERSONALIZACI��N) ---
+
+export const createCustomRequest = async (payload: CustomRequestPayload): Promise<{ id: string; createdAt: string }> => {
+  return apiRequest('/custom-requests', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+};
+
+export const fetchCustomRequests = async (token: string): Promise<CustomRequest[]> => {
+  return apiRequest('/custom-requests', {
+    method: 'GET',
+    headers: { 'Authorization': `Bearer ${token}` },
+  });
 };

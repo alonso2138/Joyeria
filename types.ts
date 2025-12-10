@@ -37,3 +37,33 @@ export interface AdminUserCredentials {
   email: string;
   password: string;
 }
+
+// Datos para personalizar una joya
+export interface CustomJewelOptions {
+  pieceType: string;
+  material: string;
+  measurements?: string;
+  engraving?: string;
+  stonesOrColors?: string; // Piedras o colores dominantes elegidos
+  description?: string; // Notas o contexto adicional
+}
+
+export interface GeneratedJewelResult {
+  imageBase64: string;
+  promptUsed: string;
+  options: CustomJewelOptions;
+}
+
+export interface CustomRequestPayload extends CustomJewelOptions {
+  customerName?: string;
+  customerEmail?: string;
+  customerPhone?: string;
+  optionsJson: string;
+  imageBase64?: string;
+  details?: string;
+}
+
+export interface CustomRequest extends CustomRequestPayload {
+  id: string;
+  createdAt: string;
+}
