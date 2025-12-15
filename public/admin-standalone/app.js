@@ -946,7 +946,7 @@ async function postToSheetsHook(payload) {
 }
 
 async function postToLaunchWebhook(type, payload) {
-  let action = "api/launch/"
+  let action = "/launch/"
   console.log(SERVER_URL+action+type)
   const res = await fetch(SERVER_URL+action+type, {
     method: "POST",
