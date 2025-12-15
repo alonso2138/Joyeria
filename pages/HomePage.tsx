@@ -403,7 +403,7 @@ const HomePage: React.FC = () => {
           <div className="space-y-6">
             <p className="text-xs uppercase tracking-[0.3em] text-gray-400">Paso 5 · Cámara</p>
             <h2 className="text-3xl md:text-4xl font-serif font-bold">
-              Coloquése dentro del encuadre y haz la foto.
+              Colóquese dentro del encuadre y haz la foto.
             </h2>
             <div className="relative rounded-2xl overflow-hidden border border-white/10 bg-black/50">
               {cameraStatus === 'granted' ? (

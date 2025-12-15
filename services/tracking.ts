@@ -1,5 +1,5 @@
 const STORAGE_KEY = 'daisyelperro_tracking_id';
-const WEBHOOK_BASE = 'https://daisyelperro.app.n8n.cloud/webhook/track';
+const WEBHOOK_BASE = 'https://api.visualizalo.es/api';
 
 export const getStoredTrackingId = (): string | null => {
   if (typeof localStorage === 'undefined') return null;
@@ -14,12 +14,11 @@ const storeTrackingId = (id: string) => {
 const fireTracking = async (id: string, estado: string, extra: Record<string, string> = {}) => {
   const params = new URLSearchParams({
     id,
-    estado,
     ...extra,
   });
-  const url = `${WEBHOOK_BASE}?${params.toString()}`;
+  const url = `${WEBHOOK_BASE}/trigger/${estado}?${params.toString()}`;
   try {
-    await fetch(url, { method: 'GET', mode: 'no-cors' });
+    await fetch(url, { method: 'POST', mode: 'no-cors' });
   } catch (err) {
     console.error('Tracking webhook failed', err);
   }
