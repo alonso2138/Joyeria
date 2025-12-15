@@ -348,30 +348,7 @@ export const launchFollowUp = async (req: Request, res: Response) => {
             await sendMail(
                 `${lead.email}`,
                 `¿Lo probamos con vuestras joyas?`,
-                `
-Hola!
-<br><br>
-Te escribo porque el otro día te envié el probador virtual de joyas y no sé si pudiste llegar a probarlo.
-<br><br>
-Te dejo el enlace de nuevo por aquí por si acaso:<br>
-<a href="https://visualizalo.es?id="${encodedEmail}" >https://visualizalo.es</a>
-<br><br>
-A varias joyerías les está funcionando bien para ayudar al cliente a decidirse cuando duda entre piezas, tanto en tienda como online.
-<br><br>
-Si te parece, puedo prepararos una prueba gratuita con alguna de vuestras joyas para que veáis si realmente os sirve o no.
-En 5 minutos te lo enseño y listo, sin compromiso ni coste.
-<br><br>
-¿Te viene mejor esta semana o la siguiente?
-<br><br>
-Muchas gracias por su tiempo,
-<br>
-Alonso Valls
-<br><br>
-
-<img src="https://api.visualizalo.es/api/trigger/follow-abierto?id=${encodedEmail}" alt="" width="1" height="1" style="display:none!important;min-height:0;height:0;max-height:0;width:0;max-width:0;opacity:0;overflow:hidden;mso-hide:all;" />
-`
-            );
-
+`Hola!<br><br>Te escribo porque el otro día te envié el probador virtual de joyas y no sé si pudiste llegar a probarlo.<br><br>Te dejo el enlace de nuevo por aquí por si acaso:<br><a href="https://visualizalo.es?id="${encodedEmail}" >https://visualizalo.es</a><br><br>A varias joyerías les está funcionando bien para ayudar al cliente a decidirse cuando duda entre piezas, tanto en tienda como online.<br><br>Si te parece, puedo prepararos una prueba gratuita con alguna de vuestras joyas para que veáis si realmente os sirve o no.<br>En 5 minutos te lo enseño y listo, sin compromiso ni coste.<br><br>¿Te viene mejor esta semana o la siguiente?<br><br>Muchas gracias por su tiempo,<br>Alonso Valls<br><br><img src="https://api.visualizalo.es/api/trigger/follow-abierto?id=${encodedEmail}" alt="" width="1" height="1" style="display:none!important;min-height:0;height:0;max-height:0;width:0;max-width:0;opacity:0;overflow:hidden;mso-hide:all;" />`);
             console.log("Mail enviado, enviando notificacion de telegram")
 
             await sendTelegramNotification(`Mail follow-up enviado a ${lead.email}`);
