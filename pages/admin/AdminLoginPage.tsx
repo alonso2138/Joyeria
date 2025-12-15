@@ -7,8 +7,8 @@ import { brandingConfig } from '../../config/branding';
 import Button from '../../components/ui/Button';
 
 const AdminLoginPage: React.FC = () => {
-    const [email, setEmail] = useState('admin@aurora.com');
-    const [password, setPassword] = useState('password123');
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
     const [error, setError] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     
