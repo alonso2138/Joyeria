@@ -110,13 +110,18 @@ const importData = async () => {
 
         await Jewelry.insertMany(mockJewelryData);
 
+        const adminPassword = process.env.ADMIN_PASSWORD;
+        if (!adminPassword) {
+            throw new Error('ADMIN_PASSWORD environment variable is required for seeding. Please set it in your .env file.');
+        }
+
         await User.create({
             email: 'admin@aurora.com',
-            password: process.env.ADMIN_PASSWORD || 'CHANGE_ME_INSECURE_DEFAULT',
+            password: adminPassword,
         });
 
         console.log('Data Imported!');
-        console.log('IMPORTANT: If you used the default password, please change it immediately!');
+        console.log('Admin user created successfully.');
         process.exit();
     } catch (error) {
         console.error(`${error}`);

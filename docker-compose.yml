@@ -7,7 +7,7 @@ services:
     container_name: joyas-mongodb
     restart: unless-stopped
     environment:
-      MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USERNAME:-admin}
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USERNAME}
       MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD}
     ports:
       - "27017:27017"
@@ -25,7 +25,7 @@ services:
     restart: unless-stopped
     environment:
       - NODE_ENV=production
-      - MONGO_URI=mongodb://${MONGO_ROOT_USERNAME:-admin}:${MONGO_ROOT_PASSWORD}@mongodb:27017/joyeria_aurora?authSource=admin
+      - MONGO_URI=mongodb://${MONGO_ROOT_USERNAME}:${MONGO_ROOT_PASSWORD}@mongodb:27017/joyeria_aurora?authSource=admin
       - JWT_SECRET=${JWT_SECRET}
       - PORT=5000
     ports:
