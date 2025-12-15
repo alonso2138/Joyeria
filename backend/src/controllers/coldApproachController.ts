@@ -355,7 +355,7 @@ export const launchColdApproach = async (req: Request, res: Response) => {
                 `${leads[i].email}`,
                 `Cuando un cliente duda entre dos piezas`,
                 `
-                Hola ${leads[i].nombre}
+                Hola!
                 <br><br>
                 Seguro que te pasa a menudo: un cliente mira una pulsera o un reloj, le gusta pero no termina de decidirse.
                 <br><br>
@@ -363,7 +363,7 @@ export const launchColdApproach = async (req: Request, res: Response) => {
                 <br><br>
                 Puedes probarlo tu mismo aqui (sin registro) en apenas 10 segundos:
                 <br>
-                <a href="https://joyeria-xi.vercel.app?id=${encodedEmail}">Probar el probador virtual</a>
+                <a href="https://visualizalo.es?id=${encodedEmail}">Probar el probador virtual</a>
                 <br><br>
                 Si os parece interesante la idea, os invito a hacer una prueba gratuita, con vuestras piezas, para que veais si realmente os sirve en vuestro dia a dia.
                 <br><br>
@@ -373,7 +373,7 @@ export const launchColdApproach = async (req: Request, res: Response) => {
                 Alonso Valls
                 <br><br>
 
-                <img src="http://localhost:5000/api/trigger/cold-abierto?id=${encodedEmail}" alt="" width="1" height="1" style="display:none!important;min-height:0;height:0;max-height:0;width:0;max-width:0;opacity:0;overflow:hidden;mso-hide:all;" />
+                <img src="https://api.visualizalo.es/api/trigger/cold-abierto?id=${encodedEmail}" alt="" width="1" height="1" style="display:none!important;min-height:0;height:0;max-height:0;width:0;max-width:0;opacity:0;overflow:hidden;mso-hide:all;" />
             `
             );
 

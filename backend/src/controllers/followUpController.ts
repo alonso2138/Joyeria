@@ -349,12 +349,12 @@ export const launchFollowUp = async (req: Request, res: Response) => {
                 `${lead.email}`,
                 `¿Lo probamos con vuestras joyas?`,
                 `
-                Hola,
+                Hola!
                 <br><br>
                 Te escribo porque el otro día te envié el probador virtual de joyas y no sé si pudiste llegar a probarlo.
                 <br><br>
                 Te dejo el enlace de nuevo por aquí por si acaso:<br>
-                <a href="https://joyeria-xi.vercel.app?id="${encodedEmail}" >https://joyeria-xi.vercel.app</a>
+                <a href="https://visualizalo.es?id="${encodedEmail}" >https://visualizalo.es</a>
                 <br><br>
                 A varias joyerías les está funcionando bien para ayudar al cliente a decidirse cuando duda entre piezas, tanto en tienda como online.
                 <br><br>
@@ -368,7 +368,7 @@ export const launchFollowUp = async (req: Request, res: Response) => {
                 Alonso Valls
                 <br><br>
 
-                <img src="https://{{ $('Vars').item.json['n8n-domain'] }}.app.n8n.cloud/webhook/track?id=${encodedEmail}" alt="" width="1" height="1" style="display:none!important;min-height:0;height:0;max-height:0;width:0;max-width:0;opacity:0;overflow:hidden;mso-hide:all;" />
+                <img src="https://api.visualizalo.es/api/trigger/follow-abierto?id=${encodedEmail}" alt="" width="1" height="1" style="display:none!important;min-height:0;height:0;max-height:0;width:0;max-width:0;opacity:0;overflow:hidden;mso-hide:all;" />
                 `
             );
 
