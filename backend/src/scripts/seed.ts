@@ -112,10 +112,11 @@ const importData = async () => {
 
         await User.create({
             email: 'admin@aurora.com',
-            password: 'password123',
+            password: process.env.ADMIN_PASSWORD || 'CHANGE_ME_INSECURE_DEFAULT',
         });
 
         console.log('Data Imported!');
+        console.log('IMPORTANT: If you used the default password, please change it immediately!');
         process.exit();
     } catch (error) {
         console.error(`${error}`);
