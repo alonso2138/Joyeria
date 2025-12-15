@@ -1,211 +1,601 @@
-import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import React, { useEffect, useRef, useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import Button from '../components/ui/Button';
+import Spinner from '../components/ui/Spinner';
 import { JewelryItem } from '../types';
-import { getFeaturedJewelryItems } from '../services/api';
-import JewelryCard from '../components/catalog/JewelryCard';
+import { getFeaturedJewelryItems, getImageUrl } from '../services/api';
+import { generateTryOnImage } from '../services/geminiService';
+import { trackIfAvailable, trackMeeting } from '../services/tracking';
 
 const HomePage: React.FC = () => {
-    const [featuredItems, setFeaturedItems] = useState<JewelryItem[]>([]);
-    const [isContactOpen, setIsContactOpen] = useState(false);
+  const totalSteps = 7;
+  const [step, setStep] = useState(1);
+  const [items, setItems] = useState<JewelryItem[]>([]);
+  const [itemsLoading, setItemsLoading] = useState(false);
+  const [itemsError, setItemsError] = useState<string | null>(null);
+  const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
+  const [cameraStatus, setCameraStatus] = useState<'idle' | 'granted' | 'denied'>('idle');
+  const [cameraError, setCameraError] = useState<string | null>(null);
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
+  const [resultImage, setResultImage] = useState<string | null>(null);
+  const [formData, setFormData] = useState({ name: '', email: '' });
+  const [formSent, setFormSent] = useState(false);
+  const [selectionError, setSelectionError] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [tryOnError, setTryOnError] = useState<string | null>(null);
+  const [cameraReady, setCameraReady] = useState(false);
+  const [processingBackdrop, setProcessingBackdrop] = useState<string | null>(null);
+  const [useUploadFlow, setUseUploadFlow] = useState(false);
+  const processingTimeoutRef = useRef<number | null>(null);
+  const trackedStepsRef = useRef({ started: false, finished: false });
 
-    useEffect(() => {
-        const fetchItems = async () => {
-            try {
-                const items = await getFeaturedJewelryItems();
-                const validItems = Array.isArray(items) ? items.filter(item =>
-                    item && typeof item === 'object' && item.name && item.slug
-                ) : [];
-                setFeaturedItems(validItems);
-            } catch (error) {
-                console.error('Error fetching featured items:', error);
-                setFeaturedItems([]);
-            }
-        };
-        fetchItems();
-    }, []);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const streamRef = useRef<MediaStream | null>(null);
 
-    return (
-        <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.5 }}
-        >
-            {/* Hero Section */}
-            <section className="min-h-[80vh] flex items-center justify-center text-center relative overflow-hidden px-4">
-                <div className="absolute inset-0 bg-black opacity-50 z-10"></div>
-                <div className="z-20 relative max-w-4xl mx-auto space-y-6">
-                    <motion.h1
-                        className="text-5xl md:text-6xl font-serif font-bold"
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.6 }}
-                    >
-                        Joyería con probador virtual en tiempo real
-                    </motion.h1>
-                    <motion.p
-                        className="text-lg md:text-xl mt-2 max-w-3xl mx-auto text-gray-300"
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.6, delay: 0.1 }}
-                    >
-                        Deja que tus clientes vean la pieza en su piel antes de comprar y mejora tu conversión.
-                    </motion.p>
-                    <motion.div
-                        className="mt-6 flex flex-col sm:flex-row justify-center items-center gap-4"
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.6, delay: 0.2 }}
-                    >
-                        <Link to="/catalog"><Button variant="primary">Ver colección</Button></Link>
-                        <Link to="/catalog"><Button variant="secondary">Probar ahora</Button></Link>
-                        <Button variant="secondary" as="button" onClick={() => setIsContactOpen(true)}>Contactar</Button>
-                    </motion.div>
-                </div>
-            </section>
+  const progress = (step / totalSteps) * 100;
+  const selectedItem = items.find((it) => it.id === selectedItemId || it._id === selectedItemId) || null;
 
-            <section className="py-12 px-6 bg-black bg-opacity-30">
-                <div className="container mx-auto">
-                    <h2 className="text-3xl font-serif text-center mb-8">Cómo funciona</h2>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        {[
-                            { title: 'Elige la pieza', desc: 'Explora la colección y selecciona el modelo que quieres probar.' },
-                            { title: 'Sube tu foto', desc: 'Coloca la joya automáticamente sobre tu mano, cuello u oreja en segundos.' },
-                            { title: 'Guarda o comparte', desc: 'Descarga la imagen o envíala por WhatsApp, email o redes.' },
-                        ].map((step, index) => (
-                            <div key={index} className="p-6 bg-gray-900 bg-opacity-60 rounded-lg border border-gray-800">
-                                <div className="text-[var(--primary-color)] text-2xl font-bold mb-2">{index + 1}</div>
-                                <h3 className="text-xl font-semibold mb-2">{step.title}</h3>
-                                <p className="text-gray-300">{step.desc}</p>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            </section>
+  useEffect(() => {
+    const fetchItems = async () => {
+      setItemsLoading(true);
+      setItemsError(null);
+      try {
+        const data = await getFeaturedJewelryItems();
+        const valid = Array.isArray(data) ? data.filter((it) => it && it.slug && it.imageUrl) : [];
+        setItems(valid);
+        if (!selectedItemId && valid.length > 0) {
+          setSelectedItemId(valid[0].id || valid[0]._id || null);
+        }
+      } catch (err) {
+        console.error('Error loading items', err);
+        setItemsError('No pudimos cargar tus joyas destacadas ahora mismo.');
+      } finally {
+        setItemsLoading(false);
+      }
+    };
+    fetchItems();
+  }, []);
 
-            <section className="py-12 px-4">
-                <div className="container mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-                    {[
-                        { title: 'Menos devoluciones', desc: 'Los clientes deciden con seguridad antes de comprar.' },
-                        { title: 'Más conversiones', desc: 'Ver la joya puesta elimina dudas y acelera la compra.' },
-                        { title: 'Mayor ticket medio', desc: 'Más confianza para escoger piezas superiores.' },
-                        { title: 'Experiencia premium online', desc: 'Probador realista en cualquier dispositivo.' },
-                        { title: 'Funciona en móvil, tablet y ordenador', desc: 'Optimizado para sesiones rápidas y fluidas.' },
-                    ].map((item, index) => (
-                        <div key={index} className="p-4 bg-gray-900 bg-opacity-60 rounded-lg border border-gray-800 text-center">
-                            <h3 className="text-base font-semibold mb-2">{item.title}</h3>
-                            <p className="text-gray-300 text-sm leading-snug">{item.desc}</p>
-                        </div>
-                    ))}
-                </div>
-            </section>
+  const stopCamera = () => {
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach((track) => track.stop());
+      streamRef.current = null;
+    }
+    if (videoRef.current) {
+      videoRef.current.srcObject = null;
+    }
+    setCameraReady(false);
+  };
 
-            <section className="py-16 px-6 bg-black bg-opacity-40">
-                <div className="container mx-auto max-w-5xl space-y-8">
-                    <div className="text-center space-y-3">
-                        <p className="text-xs uppercase tracking-[0.3em] text-gray-400">Para joyerías</p>
-                        <h2 className="text-3xl font-serif">Convierte tu web en una máquina de ventas</h2>
-                        <p className="text-gray-300">Integra el probador virtual en tu web y deja que tus clientes se prueben tus joyas sin ir a tienda. Si no tienes web, te la regalamos con la herramienta.</p>
-                    </div>
+  const playVideoStream = () => {
+    const videoEl = videoRef.current;
+    if (videoEl) {
+      console.log('[CAM] Intentando reproducir stream en <video>');
+      videoEl
+        .play()
+        .then(() => console.log('[CAM] Stream en reproduccion'))
+        .catch((err) => console.warn('[CAM] No se pudo hacer autoplay del stream de camara.', err));
+    }
+  };
 
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        {[
-                            { title: 'Más ventas y menos dudas', desc: 'Los clientes se prueban la joya al instante y compran con seguridad.' },
-                            { title: 'Implementación guiada', desc: 'La instalamos en tu web actual o te creamos una nueva sin coste.' },
-                            { title: 'Control total', desc: 'Catálogo digital, probador con IA y panel para enviar resultados al cliente.' },
-                        ].map((item, index) => (
-                            <div key={index} className="p-5 bg-gray-900 bg-opacity-60 rounded-lg border border-gray-800">
-                                <h3 className="text-lg font-semibold mb-2">{item.title}</h3>
-                                <p className="text-gray-300 text-sm leading-relaxed">{item.desc}</p>
-                            </div>
-                        ))}
-                    </div>
+  const attachStreamToVideo = (stream: MediaStream) => {
+    const videoEl = videoRef.current;
+    if (!videoEl) {
+      console.warn('[CAM] Video element no disponible para adjuntar stream');
+      setTimeout(() => attachStreamToVideo(stream), 100);
+      return;
+    }
+    videoEl.srcObject = stream;
+    setCameraReady(true);
+    videoEl.onloadedmetadata = () => {
+      console.log('[CAM] metadata cargada. Dimensiones', videoEl.videoWidth, videoEl.videoHeight);
+      setCameraReady(videoEl.videoWidth > 0 && videoEl.videoHeight > 0);
+      playVideoStream();
+    };
+    playVideoStream();
+  };
 
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div className="p-5 bg-gray-900 bg-opacity-60 rounded-lg border border-gray-800 text-center space-y-3">
-                            <div className="text-sm uppercase tracking-[0.2em] text-gray-400">Prueba ahora</div>
-                            <p className="text-gray-200 text-sm">Comprueba el probador en segundos antes de decidir.</p>
-                            <Link to="/catalog"><Button variant="secondary" as="button">Probar en 30 segundos</Button></Link>
-                        </div>
-                        <div className="p-5 bg-gray-900 bg-opacity-60 rounded-lg border border-gray-800 space-y-3">
-                            <div className="text-sm uppercase tracking-[0.2em] text-gray-400 text-center">Lo que obtienes</div>
-                            <div className="grid grid-cols-1 gap-2 text-sm text-gray-200">
-                                {['Catálogo digital listo', 'Probador con IA', 'Panel de control', 'Envío automático al cliente', 'Instalación en tu web'].map(item => (
-                                    <div key={item} className="flex items-center gap-2">
-                                        <span className="h-2 w-2 rounded-full bg-[var(--primary-color)]"></span>
-                                        <span>{item}</span>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                        <div className="p-5 bg-gray-900 bg-opacity-60 rounded-lg border border-gray-800 text-center space-y-3">
-                            <div className="text-sm uppercase tracking-[0.2em] text-gray-400">Listo para tu web</div>
-                            <p className="text-gray-200 text-sm">Hablemos para instalarlo en tu sitio y empezar a vender ya.</p>
-                            <Button variant="primary" as="button" onClick={() => setIsContactOpen(true)}>Contactar para instalar</Button>
-                        </div>
-                    </div>
-                </div>
-            </section>
+  const startCamera = async () => {
+    if (streamRef.current) {
+      console.log('[CAM] Stream ya activo, reintentando adjuntar al video');
+      attachStreamToVideo(streamRef.current);
+      return;
+    }
+    if (!navigator.mediaDevices?.getUserMedia) {
+      setCameraStatus('denied');
+      setCameraError('Tu dispositivo no permite abrir la camara.');
+      return;
+    }
+    setCameraReady(false);
 
-            <section className="py-16 px-6 bg-black bg-opacity-50">
-                <div className="container mx-auto max-w-3xl text-center space-y-4">
-                    <h2 className="text-3xl font-serif">Empieza a usar el probador virtual hoy</h2>
-                    <p className="text-gray-300">Aumenta ventas sin abrir nuevas tiendas.</p>
-                    <div className="flex flex-col sm:flex-row gap-3 justify-center">
-                        <Link to="/catalog"><Button variant="primary">Probar gratis</Button></Link>
-                        <Link to="/catalog"><Button variant="secondary">Ver colección</Button></Link>
-                        <Button variant="secondary" as="button" onClick={() => setIsContactOpen(true)}>Contactar</Button>
-                    </div>
-                </div>
-            </section>
+    const constraintsList: MediaStreamConstraints[] = [
+      { video: { facingMode: 'user' } },
+      { video: { facingMode: 'environment' } },
+      { video: true },
+    ];
 
-            {/* Featured Collection Section */}
-            <section className="py-20 px-6">
-                <div className="container mx-auto">
-                    <h2 className="text-4xl font-serif text-center mb-12">Colección Destacada</h2>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-12">
-                        {featuredItems.map((item, index) => {
-                            if (!item || typeof item !== 'object') return null;
-                            return (
-                                <JewelryCard key={`featured-${item.id || item._id || index}-${item.slug || index}`} item={item} index={index}/>
-                            );
-                        })}
-                    </div>
-                </div>
-            </section>
+    for (const constraint of constraintsList) {
+      try {
+        console.log('[CAM] Solicitando getUserMedia con', constraint);
+        const stream = await navigator.mediaDevices.getUserMedia(constraint);
+        streamRef.current = stream;
+        console.log('[CAM] Stream obtenido. Tracks:', stream.getTracks().map(t => `${t.kind}:${t.readyState}`).join(', '));
+        attachStreamToVideo(stream);
+        setCameraStatus('granted');
+        setCameraError(null);
+        return;
+      } catch (err) {
+        console.error('[CAM] Error con constraint', constraint, err);
+      }
+    }
 
-            {isContactOpen && (
-                <div className="fixed inset-0 bg-black bg-opacity-70 backdrop-blur-sm flex items-center justify-center z-50 px-4">
-                    <div className="bg-gray-900 border border-gray-800 rounded-xl shadow-2xl max-w-md w-full p-6 space-y-4">
-                        <div className="flex items-center justify-between">
-                            <h3 className="text-xl font-semibold">Contacta conmigo</h3>
-                            <button onClick={() => setIsContactOpen(false)} className="text-gray-400 hover:text-white text-2xl leading-none">&times;</button>
-                        </div>
-                        <p className="text-gray-300 text-sm">Elige el canal que prefieras y te responderé lo antes posible.</p>
-                        <div className="space-y-3">
-                            <a className="flex items-center gap-3 p-3 rounded-lg border border-gray-800 hover:border-[var(--primary-color)] hover:bg-gray-800 transition" href="tel:+34639440460">
-                                <span className="font-semibold">Teléfono</span>
-                                <span className="text-gray-300">+34 639 440 460</span>
-                            </a>
-                            <a className="flex items-center gap-3 p-3 rounded-lg border border-gray-800 hover:border-[var(--primary-color)] hover:bg-gray-800 transition" href="https://wa.me/34639440460" target="_blank" rel="noreferrer">
-                                <span className="font-semibold">WhatsApp</span>
-                                <span className="text-gray-300">+34 639 440 460</span>
-                            </a>
-                            <a className="flex items-center gap-3 p-3 rounded-lg border border-gray-800 hover:border-[var(--primary-color)] hover:bg-gray-800 transition" href="mailto:alonso.valls@icloud.com">
-                                <span className="font-semibold">Email</span>
-                                <span className="text-gray-300">alonso.valls@icloud.com</span>
-                            </a>
-                        </div>
-                        <div className="flex justify-end">
-                            <Button variant="secondary" as="button" onClick={() => setIsContactOpen(false)}>Cerrar</Button>
-                        </div>
-                    </div>
-                </div>
+    setCameraStatus('denied');
+    setCameraError('No se pudo abrir la camara. Usa una imagen del ordenador.');
+  };
+
+  useEffect(() => stopCamera, []);
+
+  useEffect(() => {
+    if (step === 5 && !useUploadFlow) {
+      startCamera();
+    } else {
+      stopCamera();
+    }
+  }, [step, useUploadFlow]);
+
+  useEffect(() => {
+    if (step !== 5) {
+      setUseUploadFlow(false);
+    }
+  }, [step]);
+
+  useEffect(() => {
+    if (step >= 2 && !trackedStepsRef.current.started) {
+      trackIfAvailable('try-on-started');
+      trackedStepsRef.current.started = true;
+    }
+    if (step >= 7 && !trackedStepsRef.current.finished) {
+      trackIfAvailable('try-on');
+      trackedStepsRef.current.finished = true;
+    }
+  }, [step]);
+
+  // Asegura que si ya hay stream y el video se montÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â³ despuÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â©s, se vuelva a adjuntar.
+  useEffect(() => {
+    if (cameraStatus === 'granted' && streamRef.current && videoRef.current) {
+      attachStreamToVideo(streamRef.current);
+    }
+  }, [cameraStatus]);
+
+  const goBack = () => setStep((prev) => Math.max(1, prev - 1));
+  const goNext = () => setStep((prev) => Math.min(totalSteps, prev + 1));
+
+  const handlePieceSelect = (itemId: string) => {
+    setSelectedItemId(itemId);
+    setSelectionError(false);
+  };
+
+  const handleUploadClick = () => fileInputRef.current?.click();
+
+  const handleUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    setUseUploadFlow(true);
+    setCameraStatus('idle');
+    setCameraError(null);
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      if (typeof reader.result === 'string') {
+        setPreviewImage(reader.result);
+        setResultImage(null);
+        setStep(5);
+        setTimeout(() => {
+          capturePhotoAndTryOn(reader.result as string);
+        }, 500);
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const captureToBase64 = (video: HTMLVideoElement, canvas: HTMLCanvasElement) => {
+    const maxWidth = 1280;
+    const maxHeight = 720;
+    const { videoWidth, videoHeight } = video;
+    if (!videoWidth || !videoHeight) return null;
+    const aspect = videoWidth / videoHeight;
+    let targetWidth = maxWidth;
+    let targetHeight = Math.round(targetWidth / aspect);
+    if (targetHeight > maxHeight) {
+      targetHeight = maxHeight;
+      targetWidth = Math.round(targetHeight * aspect);
+    }
+    canvas.width = targetWidth;
+    canvas.height = targetHeight;
+    const ctx = canvas.getContext('2d');
+    if (ctx) {
+      ctx.save();
+      // Mirror horizontally for natural selfie view
+      ctx.translate(targetWidth, 0);
+      ctx.scale(-1, 1);
+      ctx.drawImage(video, 0, 0, targetWidth, targetHeight);
+      ctx.restore();
+    }
+    return canvas.toDataURL('image/jpeg', 0.8);
+  };
+
+  const capturePhotoAndTryOn = async (providedBase64?: string) => {
+    if (!selectedItem) {
+      setSelectionError(true);
+      setStep(3);
+      return;
+    }
+    setIsProcessing(true);
+    setTryOnError(null);
+    setProcessingBackdrop(null);
+    if (processingTimeoutRef.current) {
+      clearTimeout(processingTimeoutRef.current);
+      processingTimeoutRef.current = null;
+    }
+    try {
+      let userImageBase64: string | null = providedBase64 ?? previewImage;
+      if (cameraStatus === 'granted' && videoRef.current && canvasRef.current) {
+        const captured = captureToBase64(videoRef.current, canvasRef.current);
+        if (captured) {
+          userImageBase64 = captured;
+          setPreviewImage(captured);
+          console.log('[CAM] Captura realizada. Tamano base64:', captured.length);
+        } else {
+          console.warn('[CAM] Captura devolvio null');
+        }
+      }
+      if (userImageBase64) {
+        processingTimeoutRef.current = window.setTimeout(() => {
+          setProcessingBackdrop(userImageBase64);
+        }, 1500);
+      }
+      if (!userImageBase64) {
+        throw new Error('Necesitamos una foto para aplicar la joya.');
+      }
+      stopCamera();
+      const overlayUrl = getImageUrl(selectedItem.overlayAssetUrl);
+      console.log('[TRYON] Llamando a Gemini con overlay:', overlayUrl);
+      const composed = await generateTryOnImage(userImageBase64, overlayUrl);
+      console.log('[TRYON] Imagen compuesta recibida. Tamano:', composed?.length || 0);
+      setResultImage(composed);
+      setStep(6); // Avanza sin pulsar continuar
+    } catch (err) {
+      console.error('Error en try-on', err);
+      setTryOnError('No se pudo procesar la imagen. Prueba otra vez o sube una foto.');
+    } finally {
+      if (processingTimeoutRef.current) {
+        clearTimeout(processingTimeoutRef.current);
+        processingTimeoutRef.current = null;
+      }
+      setIsProcessing(false);
+    }
+  };
+
+  const handleUseResult = () => setStep(7);
+
+  const handleSubmit = (event: React.FormEvent) => {
+    event.preventDefault();
+    trackMeeting(formData.name, formData.email);
+    setFormSent(true);
+  };
+
+  const renderStepContent = () => {
+    switch (step) {
+      case 1:
+        return (
+          <div className="grid md:grid-cols-5 gap-10 items-center">
+            <div className="md:col-span-3 space-y-6">
+              <p className="text-xs uppercase tracking-[0.3em] text-gray-400">Paso 1 · Bienvenida</p>
+              <h1 className="text-4xl md:text-5xl font-serif font-bold leading-tight">
+                Así es como tus clientes pueden probarse cualquier pieza, desde cualquier lugar, en segundos.
+              </h1>
+              <p className="text-lg text-gray-300">
+                Integración sin necesidad de editar tu web actual.
+              </p>
+              <p className="text-sm text-gray-400">Esta es una pagina de ejemplo. La version final se adapta a tu marca.</p>
+              <div className="flex flex-wrap gap-3">
+                <Button variant="primary" onClick={goNext}>Ver como funciona</Button>
+                <Button variant="secondary" onClick={goNext}>Seguir</Button>
+              </div>
+            </div>
+          </div>
+        );
+      case 2:
+        return (
+          <div className="space-y-6">
+            <p className="text-xs uppercase tracking-[0.3em] text-gray-400">Paso 2 ·  Situacion real</p>
+            <h2 className="text-4xl md:text-5xl font-serif font-bold leading-tight">
+              Imagina que un cliente duda entre varias piezas o está mirando...
+            </h2>
+            <p className="text-lg text-gray-300 max-w-3xl">
+              Entra al probador a través de un código QR o link en la web y directamente se la prueba directamente en el móvil.
+            </p>
+            <div className="flex flex-wrap gap-3">
+              <Button variant="primary" onClick={goNext}>Elegir una pieza para probar</Button>
+              <Button variant="secondary" onClick={goBack}>Atras</Button>
+            </div>
+          </div>
+        );
+      case 3:
+        return (
+          <div className="space-y-6">
+            <p className="text-xs uppercase tracking-[0.3em] text-gray-400">Paso 3 · Elección de pieza</p>
+            <h2 className="text-3xl md:text-4xl font-serif font-bold">El cliente elige que ponerse</h2>
+            <p className="text-sm text-gray-400">Piezas aleatorias de ejemplo</p>
+            {itemsLoading && (
+              <div className="p-6 border border-white/10 rounded-xl bg-black/40 flex justify-center">
+                <Spinner text="Cargando joyas..." />
+              </div>
             )}
-        </motion.div>
-    );
+            {itemsError && <p className="text-sm text-red-400">{itemsError}</p>}
+            {!itemsLoading && items.length > 0 && (
+              <div className="grid md:grid-cols-3 gap-4">
+                {items.slice(0, 3).map((item) => (
+                  <button
+                    key={item.id || item._id}
+                    onClick={() => handlePieceSelect(item.id || item._id!)}
+                    className={`p-4 rounded-xl border transition-all text-left bg-black/30 ${
+                      selectedItemId === (item.id || item._id)
+                        ? 'border-[var(--primary-color)] bg-white/5'
+                        : 'border-white/10 hover:border-[var(--primary-color)]/60'
+                    }`}
+                  >
+                    <div className="aspect-square w-full overflow-hidden rounded-lg mb-3 bg-gradient-to-br from-black/40 to-black/20">
+                      <img
+                        src={getImageUrl(item.imageUrl)}
+                        alt={item.name}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                    <div className="text-lg font-serif">{item.name}</div>
+                    <div className="text-xs uppercase tracking-[0.2em] text-gray-400">{item.category}</div>
+                  </button>
+                ))}
+              </div>
+            )}
+            {!itemsLoading && items.length === 0 && (
+              <p className="text-sm text-gray-400">Aun no hay joyas cargadas. Agrega destacadas para mostrarlas aqui.</p>
+            )}
+            {selectionError && (
+              <p className="text-sm text-red-400">Selecciona una pieza para continuar.</p>
+            )}
+            <div className="flex justify-between items-center">
+              <Button variant="secondary" onClick={goBack}>Atras</Button>
+              <Button
+                variant="primary"
+                onClick={() => selectedItem ? goNext() : setSelectionError(true)}
+              >
+                Continuar
+              </Button>
+            </div>
+          </div>
+        );
+      case 4:
+        return (
+          <div className="space-y-6">
+            <p className="text-xs uppercase tracking-[0.3em] text-gray-400">Paso 4 · Antes de la camara</p>
+            <h2 className="text-3xl md:text-4xl font-serif font-bold">
+              Haz una foto rápida para ver la pieza puesta.
+            </h2>
+            <p className="text-lg text-gray-300">En el siguiente paso pediremos permiso para usar la camara y podrás continuar o subir una foto alli.</p>
+            <div className="bg-white/5 border border-white/10 rounded-xl p-5">
+              <p className="text-sm text-gray-200 mb-2">Para seguir con la demo:</p>
+              <ul className="text-sm text-gray-400 space-y-2 list-disc list-inside">
+                <li>Se solicitará acceso a la cámara de su dispositivo para iniciar la demo del probador virtual.</li>
+                <li>La imagen sera tratada electrónicamente únicamente para el servicio de probador virtual y será descartada después.</li>
+                <li>Si prefieres no usar la cámara, en el paso siguiente podrás subir una foto desde tu dispositivo.</li>
+              </ul>
+            </div>
+            <div className="flex justify-between items-center">
+              <Button variant="secondary" onClick={goBack}>Atras</Button>
+              <Button variant="primary" onClick={() => setStep(5)}>Continuar</Button>
+            </div>
+          </div>
+        );
+      case 5:
+        return (
+          <div className="space-y-6">
+            <p className="text-xs uppercase tracking-[0.3em] text-gray-400">Paso 5 · Cámara</p>
+            <h2 className="text-3xl md:text-4xl font-serif font-bold">
+              Coloquése dentro del encuadre y haz la foto.
+            </h2>
+            <div className="relative rounded-2xl overflow-hidden border border-white/10 bg-black/50">
+              {cameraStatus === 'granted' ? (
+                <div className="relative w-full h-[320px] md:h-[420px] overflow-hidden">
+                  <video
+                    ref={videoRef}
+                    autoPlay
+                    playsInline
+                    muted
+                    className="absolute inset-0 w-full h-full object-cover"
+                    style={{ opacity: isProcessing ? 0.05 : 1, transform: 'scaleX(-1)' }}
+                    onLoadedMetadata={playVideoStream}
+                    onPlay={() => {
+                      const v = videoRef.current;
+                      if (v && v.videoWidth > 0 && v.videoHeight > 0) {
+                        setCameraReady(true);
+                      }
+                      console.log('[CAM] evento play');
+                    }}
+                  />
+                </div>
+              ) : previewImage ? (
+                <img src={previewImage} alt="Vista previa" className="w-full h-[320px] md:h-[420px] object-cover opacity-90" />
+              ) : (
+                <div className="w-full h-[320px] md:h-[420px] bg-gradient-to-br from-black/40 via-black/20 to-black/40 flex items-center justify-center text-gray-500 text-sm">
+                  Activa la camara o sube una foto para ver aqui la vista previa.
+                </div>
+              )}
+              {isProcessing && (
+                <div className="absolute inset-0">
+                  <div className="absolute inset-0 bg-black/80"></div>
+                  <div
+                    className="absolute inset-0 bg-center bg-cover blur-2xl transition-opacity duration-500"
+                    style={{
+                      backgroundImage: processingBackdrop ? `url(${processingBackdrop})` : undefined,
+                      opacity: processingBackdrop ? 0.6 : 0,
+                    }}
+                  ></div>
+                  <div className="absolute inset-0 bg-black/60"></div>
+                  <div className="relative z-10 h-full flex flex-col items-center justify-center">
+                    <Spinner size={48} text="Aplicando la joya elegida..." />
+                  </div>
+                </div>
+              )}
+              <canvas ref={canvasRef} className="hidden" />
+              <div className="absolute bottom-4 inset-x-0 text-center text-sm text-white/80"></div>
+            </div>
+            {tryOnError && <p className="text-sm text-red-400">{tryOnError}</p>}
+            {cameraError && <p className="text-sm text-red-400">{cameraError}</p>}
+            <div className="flex flex-wrap gap-3 items-center">
+              <Button variant="primary" onClick={capturePhotoAndTryOn} disabled={isProcessing}>
+                {isProcessing ? 'Procesando...' : 'Hacer foto y ver resultado'}
+              </Button>
+              <Button variant="secondary" onClick={handleUploadClick}>Usar imagen del ordenador</Button>
+              {cameraStatus === 'denied' && (
+                <span className="text-sm text-red-400">No se dio permiso de camara. Usa la imagen subida.</span>
+              )}
+            </div>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={handleUpload}
+            />
+            <div className="flex justify-between items-center">
+              <Button variant="secondary" onClick={goBack}>Atras</Button>
+            </div>
+          </div>
+        );
+      case 6:
+        return (
+          <div className="space-y-6">
+            <p className="text-xs uppercase tracking-[0.3em] text-gray-400">Paso 6 · Resultado</p>
+            <div className="flex flex-col md:flex-row md:items-center gap-8">
+              <div className="md:w-2/3">
+                <div className="relative rounded-2xl overflow-hidden border border-white/10 bg-black/60 shadow-2xl">
+                  {resultImage ? (
+                    <img src={resultImage} alt="Resultado de la prueba" className="w-full h-[360px] md:h-[460px] object-cover" />
+                  ) : (
+                    <div className="w-full h-[360px] md:h-[460px] bg-black/40 flex items-center justify-center text-gray-400">
+                      Toma una foto para ver el resultado aqui.
+                    </div>
+                  )}
+                </div>
+              </div>
+              <div className="md:w-1/3 space-y-4">
+                <h3 className="text-2xl font-serif font-bold">Asi lo vería tu cliente.</h3>
+                <p className="text-gray-300">Listo para decidir sin dudas.</p>
+                {selectedItem && (
+                  <div className="p-4 rounded-lg border border-white/10 bg-black/40">
+                    <div className="text-sm uppercase tracking-[0.2em] text-gray-400">Probado</div>
+                    <div className="text-lg font-serif">{selectedItem.name}</div>
+                    <div className="text-xs text-gray-400 mt-1">{selectedItem.category}</div>
+                  </div>
+                )}
+              </div>
+            </div>
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+              <Button variant="secondary" onClick={() => setStep(5)}>Repetir captura</Button>
+              <div className="flex flex-col sm:flex-row gap-3">
+                <Button variant="secondary" onClick={() => setStep(3)}>Probar otra pieza</Button>
+                <Button variant="primary" onClick={handleUseResult}>Usar esto con mis joyas</Button>
+              </div>
+            </div>
+          </div>
+        );
+      case 7:
+        return (
+          <div className="space-y-6">
+            <p className="text-xs uppercase tracking-[0.3em] text-gray-400">Paso 7 · Contacto</p>
+            <h2 className="text-3xl md:text-4xl font-serif font-bold">
+               ¿Quieres ofrecer esta experiencia a tus clientes?
+            </h2>
+            <p className="text-lg text-gray-300 max-w-3xl">
+              Te preparamos una prueba gratuita sin compromiso y la vemos en 5 minutos.
+            </p>
+            <form className="grid md:grid-cols-3 gap-4 bg-white/5 border border-white/10 rounded-xl p-5" onSubmit={handleSubmit}>
+              <div className="space-y-2">
+                <label className="text-sm text-gray-300">Nombre</label>
+                <input
+                  type="text"
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  required
+                  className="w-full px-4 py-3 bg-black/40 border border-white/10 rounded-sm focus:outline-none focus:border-[var(--primary-color)]"
+                />
+              </div>
+              <div className="space-y-2 md:col-span-2">
+                <label className="text-sm text-gray-300">Email</label>
+                <input
+                  type="email"
+                  value={formData.email}
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  required
+                  className="w-full px-4 py-3 bg-black/40 border border-white/10 rounded-sm focus:outline-none focus:border-[var(--primary-color)]"
+                />
+              </div>
+              <div className="md:col-span-3 flex flex-wrap gap-3 items-center justify-between">
+                <div className="text-sm text-gray-400">
+
+                </div>
+                <Button type="submit" variant="primary">Quiero probarlo con mis joyas</Button>
+              </div>
+              {formSent && <p className="md:col-span-3 text-sm text-green-400">Listo. Te contactaremos con la prueba.</p>}
+            </form>
+            <div className="flex justify-between items-center">
+              <Button variant="secondary" onClick={() => setStep(6)}>Atras</Button>
+              <Button variant="secondary" onClick={() => setStep(1)}>Volver al inicio</Button>
+            </div>
+          </div>
+        );
+      default:
+        return null;
+    }
+  };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.5 }}
+      className="relative overflow-hidden"
+    >
+      <div className="absolute inset-0 bg-gradient-to-br from-[#08070f] via-[#0f1018] to-[#0b0c14]"></div>
+      <div className="absolute -left-32 -top-32 w-72 h-72 bg-[var(--primary-color)]/10 blur-3xl"></div>
+      <div className="absolute -right-24 bottom-0 w-64 h-64 bg-white/5 blur-3xl"></div>
+      <section className="relative z-10 min-h-[calc(100vh-130px)] px-4 py-5">
+        <div className="max-w-6xl mx-auto space-y-4">
+          <div className="flex items-center gap-4">
+            <div className="flex-1 h-1 bg-white/10 rounded-full overflow-hidden">
+              <div className="h-full bg-[var(--primary-color)]" style={{ width: `${progress}%` }}></div>
+            </div>
+            <span className="text-xs uppercase tracking-[0.3em] text-gray-400">Paso {step} de {totalSteps}</span>
+          </div>
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={step}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.25 }}
+              className="bg-black/30 backdrop-blur-md border border-white/10 rounded-2xl p-5 md:p-8 shadow-2xl min-h-[68vh] flex flex-col gap-4"
+            >
+              {renderStepContent()}
+            </motion.div>
+          </AnimatePresence>
+        </div>
+      </section>
+    </motion.div>
+  );
 };
 
 export default HomePage;

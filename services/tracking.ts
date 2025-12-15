@@ -1,5 +1,5 @@
 const STORAGE_KEY = 'daisyelperro_tracking_id';
-const WEBHOOK_BASE = 'https://daisyelperro.app.n8n.cloud/webhook/track-click';
+const WEBHOOK_BASE = 'https://daisyelperro.app.n8n.cloud/webhook/track';
 
 export const getStoredTrackingId = (): string | null => {
   if (typeof localStorage === 'undefined') return null;
@@ -11,8 +11,13 @@ const storeTrackingId = (id: string) => {
   localStorage.setItem(STORAGE_KEY, id);
 };
 
-const fireTracking = async (id: string, estado: string) => {
-  const url = `${WEBHOOK_BASE}?id=${encodeURIComponent(id)}&estado=${encodeURIComponent(estado)}`;
+const fireTracking = async (id: string, estado: string, extra: Record<string, string> = {}) => {
+  const params = new URLSearchParams({
+    id,
+    estado,
+    ...extra,
+  });
+  const url = `${WEBHOOK_BASE}?${params.toString()}`;
   try {
     await fetch(url, { method: 'GET', mode: 'no-cors' });
   } catch (err) {
@@ -54,8 +59,16 @@ export const captureTrackingIdFromUrl = () => {
   }
 };
 
-export const trackIfAvailable = (estado: 'personalizada-generada' | 'try-on') => {
+export const trackIfAvailable = (estado: 'personalizada-generada' | 'try-on' | 'try-on-started') => {
   const id = getStoredTrackingId();
   if (!id) return;
   fireTracking(id, estado);
+};
+
+export const trackMeeting = (nombre: string, email: string) => {
+  const id = getStoredTrackingId() || '';
+  fireTracking(id, 'meeting', {
+    nombre,
+    email,
+  });
 };

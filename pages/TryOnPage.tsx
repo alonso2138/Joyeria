@@ -16,11 +16,14 @@ const TryOnPage: React.FC = () => {
     const [item, setItem] = useState<JewelryItem | null>(null);
     const [step, setStep] = useState<TryOnStep>('loading_item');
     const [resultImage, setResultImage] = useState<string | null>(null);
+    const [firstPassImage, setFirstPassImage] = useState<string | null>(null);
+    const [showFirstPassDebug, setShowFirstPassDebug] = useState(false);
     const [showDetails, setShowDetails] = useState(false);
     const [isProcessingAI, setIsProcessingAI] = useState(false);
     
     const videoRef = useRef<HTMLVideoElement>(null);
     const canvasRef = useRef<HTMLCanvasElement>(null);
+    const progressPreviewTimeout = useRef<number | null>(null);
 
     useEffect(() => {
         const fetchItem = async () => {
@@ -68,6 +71,14 @@ const TryOnPage: React.FC = () => {
             stopCamera();
         };
     }, [step, startCamera, stopCamera]);
+
+    useEffect(() => {
+        return () => {
+            if (progressPreviewTimeout.current) {
+                clearTimeout(progressPreviewTimeout.current);
+            }
+        };
+    }, []);
     
     const captureToBase64 = (video: HTMLVideoElement, canvas: HTMLCanvasElement) => {
         const maxWidth = 1280;
@@ -93,6 +104,11 @@ const TryOnPage: React.FC = () => {
         if (videoRef.current && canvasRef.current && item && step !== 'processing') {
             setStep('processing');
             setIsProcessingAI(true);
+            setFirstPassImage(null);
+            setShowFirstPassDebug(false);
+            if (progressPreviewTimeout.current) {
+                clearTimeout(progressPreviewTimeout.current);
+            }
             try {
                 const video = videoRef.current;
                 const canvas = canvasRef.current;
@@ -101,8 +117,19 @@ const TryOnPage: React.FC = () => {
                 if (!userImageBase64) {
                     throw new Error('No se pudo capturar la imagen.');
                 }
-                const composedImage = await generateTryOnImage(userImageBase64, getImageUrl(item.overlayAssetUrl));
+
+                // After ~2s, show the captured photo blurred as a progress backdrop.
+                progressPreviewTimeout.current = window.setTimeout(() => {
+                    setFirstPassImage(userImageBase64);
+                }, 2000);
+
+                const composedImage = await generateTryOnImage(
+                    userImageBase64,
+                    getImageUrl(item.overlayAssetUrl)
+                );
                 
+                // If no preview was shown yet, keep the captured photo as the debug image.
+                setFirstPassImage((prev) => prev || userImageBase64);
                 setResultImage(composedImage);
                 logEvent(EventType.TRYON_SUCCESS, item.id);
                 trackIfAvailable('try-on');
@@ -113,6 +140,10 @@ const TryOnPage: React.FC = () => {
                 alert('No se pudo procesar la imagen. Intenta de nuevo.');
                 setStep('camera');
             } finally {
+                if (progressPreviewTimeout.current) {
+                    clearTimeout(progressPreviewTimeout.current);
+                    progressPreviewTimeout.current = null;
+                }
                 setIsProcessingAI(false);
             }
         }
@@ -137,15 +168,41 @@ const TryOnPage: React.FC = () => {
                 );
             case 'processing':
                 return (
-                    <div className="h-full flex flex-col items-center justify-center text-center p-4">
-                        <Spinner text={isProcessingAI ? 'Aplicando la joya...' : 'Capturando...'} />
-                        <p className="mt-4 text-gray-300">Nuestra IA está creando tu imagen personalizada.</p>
+                    <div className="relative h-full w-full flex flex-col items-center justify-center text-center p-4 overflow-hidden bg-black">
+                        {firstPassImage && (
+                            <div
+                                className="absolute inset-0 bg-center bg-cover scale-105 blur-lg opacity-50"
+                                style={{ backgroundImage: `url(${firstPassImage})` }}
+                            ></div>
+                        )}
+                        <div className="absolute inset-0 bg-black bg-opacity-50"></div>
+                        <div className="relative z-10 flex flex-col items-center">
+                            <Spinner text={isProcessingAI ? 'Aplicando la joya...' : 'Capturando...'} />
+                            <p className="mt-4 text-gray-300">Nuestra IA esta creando tu imagen personalizada.</p>
+                        </div>
                     </div>
                 );
-            case 'result':
+            
+case 'result':
                 return (
                     <div className="relative w-full h-full bg-black">
                         {resultImage && <img src={resultImage} alt="Virtual try-on result" className="w-full h-full object-contain" />}
+                        {firstPassImage && (
+                            <div className="absolute top-4 right-4 z-20 flex flex-col items-end gap-2">
+                                <button
+                                    onClick={() => setShowFirstPassDebug(prev => !prev)}
+                                    className="px-3 py-1 text-xs rounded-full bg-white/20 text-white border border-white/30 backdrop-blur"
+                                >
+                                    {showFirstPassDebug ? 'Ocultar captura' : 'Ver captura (debug)'}
+                                </button>
+                                {showFirstPassDebug && (
+                                    <div className="bg-black/70 p-2 rounded-lg border border-white/20 shadow-lg">
+                                        <p className="text-[10px] text-white text-right mb-1">Captura inicial (depuracion)</p>
+                                        <img src={firstPassImage} alt="Captura inicial" className="w-40 h-40 object-contain rounded" />
+                                    </div>
+                                )}
+                            </div>
+                        )}
                         <AnimatePresence>
                         {showDetails && (
                             <motion.div

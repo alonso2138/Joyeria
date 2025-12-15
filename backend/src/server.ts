@@ -1,13 +1,14 @@
-import express from 'express';
+// Load environment variables FIRST before any other imports
 import dotenv from 'dotenv';
+dotenv.config();
+
+import express from 'express';
 import cors from 'cors';
 import connectDB from './config/db';
 import jewelryRoutes from './routes/jewelryRoutes';
 import authRoutes from './routes/authRoutes';
-import customRequestRoutes from './routes/customRequestRoutes';
-
-// Load environment variables
-dotenv.config();
+import executeRoutes from './routes/executeRoutes';
+import triggerRoutes from './routes/triggerRoutes'
 
 // Connect to database
 connectDB();
@@ -21,7 +22,8 @@ app.use(express.json());
 // API Routes
 app.use('/api/jewelry', jewelryRoutes);
 app.use('/api/auth', authRoutes);
-app.use('/api/custom-requests', customRequestRoutes);
+app.use('/api/launch', executeRoutes);
+app.use('/api/trigger', triggerRoutes);
 
 const PORT = process.env.PORT || 5000;
 

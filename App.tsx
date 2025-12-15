@@ -21,6 +21,7 @@ import AdminLoginPage from './pages/admin/AdminLoginPage';
 import AdminJewelryListPage from './pages/admin/AdminJewelryListPage';
 import AdminJewelryEditPage from './pages/admin/AdminJewelryEditPage';
 import AdminCustomRequestsPage from './pages/admin/AdminCustomRequestsPage';
+import AdminLegacyPanelPage from './pages/admin/AdminLegacyPanelPage';
 import { AuthProvider } from './hooks/useAuth';
 
 const PageLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -60,6 +61,7 @@ const App: React.FC = () => {
           <Route path="/admin/jewelry/new" element={<AdminLayout><AdminJewelryEditPage /></AdminLayout>} />
           <Route path="/admin/jewelry/edit/:id" element={<AdminLayout><AdminJewelryEditPage /></AdminLayout>} />
           <Route path="/admin/custom-requests" element={<AdminLayout><AdminCustomRequestsPage /></AdminLayout>} />
+          <Route path="/admin/legacy-panel" element={<AdminLayout><AdminLegacyPanelPage /></AdminLayout>} />
 
           <Route path="*" element={
             <PageLayout>

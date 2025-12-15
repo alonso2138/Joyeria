@@ -5,8 +5,8 @@ import { brandingConfig } from '../../config/branding';
 
 const Header: React.FC = () => {
   return (
-    <motion.header 
-      className="sticky top-0 z-50 py-4 px-6 md:px-12 bg-black bg-opacity-30 backdrop-blur-lg"
+    <motion.header
+      className="sticky top-0 z-50 py-1.5 px-4 md:px-8 bg-black bg-opacity-30 backdrop-blur-lg"
       initial={{ y: -100 }}
       animate={{ y: 0 }}
       transition={{ duration: 0.5 }}
@@ -21,8 +21,7 @@ const Header: React.FC = () => {
         <div className="flex items-center">
           <nav className="hidden md:flex items-center space-x-8 text-sm font-medium tracking-widest uppercase">
             <Link to="/" className="hover:text-[var(--primary-color)] transition-colors duration-300">Home</Link>
-            <Link to="/catalog" className="hover:text-[var(--primary-color)] transition-colors duration-300">Colección</Link>
-            <Link to="/catalog" className="hover:text-[var(--primary-color)] transition-colors duration-300">Probador virtual</Link>
+            <Link to="/catalog" className="hover:text-[var(--primary-color)] transition-colors duration-300">Todas las joyas</Link>
           </nav>
           <Link to="/admin/login" title="Admin Login" className="md:ml-8 text-gray-400 hover:text-white transition-colors">
             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">

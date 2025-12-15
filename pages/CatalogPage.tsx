@@ -47,7 +47,7 @@ const CatalogPage: React.FC = () => {
     >
       <div className="pt-24 pb-12 text-center" style={{ background: 'rgba(0,0,0,0.2)'}}>
           <h1 className="text-5xl font-serif font-bold">Nuestra Colección</h1>
-          <p className="text-lg mt-2 text-gray-300">Encuentra la joya perfecta para cada ocasión.</p>
+          <p className="text-lg mt-2 text-gray-300">Joyas disponibles para probar</p>
       </div>
       
       <FilterBar onFilterChange={handleFilterChange} />

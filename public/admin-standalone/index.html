@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard Marketing - Tiempo Real</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js" defer></script>
+  <script src="app.js" defer></script>
+</head>
+<body>
+  <div class="page">
+    <header class="topbar">
+      <div>
+        <p class="eyebrow">Dashboard en vivo</p>
+        <h1>Embudo de Marketing</h1>
+        <p class="subtitle">Monitorea el funnel y detecta leads calientes en tiempo real.</p>
+      </div>
+      <div class="status">
+        <span class="dot" id="liveDot"></span>
+        <span id="lastUpdated">Sincronizando...</span>
+      </div>
+    </header>
+
+    <section class="card filter-bar">
+      <div>
+        <p class="label">Filtros</p>
+        <h3>Campana</h3>
+      </div>
+      <div class="filter-control">
+        <label for="campaignFilter">ID campana</label>
+        <select id="campaignFilter">
+          <option value="all">Todas las campanas</option>
+        </select>
+      </div>
+      <div class="control-group">
+        <div class="status-pill" id="adminStatus">
+          <span id="adminStatusText">Accion: -</span>
+          <span class="spinner" id="adminSpinner" aria-hidden="true" style="display:none;"></span>
+        </div>
+        <div class="control-actions">
+          <button class="btn btn-danger" id="toggleStop">Parada de emergencia</button>
+          <button class="btn" id="launchFollow" disabled>Lanzar follow-ups</button>
+          <button class="btn" id="launchCold" disabled>Lanzar colds</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="grid kpis" id="kpiCounts">
+      <div class="card">
+        <p class="label">Total leads (unicos)</p>
+        <h2 id="totalLeads">-</h2>
+      </div>
+      <div class="card">
+        <p class="label">Cold enviados</p>
+        <h2 id="totalCold">-</h2>
+      </div>
+      <div class="card">
+        <p class="label">Follow-up enviados</p>
+        <h2 id="totalFollow">-</h2>
+      </div>
+      <div class="card">
+        <p class="label">Try-On iniciados (total)</p>
+        <h2 id="tryOnStartedTotal">-</h2>
+      </div>
+      <div class="card">
+        <p class="label">Try-On generados (total)</p>
+        <h2 id="tryOnTotal">-</h2>
+      </div>
+    </section>
+
+    <section class="grid kpis" id="kpiUniques">
+      <div class="card">
+        <p class="label">Aperturas cold (unicos)</p>
+        <h2 id="coldOpens">-</h2>
+      </div>
+      <div class="card">
+        <p class="label">Aperturas follow-up (unicos)</p>
+        <h2 id="followOpens">-</h2>
+      </div>
+      <div class="card">
+        <p class="label">Clicks (unicos)</p>
+        <h2 id="clickers">-</h2>
+      </div>
+      <div class="card">
+        <p class="label">Replies (unicos)</p>
+        <h2 id="replies">-</h2>
+      </div>
+      <div class="card">
+        <p class="label">Try-On iniciados (unicos)</p>
+        <h2 id="tryOnStartedCount">-</h2>
+      </div>
+      <div class="card">
+        <p class="label">Try-On generados (unicos)</p>
+        <h2 id="tryOnCount">-</h2>
+      </div>
+    </section>
+
+    <section class="grid kpis" id="kpiRates">
+      <div class="card">
+        <p class="label">Open rate Cold</p>
+        <h2 id="openRateCold">-</h2>
+      </div>
+      <div class="card">
+        <p class="label">Open rate Follow-up</p>
+        <h2 id="openRateFollow">-</h2>
+      </div>
+      <div class="card">
+        <p class="label">Click rate</p>
+        <h2 id="clickRate">-</h2>
+      </div>
+      <div class="card">
+        <p class="label">Reply rate</p>
+        <h2 id="replyRate">-</h2>
+      </div>
+      <div class="card">
+        <p class="label">Try-On iniciados rate</p>
+        <h2 id="tryOnStartedRate">-</h2>
+      </div>
+      <div class="card">
+        <p class="label">Try-On rate</p>
+        <h2 id="tryOnRate">-</h2>
+      </div>
+      <div class="card">
+        <p class="label">Progreso campana</p>
+        <h2 id="progressRate">-</h2>
+      </div>
+    </section>
+
+    <section class="grid two-cols">
+      <div class="card panel panel-fixed">
+        <div class="panel-head">
+          <div>
+            <p class="label">Actividad</p>
+            <h3>Ultimas acciones</h3>
+          </div>
+          <span class="badge">Live</span>
+        </div>
+        <div class="recent-actions" id="recentActions">
+          <p class="muted-text">Cargando...</p>
+        </div>
+      </div>
+
+      <div class="card panel panel-fixed">
+        <div class="panel-head">
+          <div>
+            <p class="label">Leads calientes</p>
+            <h3>Top 10 por score</h3>
+          </div>
+          <span class="badge">Auto</span>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Nombre</th>
+                <th>Email</th>
+                <th>Score</th>
+                <th>Ultima accion</th>
+              </tr>
+            </thead>
+            <tbody id="hotLeadsBody">
+              <tr><td colspan="4">Cargando...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section class="grid two-cols detail-section">
+      <div class="card panel panel-compact">
+        <div class="panel-head">
+          <div>
+            <p class="label">Buscar lead</p>
+            <h3>Nombre o email</h3>
+          </div>
+          <span class="badge">Live</span>
+        </div>
+        <div class="search">
+          <input type="text" id="searchInput" placeholder="Buscar por nombre o email..." autocomplete="off">
+          <div class="results" id="searchResults"></div>
+        </div>
+      </div>
+
+      <div class="card panel panel-fixed" id="leadDetail">
+        <div class="panel-head">
+          <div>
+            <p class="label">Detalle</p>
+            <h3 id="detailName">Selecciona un lead</h3>
+          </div>
+          <span class="badge" id="detailStatus">-</span>
+        </div>
+        <div class="detail-grid">
+          <div>
+            <p class="label">Email</p>
+            <p id="detailEmail" class="big">-</p>
+          </div>
+          <div>
+            <p class="label">Score</p>
+            <p id="detailScore" class="big">-</p>
+          </div>
+          <div>
+            <p class="label">Ultima accion</p>
+            <p id="detailLastAction" class="big">-</p>
+          </div>
+          <div>
+            <p class="label">Try-On iniciados</p>
+            <p id="detailTryOnStarted" class="big">-</p>
+          </div>
+          <div>
+            <p class="label">Try-On generados</p>
+            <p id="detailTryOn" class="big">-</p>
+          </div>
+        </div>
+        <div class="pills" id="detailCounts"></div>
+        <div class="timeline" id="detailTimeline">
+          <p class="muted-text">Sin eventos</p>
+        </div>
+      </div>
+    </section>
+
+    <div class="modal-overlay" id="launchModal" style="display:none;">
+      <div class="modal">
+        <h3 id="launchModalTitle">Confirmar lanzamiento</h3>
+        <p id="launchBatchLabel" class="muted-text">Batch size: 1</p>
+        <input type="range" id="launchBatchSlider" min="1" max="1" value="1">
+        <div class="modal-actions">
+          <button class="btn" id="launchCancel" type="button">Cancelar</button>
+          <button class="btn" id="launchConfirm" type="button">Confirmar</button>
+          <span class="mini-spinner" id="launchModalSpinner" aria-hidden="true" style="display:none;"></span>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
