@@ -279,11 +279,6 @@ export const launchColdApproach = async (req: Request, res: Response) => {
 
         console.log("Leads filtrados: ", leads.length)
 
-        if (adminAction && adminAction.toLowerCase() === 'stop') {
-            console.log("Ending process, admin action: ",adminAction)
-            return res.status(200).json({ message: 'Proceso detenido por ADMIN en hoja', adminAction });
-        }
-
         if (batchsize && batchsize > 0) {
             leads = leads.slice(0, batchsize);
         }
@@ -310,6 +305,9 @@ export const launchColdApproach = async (req: Request, res: Response) => {
 
         for(let i = 0; i < leads.length; i++){
             console.log("Empezando el lead numero ",i+1)
+
+            console.log(JSON.stringify(leads[i]))
+
             const horarios = ['09:15-12:45', '15:45-18:30'];
             let diaValidado = false;
             let horarioValidado = false;
@@ -349,6 +347,12 @@ export const launchColdApproach = async (req: Request, res: Response) => {
             const encodedEmail = Buffer.from(leads[i].email).toString('base64');
 
             console.log("Codificando email de lead... ("+leads[i].email+")   => "+encodedEmail);
+            
+            if (adminAction && adminAction.toLowerCase() === 'stop') {
+                console.log("Ending process, admin action: ",adminAction)
+                return res.status(200).json({ message: 'Proceso detenido por ADMIN en hoja', adminAction });
+            }
+
             console.log("Enviando mail...")
 
             await sendMail(

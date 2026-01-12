@@ -277,11 +277,6 @@ export const launchFollowUp = async (req: Request, res: Response) => {
 
         console.log("Leads filtrados: ", leads.length)
 
-        if (adminAction && adminAction.toLowerCase() === 'stop') {
-            console.log("Ending process, admin action: ",adminAction)
-            return res.status(200).json({ message: 'Proceso detenido por ADMIN en hoja', adminAction });
-        }
-
         if (batchsize && batchsize > 0) leads = leads.slice(0, batchsize);        
 
         console.log("Leads tras filtrar batchsize: ", leads.length);
@@ -343,8 +338,13 @@ export const launchFollowUp = async (req: Request, res: Response) => {
             const encodedEmail = Buffer.from(lead.email).toString('base64');
 
             console.log("Codificando email de lead... ("+lead.email+")   => "+encodedEmail);
-            console.log("Enviando mail...")
 
+            if (adminAction && adminAction.toLowerCase() === 'stop') {
+                console.log("Ending process, admin action: ",adminAction)
+                return res.status(200).json({ message: 'Proceso detenido por ADMIN en hoja', adminAction });
+            }
+
+            console.log("Enviando mail...")
             await sendMail(
                 `${lead.email}`,
                 `¿Lo probamos con vuestras joyas?`,
