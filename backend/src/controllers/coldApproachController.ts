@@ -306,6 +306,9 @@ export const launchColdApproach = async (req: Request, res: Response) => {
         for(let i = 0; i < leads.length; i++){
             console.log("Empezando el lead numero ",i+1)
 
+            const { rowsWithoutAdmin, adminAction: csvAdminAction } = extractAdminControl(csvRows);
+            adminAction = csvAdminAction;
+
             console.log(JSON.stringify(leads[i]))
 
             const horarios = ['09:15-12:45', '15:45-18:30'];
