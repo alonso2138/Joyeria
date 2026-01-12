@@ -310,7 +310,7 @@ export const launchColdApproach = async (req: Request, res: Response) => {
 
         for(let i = 0; i < leads.length; i++){
             console.log("Empezando el lead numero ",i+1)
-            const horarios = ['09:15-15:45', '15:45-18:30'];
+            const horarios = ['09:15-12:45', '15:45-18:30'];
             let diaValidado = false;
             let horarioValidado = false;
 
@@ -338,11 +338,11 @@ export const launchColdApproach = async (req: Request, res: Response) => {
 
                 if (!(diaSimple === 'viernes' || diaSimple === 'sabado' || diaSimple === 'domingo')) diaValidado = true;
 
-                if (!(diaValidado && horarioValidado)){
-                    console.log("Horario/Día no validado, intentando en 30min");
+                if (diaValidado==false || horarioValidado==false){
+                    console.log("Horario/Día "+diaValidado+"/"+horarioValidado+"+ no validado, intentando en 30min");
                     await new Promise(resolve => setTimeout(resolve, 30 * 60 * 1000));
                 }
-            } while (!(diaValidado && horarioValidado));
+            } while (diaValidado==false || horarioValidado==false);
 
             console.log("Horario y Día validado")
 
