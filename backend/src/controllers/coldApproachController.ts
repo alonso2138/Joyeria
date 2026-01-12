@@ -348,6 +348,8 @@ export const launchColdApproach = async (req: Request, res: Response) => {
 
             console.log("Codificando email de lead... ("+leads[i].email+")   => "+encodedEmail);
             
+            console.log("Admin action: ",adminAction)
+
             if (adminAction && adminAction.toLowerCase() === 'stop') {
                 console.log("Ending process, admin action: ",adminAction)
                 return res.status(200).json({ message: 'Proceso detenido por ADMIN en hoja', adminAction });
