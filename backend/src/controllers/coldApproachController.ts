@@ -311,7 +311,7 @@ export const launchColdApproach = async (req: Request, res: Response) => {
         for(let i = 0; i < leads.length; i++){
             console.log("Empezando el lead numero ",i+1)
             const horarios = ['09:15-15:45', '15:45-18:30'];
-            let diaValidado = true;
+            let diaValidado = false;
             let horarioValidado = false;
 
             do {

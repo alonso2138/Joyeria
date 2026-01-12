@@ -305,7 +305,7 @@ export const launchFollowUp = async (req: Request, res: Response) => {
 
         for (const lead of leads) {            
             const horarios = ['09:15-15:45', '15:45-18:30'];
-            let diaValidado = true;
+            let diaValidado = false;
             let horarioValidado = false;
 
             do {
