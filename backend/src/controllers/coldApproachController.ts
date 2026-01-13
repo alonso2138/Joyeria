@@ -272,7 +272,6 @@ export const launchColdApproach = async (req: Request, res: Response) => {
         });
 
         let leads = Array.from(leadsMap.values()).filter((lead) => {
-            console.log("ID de campaña: ",campaignID, "ID de lead: ",lead.campanaId)
             const matchesCampaign = campaignID ? lead.campanaId === normalizeCampaignId(campaignID) : false;
             return lead.email && lead.estado.toLowerCase() === 'no contactado' && matchesCampaign;
         });
@@ -306,12 +305,13 @@ export const launchColdApproach = async (req: Request, res: Response) => {
         for(let i = 0; i < leads.length; i++){
             console.log("Empezando el lead numero ",i+1)
 
-            const { rowsWithoutAdmin, adminAction: csvAdminAction } = extractAdminControl(csvRows);
-            adminAction = csvAdminAction;
+            const [rows, events] = await Promise.all([fetchCsv(), fetchEvents()]);
+            const { rowsWithoutAdmin, adminAction: csvAdminAction } = extractAdminControl(rows);
+            adminAction = csvAdminAction;   
 
             console.log(JSON.stringify(leads[i]))
 
-            const horarios = ['09:15-12:45', '15:45-18:30'];
+            const horarios = ['8:15-11:45', '14:45-17:30'];
             let diaValidado = false;
             let horarioValidado = false;
 
