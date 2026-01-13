@@ -739,12 +739,17 @@ async function onDeleteEvent(evData) {
 }
 
 async function removeEventFromJsonBin(evData) {
-  if (!JSONBIN_ID || JSONBIN_ID === "RELLENAR") {
+  if (!JSONBIN_ID) {
     console.warn("JSONBIN_ID no configurado; no se puede eliminar evento.");
     return;
   }
+  if (!JSONBIN_KEY) {
+    throw new Error("JSONBIN_KEY no configurada; no se puede actualizar JSONBin.");
+  }
+
   const { events, record } = await getJsonBinSnapshot();
-  const filteredEvents = events.filter(
+
+  const filteredEvents = (events || []).filter(
     (ev) =>
       !(
         ev.email === evData.email &&
@@ -754,20 +759,25 @@ async function removeEventFromJsonBin(evData) {
   );
 
   const putUrl = `https://api.jsonbin.io/v3/b/${JSONBIN_ID}`;
-  const bodyPayload = Array.isArray(record?.events)
-    ? { ...record, events: filteredEvents }
-    : filteredEvents;
+
+  // Mantén el MISMO tipo que tienes guardado en el bin
+  const bodyPayload =
+    record && typeof record === "object" && !Array.isArray(record)
+      ? { ...record, events: filteredEvents }
+      : filteredEvents;
 
   const res = await fetch(putUrl, {
     method: "PUT",
     headers: {
-      "X-Master-Key": JSONBIN_KEY || "",
-      "Content-Type": "text/plain;charset=utf-8",
+      "X-Master-Key": JSONBIN_KEY,
+      "Content-Type": "application/json",
     },
     body: JSON.stringify(bodyPayload),
   });
+
   if (!res.ok) {
-    throw new Error("No se pudo actualizar JSONBin");
+    const txt = await res.text().catch(() => "");
+    throw new Error(`No se pudo actualizar JSONBin: ${res.status} ${txt}`);
   }
 }
 
@@ -775,8 +785,8 @@ async function getJsonBinSnapshot() {
   const url = `https://api.jsonbin.io/v3/b/${JSONBIN_ID}/latest`;
   const res = await fetch(url, {
     headers: {
-      "X-Master-Key": JSONBIN_KEY || "",
-      "Content-Type": "text/plain;charset=utf-8",
+      "X-Master-Key": JSONBIN_KEY,
+      "Content-Type": "application/json",
     },
   });
   if (!res.ok) {
