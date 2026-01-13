@@ -291,17 +291,18 @@ const HomePage: React.FC = () => {
         return (
           <div className="grid md:grid-cols-5 gap-10 items-center">
             <div className="md:col-span-3 space-y-6">
-              <p className="text-xs uppercase tracking-[0.3em] text-gray-400">Paso 1 · Bienvenida</p>
+              <p className="text-xs uppercase tracking-[0.3em] text-gray-400">Bienvenida</p>
               <h1 className="text-4xl md:text-5xl font-serif font-bold leading-tight">
-                Así es como tus clientes pueden probarse cualquier pieza, desde cualquier lugar, en segundos.
+                Convierte visitas en clientes mostrando joyas en tiempo real.
               </h1>
               <p className="text-lg text-gray-300">
-                Integración sin necesidad de editar tu web actual.
+                Las joyerías que lo usan reducen dudas y cierran más ventas online y en tienda.
               </p>
-              <p className="text-sm text-gray-400">Esta es una pagina de ejemplo. La version final se adapta a tu marca.</p>
+              <p className="text-lg text-gray-400">
+                Probado con clientes reales
+              </p>
               <div className="flex flex-wrap gap-3">
-                <Button variant="primary" onClick={goNext}>Ver como funciona</Button>
-                <Button variant="secondary" onClick={goNext}>Seguir</Button>
+                <Button variant="primary" onClick={goNext}>Pruébalo en 30 segundos sin registro</Button>
               </div>
             </div>
           </div>
@@ -309,7 +310,7 @@ const HomePage: React.FC = () => {
       case 2:
         return (
           <div className="space-y-6">
-            <p className="text-xs uppercase tracking-[0.3em] text-gray-400">Paso 2 ·  Situacion real</p>
+            <p className="text-xs uppercase tracking-[0.3em] text-gray-400">Situación real</p>
             <h2 className="text-4xl md:text-5xl font-serif font-bold leading-tight">
               Imagina que un cliente duda entre varias piezas o está mirando...
             </h2>
@@ -325,7 +326,7 @@ const HomePage: React.FC = () => {
       case 3:
         return (
           <div className="space-y-6">
-            <p className="text-xs uppercase tracking-[0.3em] text-gray-400">Paso 3 · Elección de pieza</p>
+            <p className="text-xs uppercase tracking-[0.3em] text-gray-400">Elección de pieza</p>
             <h2 className="text-3xl md:text-4xl font-serif font-bold">El cliente elige que ponerse</h2>
             <p className="text-sm text-gray-400">Piezas aleatorias de ejemplo</p>
             {itemsLoading && (
@@ -379,7 +380,7 @@ const HomePage: React.FC = () => {
       case 4:
         return (
           <div className="space-y-6">
-            <p className="text-xs uppercase tracking-[0.3em] text-gray-400">Paso 4 · Antes de la camara</p>
+            <p className="text-xs uppercase tracking-[0.3em] text-gray-400">Antes de la cámara</p>
             <h2 className="text-3xl md:text-4xl font-serif font-bold">
               Haz una foto rápida para ver la pieza puesta.
             </h2>
@@ -401,7 +402,7 @@ const HomePage: React.FC = () => {
       case 5:
         return (
           <div className="space-y-6">
-            <p className="text-xs uppercase tracking-[0.3em] text-gray-400">Paso 5 · Cámara</p>
+            <p className="text-xs uppercase tracking-[0.3em] text-gray-400">Cámara</p>
             <h2 className="text-3xl md:text-4xl font-serif font-bold">
               Colóquese dentro del encuadre y haz la foto.
             </h2>
@@ -477,7 +478,7 @@ const HomePage: React.FC = () => {
       case 6:
         return (
           <div className="space-y-6">
-            <p className="text-xs uppercase tracking-[0.3em] text-gray-400">Paso 6 · Resultado</p>
+            <p className="text-xs uppercase tracking-[0.3em] text-gray-400">Resultado</p>
             <div className="flex flex-col md:flex-row md:items-center gap-8">
               <div className="md:w-2/3">
                 <div className="relative rounded-2xl overflow-hidden border border-white/10 bg-black/60 shadow-2xl">
@@ -514,7 +515,7 @@ const HomePage: React.FC = () => {
       case 7:
         return (
           <div className="space-y-6">
-            <p className="text-xs uppercase tracking-[0.3em] text-gray-400">Paso 7 · Contacto</p>
+            <p className="text-xs uppercase tracking-[0.3em] text-gray-400">Contacto</p>
             <h2 className="text-3xl md:text-4xl font-serif font-bold">
                ¿Quieres ofrecer esta experiencia a tus clientes?
             </h2>
@@ -578,7 +579,6 @@ const HomePage: React.FC = () => {
             <div className="flex-1 h-1 bg-white/10 rounded-full overflow-hidden">
               <div className="h-full bg-[var(--primary-color)]" style={{ width: `${progress}%` }}></div>
             </div>
-            <span className="text-xs uppercase tracking-[0.3em] text-gray-400">Paso {step} de {totalSteps}</span>
           </div>
           <AnimatePresence mode="wait">
             <motion.div
