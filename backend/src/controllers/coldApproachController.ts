@@ -328,6 +328,8 @@ export const launchColdApproach = async (req: Request, res: Response) => {
                     const mEnd = parseInt(horario.substring(9, 11));
                     const MIN_END = hEnd * 60 + mEnd;
 
+                    console.log("Minstart: ", MIN_START, "  Now: ",now,"  MinEnd: ",MIN_END)
+
                     if (MIN_START < now && now < MIN_END) horarioValidado = true;
                 });
 
