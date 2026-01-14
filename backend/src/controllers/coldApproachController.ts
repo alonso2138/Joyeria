@@ -311,7 +311,7 @@ export const launchColdApproach = async (req: Request, res: Response) => {
 
             console.log(JSON.stringify(leads[i]))
 
-            const horarios = ['8:15-11:45', '14:45-17:30'];
+            const horarios = ['08:15-11:45', '14:45-17:30'];
             let diaValidado = false;
             let horarioValidado = false;
 
@@ -327,8 +327,6 @@ export const launchColdApproach = async (req: Request, res: Response) => {
                     const hEnd = parseInt(horario.substring(6, 8));
                     const mEnd = parseInt(horario.substring(9, 11));
                     const MIN_END = hEnd * 60 + mEnd;
-
-                    console.log("Minstart: ", MIN_START, "  Now: ",now,"  MinEnd: ",MIN_END)
 
                     if (MIN_START < now && now < MIN_END) horarioValidado = true;
                 });
