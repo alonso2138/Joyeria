@@ -3,8 +3,8 @@ const JSONBIN_ID = "6933a43ed0ea881f40160685";
 const JSONBIN_KEY = "$2a$10$rPqE1JsFS6PXMYIptbDDTeMcuCSdqKBJEJOGouYQAqPDkhE0/eZaW ";
 const SHEETS_HOOK_URL = "https://script.google.com/macros/s/AKfycbzZaZTFDoeaXGYrzoQAJyMQ9eCCNvfmjsIjZl5iNKm1KXw4NhQEADQYGSKwdpG99KUq/exec"; // TODO: set to Apps Script URL when available
 const REFRESH_MS = 5000;
-//const SERVER_URL = 'https://api.visualizalo.es/api'
-const SERVER_URL = 'http://localhost:5000/api'
+const SERVER_URL = 'https://api.visualizalo.es/api'
+//const SERVER_URL = 'http://localhost:5000/api'
 
 const scoreWeights = {
   "cold-approach": 1,

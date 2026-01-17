@@ -350,10 +350,11 @@ export const launchFollowUp = async (req: Request, res: Response) => {
         }
 
         // Le decimos al admin que se han pasado las validaciones y el proceso está en marcha
-        res.status(200).json({ message: 'Cold approach executed' });
+        return;
 
 
-        for (const lead of leads) {            
+        for (let i = 0; i < leads.length; i++) {            
+            const lead = leads[i];
             const horarios = ['09:15-15:45', '15:45-18:30'];
             let diaValidado = false;
             let horarioValidado = false;
@@ -394,26 +395,32 @@ export const launchFollowUp = async (req: Request, res: Response) => {
 
             console.log("Codificando email de lead... ("+lead.email+")   => "+encodedEmail);
 
+            const [rows] = await Promise.all([fetchCsv()]);
+            const { adminAction: csvAdminAction } = extractAdminControl(rows);
+            adminAction = csvAdminAction;
+
             if (adminAction && adminAction.toLowerCase() === 'stop') {
                 console.log("Ending process, admin action: ",adminAction)
-                return res.status(200).json({ message: 'Proceso detenido por ADMIN en hoja', adminAction });
+                return;
             }
 
             console.log("Enviando mail...")
             await sendMail(
                 `${lead.email}`,
                 `¿Lo probamos con vuestras joyas?`,
-`Hola!<br><br>Te escribo porque el otro día te envié el probador virtual de joyas y no sé si pudiste llegar a probarlo.<br><br>Te dejo el enlace de nuevo por aquí por si acaso:<br><a href="https://visualizalo.es?id="${encodedEmail}" >https://visualizalo.es</a><br><br>A varias joyerías les está funcionando bien para ayudar al cliente a decidirse cuando duda entre piezas, tanto en tienda como online.<br><br>Si te parece, puedo prepararos una prueba gratuita con alguna de vuestras joyas para que veáis si realmente os sirve o no.<br>En 5 minutos te lo enseño y listo, sin compromiso ni coste.<br><br>¿Te viene mejor esta semana o la siguiente?<br><br>Muchas gracias por su tiempo,<br>Alonso Valls<br><br><img src="https://api.visualizalo.es/api/trigger/follow-abierto?id=${encodedEmail}" alt="" width="1" height="1" style="display:none!important;min-height:0;height:0;max-height:0;width:0;max-width:0;opacity:0;overflow:hidden;mso-hide:all;" />`);
+`Hola!<br><br>Te escribo porque el otro día te envié el probador virtual de joyas y no sé si pudiste llegar a probarlo.<br><br>Te dejo el enlace de nuevo por aquí por si acaso:<br><a href="https://visualizalo.es?id=${encodedEmail}">https://visualizalo.es</a><br><br>A varias joyerías les está funcionando bien para ayudar al cliente a decidirse cuando duda entre piezas, tanto en tienda como online.<br><br>Si te parece, puedo prepararos una prueba gratuita con alguna de vuestras joyas para que veáis si realmente os sirve o no.<br>En 5 minutos te lo enseño y listo, sin compromiso ni coste.<br><br>¿Te viene mejor esta semana o la siguiente?<br><br>Muchas gracias por su tiempo,<br>Alonso Valls<br><br><img src="https://api.visualizalo.es/api/trigger/follow-abierto?id=${encodedEmail}" alt="" width="1" height="1" style="display:none!important;min-height:0;height:0;max-height:0;width:0;max-width:0;opacity:0;overflow:hidden;mso-hide:all;" />`);
             console.log("Mail enviado, enviando notificacion de telegram")
 
             await updateJsonBin(lead.email, "follow-up-sent");
 
             await sendTelegramNotification(`Mail follow-up enviado a ${lead.email}`);
 
-            updateLeadEstadoInSheet(lead.email, "Follow-up enviado");
+            await updateLeadEstadoInSheet(lead.email, "Follow-up enviado");
 
             // Delay arbitrario para siguiente mail => Entre 120 y 180s
-            await new Promise(resolve => setTimeout(resolve, (Math.floor(Math.random() * (180 - 120 + 1)) + 120)*1000));  
+            if (!(i === leads.length - 1)) {
+                await new Promise(resolve => setTimeout(resolve, (Math.floor(Math.random() * (180 - 120 + 1)) + 120)*1000));
+            }
         }
             // Actualizar estado de la campaña en Google Sheets a Acabado
             try {

@@ -360,8 +360,8 @@ export const launchColdApproach = async (req: Request, res: Response) => {
         for(let i = 0; i < leads.length; i++){
             console.log("Empezando el lead numero ",i+1)
 
-            const [rows, events] = await Promise.all([fetchCsv(), fetchEvents()]);
-            const { rowsWithoutAdmin, adminAction: csvAdminAction } = extractAdminControl(rows);
+            const [rows] = await Promise.all([fetchCsv()]);
+            const { adminAction: csvAdminAction } = extractAdminControl(rows);
             adminAction = csvAdminAction;   
 
             console.log(JSON.stringify(leads[i]))
@@ -370,7 +370,6 @@ export const launchColdApproach = async (req: Request, res: Response) => {
             let diaValidado = false;
             let horarioValidado = false;
 
-            /*
             do {
                 const d = new Date();
                 const now = d.getMinutes() + d.getHours() * 60;
@@ -400,7 +399,6 @@ export const launchColdApproach = async (req: Request, res: Response) => {
                     await new Promise(resolve => setTimeout(resolve, 30 * 60 * 1000));
                 }
             } while (diaValidado==false || horarioValidado==false);
-            */
            
             console.log("Horario y Día validado")
 
@@ -412,7 +410,7 @@ export const launchColdApproach = async (req: Request, res: Response) => {
 
             if (adminAction && adminAction.toLowerCase() === 'stop') {
                 console.log("Ending process, admin action: ",adminAction)
-                return res.status(200).json({ message: 'Proceso detenido por ADMIN en hoja', adminAction });
+                return;
             }
 
             console.log("Enviando mail...")
@@ -428,7 +426,7 @@ export const launchColdApproach = async (req: Request, res: Response) => {
 
             await sendTelegramNotification(`Mail frio enviado a ${leads[i].email}`);
 
-            updateLeadEstadoInSheet(leads[i].email, "Cold-Approach enviado");
+            await updateLeadEstadoInSheet(leads[i].email, "Cold-Approach enviado");
 
             // Delay arbitrario para siguiente mail => Entre 120 y 180s
             if(!(i === leads.length - 1)){
