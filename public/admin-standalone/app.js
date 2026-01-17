@@ -1,9 +1,10 @@
 const CSV_URL = "https://docs.google.com/spreadsheets/d/1UTNIkH7J9xPVrOHHL0RgqsZ0Yuz6r6StQWu6ASVQSww/export?format=csv";
 const JSONBIN_ID = "6933a43ed0ea881f40160685";
 const JSONBIN_KEY = "$2a$10$rPqE1JsFS6PXMYIptbDDTeMcuCSdqKBJEJOGouYQAqPDkhE0/eZaW ";
-const SHEETS_HOOK_URL = "https://script.google.com/macros/s/AKfycbzciy1qvE6EVXbqoEB4ame0BBd4-1owpZ4ZzA5-pNdrVUma4h451Kkww1zgx7k7UXA3/exec"; // TODO: set to Apps Script URL when available
-const REFRESH_MS = 10000;
-const SERVER_URL = 'https://api.visualizalo.es/api'
+const SHEETS_HOOK_URL = "https://script.google.com/macros/s/AKfycbzZaZTFDoeaXGYrzoQAJyMQ9eCCNvfmjsIjZl5iNKm1KXw4NhQEADQYGSKwdpG99KUq/exec"; // TODO: set to Apps Script URL when available
+const REFRESH_MS = 5000;
+//const SERVER_URL = 'https://api.visualizalo.es/api'
+const SERVER_URL = 'http://localhost:5000/api'
 
 const scoreWeights = {
   "cold-approach": 1,
@@ -15,6 +16,8 @@ const scoreWeights = {
 };
 
 const actionLabels = {
+  "cold-sent": "Cold enviado",
+  "follow-up-sent": "Follow-up enviado",
   "cold-approach": "Cold abierto",
   "open-cold": "Cold abierto",
   "open-followup": "Follow-up abierto",
@@ -24,10 +27,29 @@ const actionLabels = {
   "meeting": "Meeting agendada",
   "try-on": "Try-on demo",
   "try-on-started": "Try-on iniciado",
+  "step-1-completed": "Paso 1 completado",
+  "step-2-completed": "Paso 2 completado",
+  "step-3-completed": "Paso 3 completado",
+  "step-4-completed": "Paso 4 completado",
+  "step-5-completed": "Paso 5 completado",
+  "step-6-completed": "Paso 6 completado",
   "custom-jewel": "Joya personalizada",
 };
 
+const FUNNEL_STEPS = [1, 2, 3, 4, 5, 6];
+const RECENT_ACTIONS_LIMIT = 100;
+const SHEET_ACTIONS = {
+  "cold-approach": "Aperturas de cold",
+  "open-cold": "Aperturas de cold",
+  "open-followup": "Aperturas de follow-up",
+  "link-click": "Aperturas de link",
+  "try-on-started": "Try-On-Comenzado",
+  "try-on": "Try-On Generado",
+};
+
 let cachedLeads = new Map();
+let cachedEvents = [];
+let cachedRecentEvents = [];
 let currentCampaignFilter = "all";
 let adminAction = "";
 let currentLaunchContext = null;
@@ -38,12 +60,14 @@ document.addEventListener("DOMContentLoaded", () => {
   setupFilters();
   document.getElementById("searchInput").addEventListener("input", onSearch);
   setupControlButtons();
+  setupBulkDelete();
 });
 
 async function loadAllData() {
   setSyncStatus("Sincronizando...");
   try {
     const [csvRows, events] = await Promise.all([fetchCsv(), fetchEvents()]);
+    cachedEvents = Array.isArray(events) ? events : [];
     const { rowsWithoutAdmin, adminAction: csvAdminAction } = extractAdminControl(csvRows);
     adminAction = csvAdminAction;
 
@@ -180,10 +204,39 @@ function computeLeadScores(leadsMap) {
   });
 }
 
+function getStepAction(step) {
+  return `step-${step}-completed`;
+}
+
+function computeEventStats(leadsMap) {
+  const totals = {};
+  const uniques = {};
+  leadsMap.forEach((lead) => {
+    const seen = new Set();
+    lead.eventos.forEach((ev) => {
+      totals[ev.action_type] = (totals[ev.action_type] || 0) + 1;
+      if (!seen.has(ev.action_type)) {
+        uniques[ev.action_type] = (uniques[ev.action_type] || 0) + 1;
+        seen.add(ev.action_type);
+      }
+    });
+  });
+  return { totals, uniques };
+}
+
+function countStepCompletions(events = []) {
+  const steps = new Set();
+  events.forEach((ev) => {
+    const match = String(ev.action_type || "").match(/^step-(\d+)-completed$/);
+    if (match) steps.add(match[1]);
+  });
+  return steps.size;
+}
+
 function computeMetrics(leadsMap) {
   const totalLeads = leadsMap.size;
-  let coldSent = 0;
-  let followSent = 0;
+  let coldSentFromEstado = 0;
+  let followSentFromEstado = 0;
   let coldOpeners = 0;
   let followOpeners = 0;
   let replied = 0;
@@ -192,13 +245,14 @@ function computeMetrics(leadsMap) {
   let tryOnStartedCount = 0;
   let tryOnStartedTotal = 0;
   const uniqueClickers = new Set();
+  const eventStats = computeEventStats(leadsMap);
 
   leadsMap.forEach((lead, email) => {
     if (isFollowUpEstado(lead.estado)) {
-      coldSent += 1;
-      followSent += 1;
+      coldSentFromEstado += 1;
+      followSentFromEstado += 1;
     } else if (isColdEstado(lead.estado)) {
-      coldSent += 1;
+      coldSentFromEstado += 1;
     }
 
     if (lead.aperturasCold > 0) coldOpeners += 1;
@@ -211,6 +265,11 @@ function computeMetrics(leadsMap) {
     tryOnStartedTotal += lead.tryOnStarted;
   });
 
+  const coldSentEvents = eventStats.uniques["cold-sent"] || 0;
+  const followSentEvents = eventStats.uniques["follow-up-sent"] || 0;
+  const coldSent = Math.max(coldSentFromEstado, coldSentEvents);
+  const followSent = Math.max(followSentFromEstado, followSentEvents);
+
   const openRateCold = rate(coldOpeners, coldSent);
   const openRateFollow = rate(followOpeners, followSent);
   const clickRate = rate(uniqueClickers.size, coldSent);
@@ -218,6 +277,14 @@ function computeMetrics(leadsMap) {
   const tryOnRate = rate(tryOnCount, coldSent);
   const tryOnStartedRate = rate(tryOnStartedCount, coldSent);
   const progressRate = rate(followSent, totalLeads);
+  const funnelSteps = FUNNEL_STEPS.map((step) => {
+    const action = getStepAction(step);
+    return {
+      step,
+      unique: eventStats.uniques[action] || 0,
+      total: eventStats.totals[action] || 0,
+    };
+  });
 
   return {
     totalLeads,
@@ -238,6 +305,7 @@ function computeMetrics(leadsMap) {
     tryOnRate,
     tryOnStartedRate,
     progressRate,
+    funnelSteps,
   };
 }
 
@@ -247,6 +315,7 @@ function renderDashboard(leadsMap = cachedLeads) {
   const metrics = computeMetrics(filteredLeads);
 
   renderMetrics(metrics);
+  renderFunnel(metrics.funnelSteps, metrics.coldSent);
   renderAutomationStatus();
   renderActionButtonsState(filteredLeads);
   renderHotLeads(filteredLeads);
@@ -330,6 +399,39 @@ function renderMetrics(metrics) {
   setText("progressRate", formatPercent(metrics.progressRate));
 }
 
+function renderFunnel(funnelSteps = [], baseCount = 0) {
+  const container = document.getElementById("funnelSteps");
+  if (!container) return;
+  container.innerHTML = "";
+
+  if (!funnelSteps.length) {
+    container.innerHTML = `<p class="muted-text">Sin datos</p>`;
+    return;
+  }
+
+  let prevCount = 0;
+  funnelSteps.forEach((stepData, index) => {
+    const denom = index === 0 ? (baseCount || stepData.unique) : prevCount;
+    const rateValue = rate(stepData.unique, denom);
+    const rateLabel = index === 0 && baseCount ? "Vs cold" : "Vs paso anterior";
+
+    const row = document.createElement("div");
+    row.className = "funnel-row";
+    row.innerHTML = `
+      <div class="funnel-meta">
+        <div class="funnel-title">Paso ${stepData.step} completado</div>
+        <div class="funnel-sub">${stepData.unique} unicos · ${stepData.total} total</div>
+      </div>
+      <div class="funnel-rate">
+        <span class="funnel-rate-label">${rateLabel}</span>
+        <span>${formatPercent(rateValue)}</span>
+      </div>
+    `;
+    container.appendChild(row);
+    prevCount = stepData.unique;
+  });
+}
+
 
 function renderHotLeads(leadsMap) {
   const tbody = document.getElementById("hotLeadsBody");
@@ -377,9 +479,11 @@ function renderRecentActions(leadsMap) {
   events.sort(
     (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
   );
-  const recent = events.slice(0, 20);
+  const recent = events.slice(0, RECENT_ACTIONS_LIMIT);
+  cachedRecentEvents = recent;
 
   if (!recent.length) {
+    cachedRecentEvents = [];
     container.innerHTML = `<p class="muted-text">Sin acciones recientes</p>`;
     return;
   }
@@ -455,14 +559,21 @@ function renderLeadDetail(lead) {
   setText("detailTryOnStarted", tryOnStarted);
   setText("detailTryOn", Number.isFinite(lead.tryOn) ? lead.tryOn : "N/D");
 
+  const coldSentCount = countEventsByAction(lead.eventos, "cold-sent");
+  const followSentCount = countEventsByAction(lead.eventos, "follow-up-sent");
+  const stepsCompleted = countStepCompletions(lead.eventos);
+
   const pills = document.getElementById("detailCounts");
   pills.innerHTML = "";
   const pillData = [
     { label: "ID campana", value: lead.campanaId || "None" },
+    { label: "Cold enviado", value: coldSentCount },
+    { label: "Follow-up enviado", value: followSentCount },
     { label: "Aperturas cold", value: lead.aperturasCold },
     { label: "Aperturas follow", value: lead.aperturasFollow },
     { label: "Aperturas link", value: lead.aperturasLink },
     { label: "Respuesta", value: lead.respuesta || "Ninguna" },
+    { label: "Pasos completados", value: stepsCompleted },
   ];
   pillData.forEach((p) => {
     const div = document.createElement("div");
@@ -473,19 +584,51 @@ function renderLeadDetail(lead) {
 
   const timeline = document.getElementById("detailTimeline");
   timeline.innerHTML = "";
-  if (!lead.eventos.length) {
+  const timelineEvents = buildLeadTimelineEvents(lead);
+  if (!timelineEvents.length) {
     timeline.innerHTML = `<p class="muted-text">Sin eventos</p>`;
     return;
   }
-  lead.eventos.forEach((ev) => {
+  timelineEvents
+    .sort((a, b) => {
+      const aTime = a.timestamp ? new Date(a.timestamp).getTime() : 0;
+      const bTime = b.timestamp ? new Date(b.timestamp).getTime() : 0;
+      return bTime - aTime;
+    })
+    .forEach((ev) => {
+      const timeLabel = formatTimestamp(ev.timestamp);
     const row = document.createElement("div");
     row.className = "event";
     row.innerHTML = `
       <span class="action">${formatAction(ev.action_type)}</span>
-      <span class="time">${timeAgo(ev.timestamp)}</span>
+      <span class="time">${timeLabel}</span>
     `;
     timeline.appendChild(row);
   });
+}
+
+function buildLeadTimelineEvents(lead) {
+  const events = Array.isArray(lead.eventos) ? [...lead.eventos] : [];
+  const hasAction = (type) =>
+    events.some((ev) => normalizeActionType(ev.action_type) === type);
+
+  if (isColdEstado(lead.estado) && !hasAction("cold-sent")) {
+    events.push({
+      email: lead.email,
+      action_type: "cold-sent",
+      timestamp: null,
+    });
+  }
+
+  if (isFollowUpEstado(lead.estado) && !hasAction("follow-up-sent")) {
+    events.push({
+      email: lead.email,
+      action_type: "follow-up-sent",
+      timestamp: null,
+    });
+  }
+
+  return events;
 }
 
 function onSearch(e) {
@@ -529,6 +672,107 @@ function setupControlButtons() {
   }
   if (launchSlider) {
     launchSlider.addEventListener("input", () => updateLaunchSliderLabel());
+  }
+}
+
+function setupBulkDelete() {
+  const openBtn = document.getElementById("bulkDeleteOpen");
+  const confirmBtn = document.getElementById("bulkDeleteConfirm");
+  const cancelBtn = document.getElementById("bulkDeleteCancel");
+  const slider = document.getElementById("bulkDeleteSlider");
+
+  if (openBtn) {
+    openBtn.addEventListener("click", () => openBulkDeleteModal());
+  }
+  if (confirmBtn) {
+    confirmBtn.addEventListener("click", () => confirmBulkDelete());
+  }
+  if (cancelBtn) {
+    cancelBtn.addEventListener("click", () => closeBulkDeleteModal());
+  }
+  if (slider) {
+    slider.addEventListener("input", () => updateBulkDeleteLabel());
+  }
+}
+
+function openBulkDeleteModal() {
+  const modal = document.getElementById("bulkDeleteModal");
+  const slider = document.getElementById("bulkDeleteSlider");
+  const spinner = document.getElementById("bulkDeleteSpinner");
+  if (!modal || !slider) return;
+  const maxCount = Math.min(RECENT_ACTIONS_LIMIT, Array.isArray(cachedRecentEvents) ? cachedRecentEvents.length : 0);
+  slider.min = 0;
+  slider.max = maxCount;
+  slider.value = maxCount ? Math.min(20, maxCount) : 0;
+  updateBulkDeleteLabel();
+  if (spinner) spinner.style.display = "none";
+  modal.style.display = "flex";
+}
+
+function closeBulkDeleteModal() {
+  const modal = document.getElementById("bulkDeleteModal");
+  const confirmBtn = document.getElementById("bulkDeleteConfirm");
+  const cancelBtn = document.getElementById("bulkDeleteCancel");
+  const spinner = document.getElementById("bulkDeleteSpinner");
+  if (modal) modal.style.display = "none";
+  if (confirmBtn) confirmBtn.disabled = false;
+  if (cancelBtn) cancelBtn.disabled = false;
+  if (spinner) spinner.style.display = "none";
+}
+
+function updateBulkDeleteLabel() {
+  const slider = document.getElementById("bulkDeleteSlider");
+  const label = document.getElementById("bulkDeleteLabel");
+  if (!slider || !label) return;
+  label.textContent = `Eventos a borrar: ${slider.value}`;
+}
+
+function buildEventKey(ev) {
+  return `${normalizeEmail(ev.email)}||${normalizeActionType(ev.action_type)}||${ev.timestamp || ""}`;
+}
+
+async function confirmBulkDelete() {
+  const slider = document.getElementById("bulkDeleteSlider");
+  const spinner = document.getElementById("bulkDeleteSpinner");
+  const confirmBtn = document.getElementById("bulkDeleteConfirm");
+  const cancelBtn = document.getElementById("bulkDeleteCancel");
+  const count = slider ? Number(slider.value) || 0 : 0;
+
+  if (!count) {
+    closeBulkDeleteModal();
+    return;
+  }
+
+  const confirmed = window.confirm(`Eliminar los ultimos ${count} eventos?`);
+  if (!confirmed) return;
+
+  if (confirmBtn) confirmBtn.disabled = true;
+  if (cancelBtn) cancelBtn.disabled = true;
+  if (spinner) spinner.style.display = "inline-block";
+  setSyncStatus("Eliminando eventos...");
+
+  try {
+    const { events, record } = await getJsonBinSnapshot();
+    const listedEvents = Array.isArray(cachedRecentEvents) ? cachedRecentEvents : [];
+    const toDelete = listedEvents.slice(0, count);
+    if (!toDelete.length) {
+      setSyncStatus("Sin eventos para eliminar");
+      closeBulkDeleteModal();
+      return;
+    }
+    await removeEventsFromJsonBinBatch(toDelete, record);
+    await decrementSheetMetricsBatch(toDelete);
+    applyLocalDeletionsBatch(toDelete);
+    computeLeadScores(cachedLeads);
+    renderDashboard(cachedLeads);
+    setSyncStatus(`Actualizado ${new Date().toLocaleTimeString()}`);
+    closeBulkDeleteModal();
+  } catch (err) {
+    console.error("Error eliminando eventos", err);
+    setSyncStatus("Error al eliminar eventos");
+    if (confirmBtn) confirmBtn.disabled = false;
+    if (cancelBtn) cancelBtn.disabled = false;
+    if (spinner) spinner.style.display = "none";
   }
 }
 
@@ -727,8 +971,18 @@ async function onDeleteEvent(evData) {
   setSyncStatus("Eliminando evento...");
   try {
     await removeEventFromJsonBin(evData);
-    await decrementSheetMetric(evData);
+    await decrementSheetMetric(evData, 1);
     applyLocalDeletion(evData);
+    const email = normalizeEmail(evData.email);
+    const action = normalizeActionType(evData.action_type);
+    cachedEvents = cachedEvents.filter(
+      (ev) =>
+        !(
+          normalizeEmail(ev.email) === email &&
+          normalizeActionType(ev.action_type) === action &&
+          ev.timestamp === evData.timestamp
+        )
+    );
     computeLeadScores(cachedLeads);
     renderDashboard(cachedLeads);
     setSyncStatus(`Actualizado ${new Date().toLocaleTimeString()}`);
@@ -748,12 +1002,14 @@ async function removeEventFromJsonBin(evData) {
   }
 
   const { events, record } = await getJsonBinSnapshot();
+  const email = normalizeEmail(evData.email);
+  const action = normalizeActionType(evData.action_type);
 
   const filteredEvents = (events || []).filter(
     (ev) =>
       !(
-        ev.email === evData.email &&
-        ev.action_type === evData.action_type &&
+        normalizeEmail(ev.email) === email &&
+        normalizeActionType(ev.action_type) === action &&
         ev.timestamp === evData.timestamp
       )
   );
@@ -781,6 +1037,42 @@ async function removeEventFromJsonBin(evData) {
   }
 }
 
+async function removeEventsFromJsonBinBatch(eventsToDelete, record) {
+  if (!JSONBIN_ID) {
+    console.warn("JSONBIN_ID no configurado; no se puede eliminar evento.");
+    return;
+  }
+  if (!JSONBIN_KEY) {
+    throw new Error("JSONBIN_KEY no configurada; no se puede actualizar JSONBin.");
+  }
+
+  const deleteKeys = new Set(eventsToDelete.map((ev) => buildEventKey(ev)));
+  const currentEvents = Array.isArray(record?.events) ? record.events : Array.isArray(record) ? record : [];
+  const filteredEvents = currentEvents.filter((ev) => !deleteKeys.has(buildEventKey(ev)));
+
+  const putUrl = `https://api.jsonbin.io/v3/b/${JSONBIN_ID}`;
+  const bodyPayload =
+    record && typeof record === "object" && !Array.isArray(record)
+      ? { ...record, events: filteredEvents }
+      : filteredEvents;
+
+  const res = await fetch(putUrl, {
+    method: "PUT",
+    headers: {
+      "X-Master-Key": JSONBIN_KEY,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(bodyPayload),
+  });
+
+  if (!res.ok) {
+    const txt = await res.text().catch(() => "");
+    throw new Error(`No se pudo actualizar JSONBin: ${res.status} ${txt}`);
+  }
+
+  cachedEvents = filteredEvents;
+}
+
 async function getJsonBinSnapshot() {
   const url = `https://api.jsonbin.io/v3/b/${JSONBIN_ID}/latest`;
   const res = await fetch(url, {
@@ -803,47 +1095,83 @@ async function getJsonBinSnapshot() {
   return { events: [], record };
 }
 
-async function decrementSheetMetric(evData) {
+async function decrementSheetMetric(evData, count = 1) {
   if (!SHEETS_HOOK_URL) {
     console.warn("SHEETS_HOOK_URL no configurado; omitiendo update en Sheets.");
     return;
   }
-  // Solo decrementar acciones que impactan contadores en Sheet
-  const allowed = ["open-followup", "open-cold", "link-click"];
-  if (!allowed.includes(evData.action_type)) return;
+  const action = normalizeActionType(evData.action_type);
+  const estado = SHEET_ACTIONS[action];
+  if (!estado) return;
 
+  const delta = -Math.abs(count || 1);
   await postToSheetsHook({
-    email: evData.email,
-    action_type: evData.action_type,
-    delta: -1,
+    action: "trigger",
+    email: normalizeEmail(evData.email),
+    estado,
+    delta,
+    action_type: action,
     timestamp: evData.timestamp,
   });
 }
 
+async function decrementSheetMetricsBatch(events = []) {
+  const grouped = new Map();
+  events.forEach((ev) => {
+    const action = normalizeActionType(ev.action_type);
+    const estado = SHEET_ACTIONS[action];
+    const email = normalizeEmail(ev.email);
+    if (!estado || !email) return;
+    const key = `${email}||${action}`;
+    const current = grouped.get(key) || { email, action, count: 0 };
+    current.count += 1;
+    grouped.set(key, current);
+  });
+
+  for (const group of grouped.values()) {
+    await decrementSheetMetric(
+      { email: group.email, action_type: group.action },
+      group.count
+    );
+  }
+}
+
 function applyLocalDeletion(evData) {
-  const lead = cachedLeads.get(evData.email);
+  const email = normalizeEmail(evData.email);
+  const action = normalizeActionType(evData.action_type);
+  const lead = cachedLeads.get(email);
   if (!lead) return;
   lead.eventos = lead.eventos.filter(
     (ev) =>
       !(
-        ev.email === evData.email &&
-        ev.action_type === evData.action_type &&
+        ev.email === email &&
+        ev.action_type === action &&
         ev.timestamp === evData.timestamp
       )
   );
-  if (evData.action_type === "open-followup" && lead.aperturasFollow > 0) {
+  if (action === "open-followup" && lead.aperturasFollow > 0) {
     lead.aperturasFollow -= 1;
   }
-  if (evData.action_type === "open-cold" && lead.aperturasCold > 0) {
+  if ((action === "open-cold" || action === "cold-approach") && lead.aperturasCold > 0) {
     lead.aperturasCold -= 1;
   }
-  if (evData.action_type === "link-click" && lead.aperturasLink > 0) {
+  if (action === "link-click" && lead.aperturasLink > 0) {
     lead.aperturasLink -= 1;
+  }
+  if (action === "try-on-started" && lead.tryOnStarted > 0) {
+    lead.tryOnStarted -= 1;
+  }
+  if (action === "try-on" && lead.tryOn > 0) {
+    lead.tryOn -= 1;
   }
   lead.eventos.sort(
     (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
   );
   lead.ultimaAccion = lead.eventos[0] || null;
+}
+
+function applyLocalDeletionsBatch(events = []) {
+  events.forEach((ev) => applyLocalDeletion(ev));
 }
 
 function normalizeEmail(email) {
@@ -862,8 +1190,14 @@ function normalizeActionType(action) {
   if (!a) return "";
   if (a === "follow-up" || a === "followup" || a === "open-followup" || a === "open follow-up") return "open-followup";
   if (a === "cold approach") return "cold-approach";
+  if (a === "cold sent" || a === "cold-sent" || a === "cold send") return "cold-sent";
+  if (a === "follow-up sent" || a === "follow up sent" || a === "followup sent") return "follow-up-sent";
   if (a === "try-on-started" || a === "try on started" || a === "try-on start" || a === "try on start") return "try-on-started";
   if (a === "try on") return "try-on";
+  const stepMatch = a.match(/^step[\s-]?(\d+)(?:[\s-]?completed)?$/);
+  if (stepMatch) return `step-${stepMatch[1]}-completed`;
+  const pasoMatch = a.match(/^paso[\s-]?(\d+)(?:[\s-]?completado)?$/);
+  if (pasoMatch) return `step-${pasoMatch[1]}-completed`;
   return a;
 }
 
@@ -904,7 +1238,7 @@ function mergeLeadRecords(current, incoming) {
     respuesta: current.respuesta || incoming.respuesta,
     tryOn: current.tryOn + incoming.tryOn,
     tryOnStarted: current.tryOnStarted + incoming.tryOnStarted,
-    eventos: current.eventos,
+    eventos: current.eventos, 
     score: 0,
     ultimaAccion: null,
   };
@@ -922,6 +1256,14 @@ function rate(part, total) {
 
 function formatPercent(v) {
   return `${(v * 100).toFixed(1)}%`;
+}
+
+function formatTimestamp(dateInput) {
+  if (!dateInput) return "sin fecha";
+  const d = new Date(dateInput);
+  if (Number.isNaN(d.getTime())) return "sin fecha";
+  const pad = (n) => String(n).padStart(2, "0");
+  return `${pad(d.getDate())}/${pad(d.getMonth() + 1)} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
 async function postToSheetsHook(payload) {

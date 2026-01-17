@@ -4,7 +4,6 @@ import { CustomJewelOptions, GeneratedJewelResult } from '../types';
 const getGenAI = async () => {
   const { GoogleGenAI, Modality } = await import('@google/genai');
   const apiKey = import.meta.env.VITE_API_KEY;
-
   if (!apiKey) {
     throw new Error('Gemini API key is missing');
   }
@@ -83,7 +82,7 @@ export const generateTryOnImage = async (
     const jewelryImagePart = await urlToInlineData(jewelryOverlayUrl);
     const textPart = {
         text: `
-Simulate a virtual try-on. Realistically place the second image (a piece of jewelry with a transparent background) onto the first image (a person). The jewelry should be positioned where it would naturally be worn. For example, a ring goes on a finger, a necklace on the neck, an earring on an earlobe, etc. Maintain the original lighting and perspective as much as possible.
+Simulate a virtual try-on returning an image with 1:1 SQUARE ASPECT RATIO: Realistically place the second image (a piece of jewelry with a transparent background) onto the first image (a person). The jewelry should be positioned where it would naturally be worn. For example, a ring goes on a finger, a necklace on the neck, an earring on an earlobe, etc. Maintain the original lighting and perspective as much as possible.
         `,};
 
     const firstPassResponse = await client.models.generateContent({
@@ -95,6 +94,8 @@ Simulate a virtual try-on. Realistically place the second image (a piece of jewe
             responseModalities: [Modality.IMAGE],
         },
     });
+
+    console.log(textPart)
 
     const firstPassImage = extractImageDataUrl(firstPassResponse);
     if (!firstPassImage) {

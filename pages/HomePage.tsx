@@ -5,10 +5,10 @@ import Spinner from '../components/ui/Spinner';
 import { JewelryItem } from '../types';
 import { getFeaturedJewelryItems, getImageUrl } from '../services/api';
 import { generateTryOnImage } from '../services/geminiService';
-import { trackIfAvailable, trackMeeting } from '../services/tracking';
+import { trackIfAvailable, trackMeeting, trackStepCompleted } from '../services/tracking';
 
 const HomePage: React.FC = () => {
-  const totalSteps = 7;
+  const totalSteps = 6;
   const [step, setStep] = useState(1);
   const [items, setItems] = useState<JewelryItem[]>([]);
   const [itemsLoading, setItemsLoading] = useState(false);
@@ -26,8 +26,15 @@ const HomePage: React.FC = () => {
   const [cameraReady, setCameraReady] = useState(false);
   const [processingBackdrop, setProcessingBackdrop] = useState<string | null>(null);
   const [useUploadFlow, setUseUploadFlow] = useState(false);
+  const [comparePosition, setComparePosition] = useState(50);
+  const [compareDragging, setCompareDragging] = useState(false);
+  const [compareAnimating, setCompareAnimating] = useState(false);
   const processingTimeoutRef = useRef<number | null>(null);
   const trackedStepsRef = useRef({ started: false, finished: false });
+  const trackedStepNumbersRef = useRef<Set<number>>(new Set());
+  const prevStepRef = useRef(step);
+  const compareIntroTimeoutRef = useRef<number | null>(null);
+  const compareStopTimeoutRef = useRef<number | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -36,6 +43,16 @@ const HomePage: React.FC = () => {
 
   const progress = (step / totalSteps) * 100;
   const selectedItem = items.find((it) => it.id === selectedItemId || it._id === selectedItemId) || null;
+  const compareOverlayTransition = compareDragging
+    ? 'none'
+    : compareAnimating
+      ? 'clip-path 1.1s ease'
+      : 'clip-path 0.2s ease';
+  const compareHandleTransition = compareDragging
+    ? 'none'
+    : compareAnimating
+      ? 'left 1.1s ease'
+      : 'left 0.2s ease';
 
   useEffect(() => {
     const fetchItems = async () => {
@@ -138,7 +155,7 @@ const HomePage: React.FC = () => {
   useEffect(() => stopCamera, []);
 
   useEffect(() => {
-    if (step === 5 && !useUploadFlow) {
+    if (step === 4 && !useUploadFlow) {
       startCamera();
     } else {
       stopCamera();
@@ -146,7 +163,7 @@ const HomePage: React.FC = () => {
   }, [step, useUploadFlow]);
 
   useEffect(() => {
-    if (step !== 5) {
+    if (step !== 4) {
       setUseUploadFlow(false);
     }
   }, [step]);
@@ -156,10 +173,55 @@ const HomePage: React.FC = () => {
       trackIfAvailable('try-on-started');
       trackedStepsRef.current.started = true;
     }
-    if (step >= 7 && !trackedStepsRef.current.finished) {
-      trackIfAvailable('try-on');
-      trackedStepsRef.current.finished = true;
+  }, [step]);
+
+  useEffect(() => {
+    const prevStep = prevStepRef.current;
+    if (step > prevStep) {
+      const completedStep = prevStep;
+      if (completedStep >= 1 && !trackedStepNumbersRef.current.has(completedStep)) {
+        trackStepCompleted(completedStep);
+        trackedStepNumbersRef.current.add(completedStep);
+      }
     }
+    prevStepRef.current = step;
+  }, [step]);
+
+  useEffect(() => {
+    if (compareIntroTimeoutRef.current) {
+      clearTimeout(compareIntroTimeoutRef.current);
+      compareIntroTimeoutRef.current = null;
+    }
+    if (compareStopTimeoutRef.current) {
+      clearTimeout(compareStopTimeoutRef.current);
+      compareStopTimeoutRef.current = null;
+    }
+    if (step !== 1) {
+      setCompareAnimating(false);
+      setCompareDragging(false);
+      return;
+    }
+    setCompareAnimating(false);
+    setCompareDragging(true);
+    setComparePosition(20);
+    compareIntroTimeoutRef.current = window.setTimeout(() => {
+      setCompareDragging(false);
+      setCompareAnimating(true);
+      setComparePosition(50);
+    }, 150);
+    compareStopTimeoutRef.current = window.setTimeout(() => {
+      setCompareAnimating(false);
+    }, 1250);
+    return () => {
+      if (compareIntroTimeoutRef.current) {
+        clearTimeout(compareIntroTimeoutRef.current);
+        compareIntroTimeoutRef.current = null;
+      }
+      if (compareStopTimeoutRef.current) {
+        clearTimeout(compareStopTimeoutRef.current);
+        compareStopTimeoutRef.current = null;
+      }
+    };
   }, [step]);
 
   // Asegura que si ya hay stream y el video se montÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â³ despuÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â©s, se vuelva a adjuntar.
@@ -190,7 +252,7 @@ const HomePage: React.FC = () => {
       if (typeof reader.result === 'string') {
         setPreviewImage(reader.result);
         setResultImage(null);
-        setStep(5);
+        setStep(4);
         setTimeout(() => {
           capturePhotoAndTryOn(reader.result as string);
         }, 500);
@@ -228,7 +290,7 @@ const HomePage: React.FC = () => {
   const capturePhotoAndTryOn = async (providedBase64?: string) => {
     if (!selectedItem) {
       setSelectionError(true);
-      setStep(3);
+      setStep(2);
       return;
     }
     setIsProcessing(true);
@@ -264,7 +326,11 @@ const HomePage: React.FC = () => {
       const composed = await generateTryOnImage(userImageBase64, overlayUrl);
       console.log('[TRYON] Imagen compuesta recibida. Tamano:', composed?.length || 0);
       setResultImage(composed);
-      setStep(6); // Avanza sin pulsar continuar
+      if (!trackedStepsRef.current.finished) {
+        trackIfAvailable('try-on');
+        trackedStepsRef.current.finished = true;
+      }
+      setStep(5); // Avanza sin pulsar continuar
     } catch (err) {
       console.error('Error en try-on', err);
       setTryOnError('No se pudo procesar la imagen. Prueba otra vez o sube una foto.');
@@ -277,11 +343,15 @@ const HomePage: React.FC = () => {
     }
   };
 
-  const handleUseResult = () => setStep(7);
+  const handleUseResult = () => setStep(6);
 
   const handleSubmit = (event: React.FormEvent) => {
     event.preventDefault();
     trackMeeting(formData.name, formData.email);
+    if (!trackedStepNumbersRef.current.has(6)) {
+      trackStepCompleted(6);
+      trackedStepNumbersRef.current.add(6);
+    }
     setFormSent(true);
   };
 
@@ -305,30 +375,72 @@ const HomePage: React.FC = () => {
                 <Button variant="primary" onClick={goNext}>Pruébalo en 30 segundos sin registro</Button>
               </div>
             </div>
+            <div className="md:col-span-2">
+              <div className="space-y-3">
+                <div className="relative aspect-square w-full max-w-sm md:max-w-none mx-auto rounded-2xl overflow-hidden border border-white/10 bg-black/50 shadow-2xl">
+                  <img src="/despues.png" alt="Despues con probador" className="absolute inset-0 w-full h-full object-cover" />
+                  <div
+                    className="absolute inset-0 z-10 overflow-hidden"
+                    style={{
+                      clipPath: `inset(0 ${100 - comparePosition}% 0 0)`,
+                      WebkitClipPath: `inset(0 ${100 - comparePosition}% 0 0)`,
+                      transition: compareOverlayTransition,
+                    }}
+                  >
+                    <img src="/antes.png" alt="Antes sin probador" className="absolute inset-0 w-full h-full object-cover" />
+                  </div>
+                  <div className="absolute inset-0 z-20 bg-gradient-to-br from-black/35 via-transparent to-black/55 pointer-events-none"></div>
+                  <div className="absolute top-3 left-3 z-30 rounded-full bg-black/70 border border-white/10 px-3 py-1 text-[10px] uppercase tracking-[0.3em] text-white/80">
+                    Antes
+                  </div>
+                  <div className="absolute top-3 right-3 z-30 rounded-full bg-black/70 border border-white/10 px-3 py-1 text-[10px] uppercase tracking-[0.3em] text-white/80">
+                    Despues
+                  </div>
+                  <div
+                    className="absolute top-0 bottom-0 z-40 -translate-x-1/2"
+                    style={{
+                      left: `${comparePosition}%`,
+                      transition: compareHandleTransition,
+                    }}
+                  >
+                    <div className="h-full w-[2px] bg-[var(--primary-color)]/80 shadow-[0_0_12px_rgba(245,193,76,0.45)]" />
+                    <div className="absolute left-1/2 top-1/2 h-10 w-10 -translate-x-1/2 -translate-y-1/2 rounded-full border border-[var(--primary-color)]/70 bg-black/70 shadow-lg flex items-center justify-center">
+                      <div className="flex gap-1 text-[10px] text-white/80">
+                        <span>&lt;</span>
+                        <span>&gt;</span>
+                      </div>
+                    </div>
+                  </div>
+                  <input
+                    type="range"
+                    min={0}
+                    max={100}
+                    value={comparePosition}
+                    onChange={(event) => setComparePosition(Number(event.target.value))}
+                    onPointerDown={() => {
+                      setCompareDragging(true);
+                      setCompareAnimating(false);
+                    }}
+                    onPointerUp={() => setCompareDragging(false)}
+                    onPointerCancel={() => setCompareDragging(false)}
+                    onBlur={() => setCompareDragging(false)}
+                    aria-label="Comparador antes y despues"
+                    className="absolute inset-0 z-50 h-full w-full cursor-ew-resize opacity-0"
+                    style={{ touchAction: 'none' }}
+                  />
+                </div>
+                <Button variant="secondary" onClick={() => setStep(6)}>
+                  Usar esto con mis joyas
+                </Button>
+              </div>
+            </div>
           </div>
         );
       case 2:
         return (
           <div className="space-y-6">
-            <p className="text-xs uppercase tracking-[0.3em] text-gray-400">Situación real</p>
-            <h2 className="text-4xl md:text-5xl font-serif font-bold leading-tight">
-              Imagina que un cliente duda entre varias piezas o está mirando...
-            </h2>
-            <p className="text-lg text-gray-300 max-w-3xl">
-              Entra al probador a través de un código QR o link en la web y directamente se la prueba directamente en el móvil.
-            </p>
-            <div className="flex flex-wrap gap-3">
-              <Button variant="primary" onClick={goNext}>Elegir una pieza para probar</Button>
-              <Button variant="secondary" onClick={goBack}>Atras</Button>
-            </div>
-          </div>
-        );
-      case 3:
-        return (
-          <div className="space-y-6">
             <p className="text-xs uppercase tracking-[0.3em] text-gray-400">Elección de pieza</p>
-            <h2 className="text-3xl md:text-4xl font-serif font-bold">El cliente elige que ponerse</h2>
-            <p className="text-sm text-gray-400">Piezas aleatorias de ejemplo</p>
+            <h2 className="text-3xl md:text-4xl font-serif font-bold">¿Qué pieza quiere probarse?</h2>
             {itemsLoading && (
               <div className="p-6 border border-white/10 rounded-xl bg-black/40 flex justify-center">
                 <Spinner text="Cargando joyas..." />
@@ -367,7 +479,6 @@ const HomePage: React.FC = () => {
               <p className="text-sm text-red-400">Selecciona una pieza para continuar.</p>
             )}
             <div className="flex justify-between items-center">
-              <Button variant="secondary" onClick={goBack}>Atras</Button>
               <Button
                 variant="primary"
                 onClick={() => selectedItem ? goNext() : setSelectionError(true)}
@@ -377,7 +488,7 @@ const HomePage: React.FC = () => {
             </div>
           </div>
         );
-      case 4:
+      case 3:
         return (
           <div className="space-y-6">
             <p className="text-xs uppercase tracking-[0.3em] text-gray-400">Antes de la cámara</p>
@@ -394,12 +505,11 @@ const HomePage: React.FC = () => {
               </ul>
             </div>
             <div className="flex justify-between items-center">
-              <Button variant="secondary" onClick={goBack}>Atras</Button>
-              <Button variant="primary" onClick={() => setStep(5)}>Continuar</Button>
+              <Button variant="primary" onClick={() => setStep(4)}>Continuar</Button>
             </div>
           </div>
         );
-      case 5:
+      case 4:
         return (
           <div className="space-y-6">
             <p className="text-xs uppercase tracking-[0.3em] text-gray-400">Cámara</p>
@@ -459,9 +569,7 @@ const HomePage: React.FC = () => {
                 {isProcessing ? 'Procesando...' : 'Hacer foto y ver resultado'}
               </Button>
               <Button variant="secondary" onClick={handleUploadClick}>Usar imagen del ordenador</Button>
-              {cameraStatus === 'denied' && (
-                <span className="text-sm text-red-400">No se dio permiso de camara. Usa la imagen subida.</span>
-              )}
+
             </div>
             <input
               ref={fileInputRef}
@@ -471,11 +579,10 @@ const HomePage: React.FC = () => {
               onChange={handleUpload}
             />
             <div className="flex justify-between items-center">
-              <Button variant="secondary" onClick={goBack}>Atras</Button>
             </div>
           </div>
         );
-      case 6:
+      case 5:
         return (
           <div className="space-y-6">
             <p className="text-xs uppercase tracking-[0.3em] text-gray-400">Resultado</p>
@@ -504,15 +611,15 @@ const HomePage: React.FC = () => {
               </div>
             </div>
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-              <Button variant="secondary" onClick={() => setStep(5)}>Repetir captura</Button>
+              <Button variant="secondary" onClick={() => setStep(4)}>Repetir captura</Button>
               <div className="flex flex-col sm:flex-row gap-3">
-                <Button variant="secondary" onClick={() => setStep(3)}>Probar otra pieza</Button>
+                <Button variant="secondary" onClick={() => setStep(2)}>Probar otra pieza</Button>
                 <Button variant="primary" onClick={handleUseResult}>Usar esto con mis joyas</Button>
               </div>
             </div>
           </div>
         );
-      case 7:
+      case 6:
         return (
           <div className="space-y-6">
             <p className="text-xs uppercase tracking-[0.3em] text-gray-400">Contacto</p>
@@ -552,7 +659,6 @@ const HomePage: React.FC = () => {
               {formSent && <p className="md:col-span-3 text-sm text-green-400">Listo. Te contactaremos con la prueba.</p>}
             </form>
             <div className="flex justify-between items-center">
-              <Button variant="secondary" onClick={() => setStep(6)}>Atras</Button>
               <Button variant="secondary" onClick={() => setStep(1)}>Volver al inicio</Button>
             </div>
           </div>

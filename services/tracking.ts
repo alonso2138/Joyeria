@@ -1,5 +1,6 @@
 const STORAGE_KEY = 'daisyelperro_tracking_id';
-const WEBHOOK_BASE = 'https://api.visualizalo.es/api';
+//const WEBHOOK_BASE = 'https://api.visualizalo.es/api'
+const WEBHOOK_BASE = 'http://localhost:5000/api'
 
 export const getStoredTrackingId = (): string | null => {
   if (typeof localStorage === 'undefined') return null;
@@ -62,6 +63,14 @@ export const trackIfAvailable = (estado: 'personalizada-generada' | 'try-on' | '
   const id = getStoredTrackingId();
   if (!id) return;
   fireTracking(id, estado);
+};
+
+export const trackStepCompleted = (step: number) => {
+  const id = getStoredTrackingId();
+  if (!id) return;
+  const safeStep = Number.isFinite(step) ? Math.floor(step) : NaN;
+  if (!safeStep || safeStep < 1) return;
+  fireTracking(id, 'step-completed', { step: String(safeStep) });
 };
 
 export const trackMeeting = (nombre: string, email: string) => {

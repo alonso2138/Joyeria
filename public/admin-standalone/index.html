@@ -128,6 +128,19 @@
       </div>
     </section>
 
+    <section class="card funnel-card">
+      <div class="panel-head">
+        <div>
+          <p class="label">Funnel</p>
+          <h3>Pasos completados</h3>
+        </div>
+        <span class="badge">Live</span>
+      </div>
+      <div class="funnel-list" id="funnelSteps">
+        <p class="muted-text">Cargando...</p>
+      </div>
+    </section>
+
     <section class="grid two-cols">
       <div class="card panel panel-fixed">
         <div class="panel-head">
@@ -135,7 +148,10 @@
             <p class="label">Actividad</p>
             <h3>Ultimas acciones</h3>
           </div>
-          <span class="badge">Live</span>
+          <div class="panel-actions">
+            <span class="badge">Live</span>
+            <button class="btn btn-danger btn-compact" id="bulkDeleteOpen" type="button">Borrar eventos</button>
+          </div>
         </div>
         <div class="recent-actions" id="recentActions">
           <p class="muted-text">Cargando...</p>
@@ -229,6 +245,19 @@
           <button class="btn" id="launchCancel" type="button">Cancelar</button>
           <button class="btn" id="launchConfirm" type="button">Confirmar</button>
           <span class="mini-spinner" id="launchModalSpinner" aria-hidden="true" style="display:none;"></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-overlay" id="bulkDeleteModal" style="display:none;">
+      <div class="modal">
+        <h3>Borrar ultimos eventos</h3>
+        <p id="bulkDeleteLabel" class="muted-text">Eventos a borrar: 0</p>
+        <input type="range" id="bulkDeleteSlider" min="0" max="100" value="0">
+        <div class="modal-actions">
+          <button class="btn" id="bulkDeleteCancel" type="button">Cancelar</button>
+          <button class="btn btn-danger" id="bulkDeleteConfirm" type="button">Borrar</button>
+          <span class="mini-spinner" id="bulkDeleteSpinner" aria-hidden="true" style="display:none;"></span>
         </div>
       </div>
     </div>

@@ -88,6 +88,57 @@ h1 {
   margin-bottom: 20px;
 }
 
+.funnel-card {
+  margin-bottom: 20px;
+}
+
+.funnel-list {
+  display: grid;
+  gap: 10px;
+}
+
+.funnel-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: var(--card-alt);
+  border: 1px solid var(--border);
+}
+
+.funnel-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.funnel-title {
+  font-weight: 600;
+}
+
+.funnel-sub {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.funnel-rate {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  text-align: right;
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.funnel-rate-label {
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
 .two-cols {
   grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
   align-items: start;
@@ -236,6 +287,11 @@ h1 {
   color: var(--danger);
 }
 
+.btn-compact {
+  padding: 6px 10px;
+  font-size: 12px;
+}
+
 .modal-overlay {
   position: fixed;
   inset: 0;
@@ -307,6 +363,14 @@ input[type="range"] {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 12px;
+}
+
+.panel-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
 }
 
 .panel h3 {

@@ -36,6 +36,11 @@ let mailFrom = '';
 const SHEETS_HOOK_URL =
     process.env.SHEETS_HOOK_URL ||
     'https://script.google.com/macros/s/AKfycbzW6IyAaawNV2z665RTC3PthHqNWqJapgJZMQMm38SkAvTLCRqWl1Ni_Hrx6Mbo6Hhk/exec';
+const JSONBIN_BIN_ID = process.env.JSONBIN_BIN_ID;
+const JSONBIN_MASTER_KEY = process.env.JSONBIN_MASTER_KEY;
+const JSONBIN_API_URL =
+    process.env.JSONBIN_API_URL ||
+    (JSONBIN_BIN_ID ? `https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}` : '');
 
 const normalizeEmail = (value: unknown) => {
     const email = String(value ?? '').trim().toLowerCase();
@@ -67,6 +72,56 @@ const mergeLeadRecords = (a: Lead, b: Lead): Lead => ({
     score: Math.max(a.score, b.score),
     ultimaAccion: b.ultimaAccion || a.ultimaAccion,
 });
+
+const updateJsonBin = async (email: string, actionType: string): Promise<void> => {
+    if (!JSONBIN_BIN_ID || !JSONBIN_MASTER_KEY || !JSONBIN_API_URL) {
+        console.warn('JSONBin no configurado; omitiendo evento', actionType);
+        return;
+    }
+
+    try {
+        const getResponse = await fetch(`${JSONBIN_API_URL}/latest`, {
+            method: 'GET',
+            headers: {
+                'X-Master-Key': JSONBIN_MASTER_KEY
+            }
+        });
+
+        if (!getResponse.ok) {
+            throw new Error(`Error obteniendo bin: ${getResponse.status}`);
+        }
+
+        const binData = await getResponse.json();
+        const currentRecord = binData.record || [];
+
+        const newData = {
+            email,
+            timestamp: new Date().toISOString(),
+            action_type: actionType
+        };
+
+        const updatedRecord = Array.isArray(currentRecord)
+            ? [...currentRecord, newData]
+            : (currentRecord && Array.isArray(currentRecord.events))
+                ? { ...currentRecord, events: [...currentRecord.events, newData] }
+                : [newData];
+
+        const putResponse = await fetch(JSONBIN_API_URL, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Master-Key': JSONBIN_MASTER_KEY
+            },
+            body: JSON.stringify(updatedRecord)
+        });
+
+        if (!putResponse.ok) {
+            throw new Error(`Error actualizando bin: ${putResponse.status}`);
+        }
+    } catch (error) {
+        console.error('Error actualizando JSONBin:', error);
+    }
+};
 
 const fetchCsv = async (): Promise<CsvRow[]> => {
     const res = await fetch(CSV_URL);
@@ -315,6 +370,7 @@ export const launchColdApproach = async (req: Request, res: Response) => {
             let diaValidado = false;
             let horarioValidado = false;
 
+            /*
             do {
                 const d = new Date();
                 const now = d.getMinutes() + d.getHours() * 60;
@@ -326,8 +382,8 @@ export const launchColdApproach = async (req: Request, res: Response) => {
 
                     const hEnd = parseInt(horario.substring(6, 8));
                     const mEnd = parseInt(horario.substring(9, 11));
+                    
                     const MIN_END = hEnd * 60 + mEnd;
-
                     if (MIN_START < now && now < MIN_END) horarioValidado = true;
                 });
 
@@ -337,14 +393,15 @@ export const launchColdApproach = async (req: Request, res: Response) => {
                     .normalize('NFD')
                     .replace(/[\u0300-\u036f]/g, '');
 
-                if (!(diaSimple === 'viernes' || diaSimple === 'sabado' || diaSimple === 'domingo')) diaValidado = true;
+                if (!(diaSimple === 'viernes' || diaSimple === 'sabado' || diaSimple === 'domingo')) diaValidado = true;                
 
                 if (diaValidado==false || horarioValidado==false){
                     console.log("Horario/Día "+diaValidado+"/"+horarioValidado+"+ no validado, intentando en 30min");
                     await new Promise(resolve => setTimeout(resolve, 30 * 60 * 1000));
                 }
             } while (diaValidado==false || horarioValidado==false);
-
+            */
+           
             console.log("Horario y Día validado")
 
             const encodedEmail = Buffer.from(leads[i].email).toString('base64');
@@ -366,6 +423,8 @@ export const launchColdApproach = async (req: Request, res: Response) => {
 `Hola!<br><br>Seguro que te pasa a menudo: un cliente mira una pulsera o un reloj, le gusta pero no termina de decidirse.<br><br>Estoy ayudando a algunas joyerias a que el cliente se decida antes de comprar, usando una pagina donde puede verse la joya que quiera puesta desde el movil en segundos.<br><br>Puedes probarlo tu mismo aqui (sin registro) en apenas 10 segundos:<br><a href="https://visualizalo.es?id=${encodedEmail}">Probar el probador virtual</a><br><br>Si os parece interesante la idea, os invito a hacer una prueba gratuita, con vuestras piezas, para que veais si realmente os sirve en vuestro dia a dia.<br><br>Si no es algo que encaje con vuestra forma de vender, dimelo sin problema, se agradece cualquier feedback.<br><br>Muchas gracias por su tiempo,<br>Alonso Valls<br><br><img src="https://api.visualizalo.es/api/trigger/cold-abierto?id=${encodedEmail}" alt="" width="1" height="1" style="display:none!important;min-height:0;height:0;max-height:0;width:0;max-width:0;opacity:0;overflow:hidden;mso-hide:all;" />`);
 
             console.log("Mail enviado, enviando notificacion de telegram")
+
+            await updateJsonBin(leads[i].email, "cold-sent");
 
             await sendTelegramNotification(`Mail frio enviado a ${leads[i].email}`);
 
