@@ -53,6 +53,7 @@ const HomePage: React.FC = () => {
     : compareAnimating
       ? 'left 1.1s ease'
       : 'left 0.2s ease';
+  const isIntroStep = step === 1;
 
   useEffect(() => {
     const fetchItems = async () => {
@@ -224,7 +225,7 @@ const HomePage: React.FC = () => {
     };
   }, [step]);
 
-  // Asegura que si ya hay stream y el video se montÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â³ despuÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â©s, se vuelva a adjuntar.
+  // Asegura que si ya hay stream y el video se monta, se vuelva a adjuntar.
   useEffect(() => {
     if (cameraStatus === 'granted' && streamRef.current && videoRef.current) {
       attachStreamToVideo(streamRef.current);
@@ -359,25 +360,27 @@ const HomePage: React.FC = () => {
     switch (step) {
       case 1:
         return (
-          <div className="grid md:grid-cols-5 gap-10 items-center">
-            <div className="md:col-span-3 space-y-6">
+          <div className="grid md:grid-cols-5 gap-8 items-start">
+            <div className="md:col-span-3 space-y-4">
               <p className="text-xs uppercase tracking-[0.3em] text-gray-400">Bienvenida</p>
-              <h1 className="text-4xl md:text-5xl font-serif font-bold leading-tight">
+              <h1 className="text-[clamp(2.3rem,4.5vh,3.2rem)] font-serif font-bold leading-tight">
                 Convierte visitas en clientes mostrando joyas en tiempo real.
               </h1>
-              <p className="text-lg text-gray-300">
+              <p className="text-base md:text-lg text-gray-300">
                 Las joyerías que lo usan reducen dudas y cierran más ventas online y en tienda.
               </p>
-              <p className="text-lg text-gray-400">
+              <p className="text-sm md:text-base text-gray-400">
                 Probado con clientes reales
               </p>
               <div className="flex flex-wrap gap-3">
-                <Button variant="primary" onClick={goNext}>Pruébalo en 30 segundos sin registro</Button>
+                <Button variant="primary" className="px-6 py-2 text-xs md:text-sm" onClick={goNext}>
+                  Pruébalo en 30 segundos sin registro
+                </Button>
               </div>
             </div>
             <div className="md:col-span-2">
-              <div className="space-y-3">
-                <div className="relative aspect-square w-full max-w-sm md:max-w-none mx-auto rounded-2xl overflow-hidden border border-white/10 bg-black/50 shadow-2xl">
+              <div className="space-y-2">
+                <div className="relative aspect-square w-full max-w-[20rem] md:max-w-[22rem] lg:max-w-sm mx-auto rounded-2xl overflow-hidden border border-white/10 bg-black/50 shadow-2xl">
                   <img src="/despues.png" alt="Despues con probador" className="absolute inset-0 w-full h-full object-cover" />
                   <div
                     className="absolute inset-0 z-10 overflow-hidden"
@@ -679,9 +682,13 @@ const HomePage: React.FC = () => {
       <div className="absolute inset-0 bg-gradient-to-br from-[#08070f] via-[#0f1018] to-[#0b0c14]"></div>
       <div className="absolute -left-32 -top-32 w-72 h-72 bg-[var(--primary-color)]/10 blur-3xl"></div>
       <div className="absolute -right-24 bottom-0 w-64 h-64 bg-white/5 blur-3xl"></div>
-      <section className="relative z-10 min-h-[calc(100vh-130px)] px-4 py-5">
-        <div className="max-w-6xl mx-auto space-y-4">
-          <div className="flex items-center gap-4">
+      <section
+        className={`relative z-10 min-h-[calc(100vh-130px)] px-4 ${
+          isIntroStep ? 'py-2 md:py-3' : 'py-4'
+        }`}
+      >
+        <div className={`max-w-6xl mx-auto flex flex-col ${isIntroStep ? 'gap-2' : 'gap-3'}`} style={{ zoom: 1 }}>
+          <div className="flex items-center gap-4 shrink-0">
             <div className="flex-1 h-1 bg-white/10 rounded-full overflow-hidden">
               <div className="h-full bg-[var(--primary-color)]" style={{ width: `${progress}%` }}></div>
             </div>
@@ -693,9 +700,13 @@ const HomePage: React.FC = () => {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
               transition={{ duration: 0.25 }}
-              className="bg-black/30 backdrop-blur-md border border-white/10 rounded-2xl p-5 md:p-8 shadow-2xl min-h-[68vh] flex flex-col gap-4"
+              className={`bg-black/30 backdrop-blur-md border border-white/10 rounded-2xl ${
+                isIntroStep ? 'p-4 md:p-5' : 'p-4 md:p-6'
+              } shadow-2xl flex-1 flex flex-col gap-4 overflow-hidden`}
             >
-              {renderStepContent()}
+              <div className="flex-1">
+                {renderStepContent()}
+              </div>
             </motion.div>
           </AnimatePresence>
         </div>

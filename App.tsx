@@ -7,7 +7,6 @@ import { brandingConfig } from './config/branding';
 import { captureTrackingIdFromUrl } from './services/tracking';
 
 import Header from './components/layout/Header';
-import Footer from './components/layout/Footer';
 import HomePage from './pages/HomePage';
 import CatalogPage from './pages/CatalogPage';
 import JewelryDetailPage from './pages/JewelryDetailPage';
@@ -34,7 +33,6 @@ const PageLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
           <div key={location.pathname}>{children}</div>
         </AnimatePresence>
       </main>
-      <Footer />
     </div>
   );
 };
