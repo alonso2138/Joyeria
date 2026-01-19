@@ -54,6 +54,8 @@ const HomePage: React.FC = () => {
       ? 'left 1.1s ease'
       : 'left 0.2s ease';
   const isIntroStep = step === 1;
+  const isCompactStep = step === 1 || step === 2 || step === 4;
+  const cameraFrameClass = "w-full max-w-[70vh] aspect-video mx-auto";
 
   useEffect(() => {
     const fetchItems = async () => {
@@ -441,9 +443,9 @@ const HomePage: React.FC = () => {
         );
       case 2:
         return (
-          <div className="space-y-6">
+          <div className="space-y-3">
             <p className="text-xs uppercase tracking-[0.3em] text-gray-400">Elección de pieza</p>
-            <h2 className="text-3xl md:text-4xl font-serif font-bold">¿Qué pieza quiere probarse?</h2>
+            <h2 className="text-2xl md:text-3xl font-serif font-bold">¿Qué pieza quiere probarse?</h2>
             {itemsLoading && (
               <div className="p-6 border border-white/10 rounded-xl bg-black/40 flex justify-center">
                 <Spinner text="Cargando joyas..." />
@@ -451,26 +453,26 @@ const HomePage: React.FC = () => {
             )}
             {itemsError && <p className="text-sm text-red-400">{itemsError}</p>}
             {!itemsLoading && items.length > 0 && (
-              <div className="grid md:grid-cols-3 gap-4">
+              <div className="grid md:grid-cols-3 gap-2">
                 {items.slice(0, 3).map((item) => (
                   <button
                     key={item.id || item._id}
                     onClick={() => handlePieceSelect(item.id || item._id!)}
-                    className={`p-4 rounded-xl border transition-all text-left bg-black/30 ${
+                    className={`p-3 rounded-xl border transition-all text-left bg-black/30 ${
                       selectedItemId === (item.id || item._id)
                         ? 'border-[var(--primary-color)] bg-white/5'
                         : 'border-white/10 hover:border-[var(--primary-color)]/60'
                     }`}
                   >
-                    <div className="aspect-square w-full overflow-hidden rounded-lg mb-3 bg-gradient-to-br from-black/40 to-black/20">
+                    <div className="aspect-[3/2] w-full overflow-hidden rounded-lg mb-2 bg-gradient-to-br from-black/40 to-black/20">
                       <img
                         src={getImageUrl(item.imageUrl)}
                         alt={item.name}
                         className="w-full h-full object-cover"
                       />
                     </div>
-                    <div className="text-lg font-serif">{item.name}</div>
-                    <div className="text-xs uppercase tracking-[0.2em] text-gray-400">{item.category}</div>
+                    <div className="text-sm md:text-base font-serif">{item.name}</div>
+                    <div className="text-[10px] uppercase tracking-[0.2em] text-gray-400">{item.category}</div>
                   </button>
                 ))}
               </div>
@@ -484,6 +486,7 @@ const HomePage: React.FC = () => {
             <div className="flex justify-between items-center">
               <Button
                 variant="primary"
+                className="px-6 py-2 text-xs md:text-sm"
                 onClick={() => selectedItem ? goNext() : setSelectionError(true)}
               >
                 Continuar
@@ -514,14 +517,14 @@ const HomePage: React.FC = () => {
         );
       case 4:
         return (
-          <div className="space-y-6">
+          <div className="space-y-4">
             <p className="text-xs uppercase tracking-[0.3em] text-gray-400">Cámara</p>
-            <h2 className="text-3xl md:text-4xl font-serif font-bold">
+            <h2 className="text-2xl md:text-3xl font-serif font-bold">
               Colóquese dentro del encuadre y haz la foto.
             </h2>
             <div className="relative rounded-2xl overflow-hidden border border-white/10 bg-black/50">
               {cameraStatus === 'granted' ? (
-                <div className="relative w-full h-[320px] md:h-[420px] overflow-hidden">
+                <div className={`relative ${cameraFrameClass} overflow-hidden`}>
                   <video
                     ref={videoRef}
                     autoPlay
@@ -540,9 +543,9 @@ const HomePage: React.FC = () => {
                   />
                 </div>
               ) : previewImage ? (
-                <img src={previewImage} alt="Vista previa" className="w-full h-[320px] md:h-[420px] object-cover opacity-90" />
+                <img src={previewImage} alt="Vista previa" className={`${cameraFrameClass} object-cover opacity-90`} />
               ) : (
-                <div className="w-full h-[320px] md:h-[420px] bg-gradient-to-br from-black/40 via-black/20 to-black/40 flex items-center justify-center text-gray-500 text-sm">
+                <div className={`${cameraFrameClass} bg-gradient-to-br from-black/40 via-black/20 to-black/40 flex items-center justify-center text-gray-500 text-sm`}>
                   Activa la camara o sube una foto para ver aqui la vista previa.
                 </div>
               )}
@@ -567,11 +570,11 @@ const HomePage: React.FC = () => {
             </div>
             {tryOnError && <p className="text-sm text-red-400">{tryOnError}</p>}
             {cameraError && <p className="text-sm text-red-400">{cameraError}</p>}
-            <div className="flex flex-wrap gap-3 items-center">
-              <Button variant="primary" onClick={capturePhotoAndTryOn} disabled={isProcessing}>
+            <div className="flex flex-wrap gap-2 items-center">
+              <Button variant="primary" className="px-6 py-2 text-xs md:text-sm" onClick={capturePhotoAndTryOn} disabled={isProcessing}>
                 {isProcessing ? 'Procesando...' : 'Hacer foto y ver resultado'}
               </Button>
-              <Button variant="secondary" onClick={handleUploadClick}>Usar imagen del ordenador</Button>
+              <Button variant="secondary" className="px-6 py-2 text-xs md:text-sm" onClick={handleUploadClick}>Usar imagen del ordenador</Button>
 
             </div>
             <input
@@ -679,15 +682,12 @@ const HomePage: React.FC = () => {
       transition={{ duration: 0.5 }}
       className="relative overflow-hidden"
     >
-      <div className="absolute inset-0 bg-gradient-to-br from-[#08070f] via-[#0f1018] to-[#0b0c14]"></div>
-      <div className="absolute -left-32 -top-32 w-72 h-72 bg-[var(--primary-color)]/10 blur-3xl"></div>
-      <div className="absolute -right-24 bottom-0 w-64 h-64 bg-white/5 blur-3xl"></div>
       <section
-        className={`relative z-10 min-h-[calc(100vh-130px)] px-4 ${
-          isIntroStep ? 'py-2 md:py-3' : 'py-4'
+        className={`relative min-h-[calc(100vh-130px)] px-4 ${
+          isCompactStep ? 'py-1 md:py-2' : 'py-4'
         }`}
       >
-        <div className={`max-w-6xl mx-auto flex flex-col ${isIntroStep ? 'gap-2' : 'gap-3'}`} style={{ zoom: 1 }}>
+        <div className={`max-w-6xl mx-auto flex flex-col ${isCompactStep ? 'gap-2' : 'gap-3'}`} style={{ zoom: 1 }}>
           <div className="flex items-center gap-4 shrink-0">
             <div className="flex-1 h-1 bg-white/10 rounded-full overflow-hidden">
               <div className="h-full bg-[var(--primary-color)]" style={{ width: `${progress}%` }}></div>
@@ -701,7 +701,7 @@ const HomePage: React.FC = () => {
               exit={{ opacity: 0, y: -10 }}
               transition={{ duration: 0.25 }}
               className={`bg-black/30 backdrop-blur-md border border-white/10 rounded-2xl ${
-                isIntroStep ? 'p-4 md:p-5' : 'p-4 md:p-6'
+                isIntroStep ? 'p-4 md:p-5 border-b-transparent' : isCompactStep ? 'p-3 md:p-4' : 'p-4 md:p-6'
               } shadow-2xl flex-1 flex flex-col gap-4 overflow-hidden`}
             >
               <div className="flex-1">
@@ -716,3 +716,5 @@ const HomePage: React.FC = () => {
 };
 
 export default HomePage;
+
+

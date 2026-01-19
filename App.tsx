@@ -26,13 +26,20 @@ import { AuthProvider } from './hooks/useAuth';
 const PageLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const location = useLocation();
   return (
-    <div className="flex flex-col min-h-screen font-sans">
-      <Header />
-      <main className="flex-grow">
-        <AnimatePresence mode="wait">
-          <div key={location.pathname}>{children}</div>
-        </AnimatePresence>
-      </main>
+    <div className="relative min-h-screen font-sans">
+      <div className="fixed inset-0 z-0 pointer-events-none">
+        <div className="absolute inset-0 bg-gradient-to-br from-[#08070f] via-[#0f1018] to-[#0b0c14]"></div>
+        <div className="absolute -left-32 -top-32 w-72 h-72 bg-[var(--primary-color)]/10 blur-3xl"></div>
+        <div className="absolute -right-24 bottom-0 w-64 h-64 bg-white/5 blur-3xl"></div>
+      </div>
+      <div className="relative z-10 flex flex-col min-h-screen">
+        <Header />
+        <main className="flex-grow">
+          <AnimatePresence mode="wait">
+            <div key={location.pathname}>{children}</div>
+          </AnimatePresence>
+        </main>
+      </div>
     </div>
   );
 };
