@@ -307,7 +307,7 @@ export const sendTelegramNotification = async (text: string) => {
     });
 };
 
-export const launchFollowUp = async (req: Request, res: Response) => {
+export const    FollowUp = async (req: Request, res: Response) => {
     try {
         const batchsize = req.body.batchsize as number | undefined;
         const campaignID = req.body.campaignId as string | undefined;
@@ -348,10 +348,6 @@ export const launchFollowUp = async (req: Request, res: Response) => {
         } catch (sheetError) {
             console.error('No se pudo actualizar la hoja para', sheetError);
         }
-
-        // Le decimos al admin que se han pasado las validaciones y el proceso está en marcha
-        return;
-
 
         for (let i = 0; i < leads.length; i++) {            
             const lead = leads[i];
