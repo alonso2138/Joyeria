@@ -307,7 +307,7 @@ export const sendTelegramNotification = async (text: string) => {
     });
 };
 
-export const    FollowUp = async (req: Request, res: Response) => {
+export const launchFollowUp = async (req: Request, res: Response) => {
     try {
         const batchsize = req.body.batchsize as number | undefined;
         const campaignID = req.body.campaignId as string | undefined;
