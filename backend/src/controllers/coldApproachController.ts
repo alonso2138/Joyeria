@@ -366,7 +366,7 @@ export const launchColdApproach = async (req: Request, res: Response) => {
 
             console.log(JSON.stringify(leads[i]))
 
-            const horarios = ['08:15-11:45', '14:45-17:30'];
+            const horarios = ['08:15-12:45', '14:45-17:00'];
             let diaValidado = false;
             let horarioValidado = false;
 
@@ -428,9 +428,9 @@ export const launchColdApproach = async (req: Request, res: Response) => {
 
             await updateLeadEstadoInSheet(leads[i].email, "Cold-Approach enviado");
 
-            // Delay arbitrario para siguiente mail => Entre 120 y 180s
+            // Delay arbitrario para siguiente mail => Entre 10 y 20s
             if(!(i === leads.length - 1)){
-                await new Promise(resolve => setTimeout(resolve, (Math.floor(Math.random() * (180 - 120 + 1)) + 120)*1000));
+                await new Promise(resolve => setTimeout(resolve, (Math.floor(Math.random() * (20 - 10 + 1)) + 20)*1000));
             }  
         }
 
