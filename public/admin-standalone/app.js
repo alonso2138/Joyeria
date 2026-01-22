@@ -1,5 +1,5 @@
 const CSV_URL = "https://docs.google.com/spreadsheets/d/1UTNIkH7J9xPVrOHHL0RgqsZ0Yuz6r6StQWu6ASVQSww/export?format=csv";
-const JSONBIN_ID = "6933a43ed0ea881f40160685";
+const JSONBIN_ID = "6972085743b1c97be9418108";
 const JSONBIN_KEY = "$2a$10$rPqE1JsFS6PXMYIptbDDTeMcuCSdqKBJEJOGouYQAqPDkhE0/eZaW ";
 const SHEETS_HOOK_URL = "https://script.google.com/macros/s/AKfycbzZaZTFDoeaXGYrzoQAJyMQ9eCCNvfmjsIjZl5iNKm1KXw4NhQEADQYGSKwdpG99KUq/exec"; // TODO: set to Apps Script URL when available
 const REFRESH_MS = 5000;
