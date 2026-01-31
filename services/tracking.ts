@@ -1,6 +1,7 @@
 const STORAGE_KEY = 'daisyelperro_tracking_id';
-const WEBHOOK_BASE = 'https://api.visualizalo.es/api'
-//const WEBHOOK_BASE = 'http://localhost:5000/api'
+const WEBHOOK_BASE = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+  ? 'http://localhost:5000/api'
+  : 'https://api.visualizalo.es/api';
 
 export const getStoredTrackingId = (): string | null => {
   if (typeof localStorage === 'undefined') return null;

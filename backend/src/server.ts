@@ -9,6 +9,7 @@ import jewelryRoutes from './routes/jewelryRoutes';
 import authRoutes from './routes/authRoutes';
 import executeRoutes from './routes/executeRoutes';
 import triggerRoutes from './routes/triggerRoutes'
+import eventsRoutes from './routes/eventsRoutes'
 
 // Connect to database
 connectDB();
@@ -24,6 +25,7 @@ app.use('/api/jewelry', jewelryRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/launch', executeRoutes);
 app.use('/api/trigger', triggerRoutes);
+app.use('/api/events', eventsRoutes);
 
 const PORT = process.env.PORT || 5000;
 

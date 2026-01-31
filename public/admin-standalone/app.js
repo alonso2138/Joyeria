@@ -1,10 +1,9 @@
 const CSV_URL = "https://docs.google.com/spreadsheets/d/1UTNIkH7J9xPVrOHHL0RgqsZ0Yuz6r6StQWu6ASVQSww/export?format=csv";
-const JSONBIN_ID = "6972085743b1c97be9418108";
-const JSONBIN_KEY = "$2a$10$rPqE1JsFS6PXMYIptbDDTeMcuCSdqKBJEJOGouYQAqPDkhE0/eZaW ";
-const SHEETS_HOOK_URL = "https://script.google.com/macros/s/AKfycbzZaZTFDoeaXGYrzoQAJyMQ9eCCNvfmjsIjZl5iNKm1KXw4NhQEADQYGSKwdpG99KUq/exec"; // TODO: set to Apps Script URL when available
+const SHEETS_HOOK_URL = "https://script.google.com/macros/s/AKfycbzZaZTFDoeaXGYrzoQAJyMQ9eCCNvfmjsIjZl5iNKm1KXw4NhQEADQYGSKwdpG99KUq/exec";
 const REFRESH_MS = 5000;
-const SERVER_URL = 'https://api.visualizalo.es/api'
-//const SERVER_URL = 'http://localhost:5000/api'
+const SERVER_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+  ? 'http://localhost:5000/api'
+  : 'https://api.visualizalo.es/api';
 
 const scoreWeights = {
   "cold-approach": 1,
@@ -96,25 +95,13 @@ async function fetchCsv() {
 }
 
 async function fetchEvents() {
-  if (!JSONBIN_ID || JSONBIN_ID === "RELLENAR") {
-    console.warn("Configura JSONBIN_ID y JSONBIN_KEY para traer eventos.");
-    return [];
-  }
-  const url = `https://api.jsonbin.io/v3/b/${JSONBIN_ID}/latest`;
-  const res = await fetch(url, {
-    headers: {
-      "X-Master-Key": JSONBIN_KEY || "",
-      "Content-Type": "text/plain;charset=utf-8",
-    },
-  });
+  const url = `${SERVER_URL}/events`;
+  const res = await fetch(url);
   if (!res.ok) {
-    throw new Error("No se pudo leer JSONBin");
+    throw new Error("No se pudo leer los eventos del servidor");
   }
-  const json = await res.json();
-  const payload = json.record || json;
-  if (Array.isArray(payload)) return payload;
-  if (Array.isArray(payload.events)) return payload.events;
-  return [];
+  const events = await res.json();
+  return Array.isArray(events) ? events : [];
 }
 
 function extractAdminControl(rows) {
@@ -597,14 +584,14 @@ function renderLeadDetail(lead) {
     })
     .forEach((ev) => {
       const timeLabel = formatTimestamp(ev.timestamp);
-    const row = document.createElement("div");
-    row.className = "event";
-    row.innerHTML = `
+      const row = document.createElement("div");
+      row.className = "event";
+      row.innerHTML = `
       <span class="action">${formatAction(ev.action_type)}</span>
       <span class="time">${timeLabel}</span>
     `;
-    timeline.appendChild(row);
-  });
+      timeline.appendChild(row);
+    });
 }
 
 function buildLeadTimelineEvents(lead) {
@@ -752,7 +739,6 @@ async function confirmBulkDelete() {
   setSyncStatus("Eliminando eventos...");
 
   try {
-    const { events, record } = await getJsonBinSnapshot();
     const listedEvents = Array.isArray(cachedRecentEvents) ? cachedRecentEvents : [];
     const toDelete = listedEvents.slice(0, count);
     if (!toDelete.length) {
@@ -760,7 +746,7 @@ async function confirmBulkDelete() {
       closeBulkDeleteModal();
       return;
     }
-    await removeEventsFromJsonBinBatch(toDelete, record);
+    await removeEventsBatch(toDelete);
     await decrementSheetMetricsBatch(toDelete);
     applyLocalDeletionsBatch(toDelete);
     computeLeadScores(cachedLeads);
@@ -970,7 +956,7 @@ async function onDeleteEvent(evData) {
 
   setSyncStatus("Eliminando evento...");
   try {
-    await removeEventFromJsonBin(evData);
+    await removeEvent(evData);
     await decrementSheetMetric(evData, 1);
     applyLocalDeletion(evData);
     const email = normalizeEmail(evData.email);
@@ -992,108 +978,26 @@ async function onDeleteEvent(evData) {
   }
 }
 
-async function removeEventFromJsonBin(evData) {
-  if (!JSONBIN_ID) {
-    console.warn("JSONBIN_ID no configurado; no se puede eliminar evento.");
-    return;
-  }
-  if (!JSONBIN_KEY) {
-    throw new Error("JSONBIN_KEY no configurada; no se puede actualizar JSONBin.");
-  }
-
-  const { events, record } = await getJsonBinSnapshot();
-  const email = normalizeEmail(evData.email);
-  const action = normalizeActionType(evData.action_type);
-
-  const filteredEvents = (events || []).filter(
-    (ev) =>
-      !(
-        normalizeEmail(ev.email) === email &&
-        normalizeActionType(ev.action_type) === action &&
-        ev.timestamp === evData.timestamp
-      )
-  );
-
-  const putUrl = `https://api.jsonbin.io/v3/b/${JSONBIN_ID}`;
-
-  // Mantén el MISMO tipo que tienes guardado en el bin
-  const bodyPayload =
-    record && typeof record === "object" && !Array.isArray(record)
-      ? { ...record, events: filteredEvents }
-      : filteredEvents;
-
-  const res = await fetch(putUrl, {
-    method: "PUT",
-    headers: {
-      "X-Master-Key": JSONBIN_KEY,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(bodyPayload),
-  });
-
-  if (!res.ok) {
-    const txt = await res.text().catch(() => "");
-    throw new Error(`No se pudo actualizar JSONBin: ${res.status} ${txt}`);
-  }
+async function removeEvent(evData) {
+  await removeEventsBatch([evData]);
 }
 
-async function removeEventsFromJsonBinBatch(eventsToDelete, record) {
-  if (!JSONBIN_ID) {
-    console.warn("JSONBIN_ID no configurado; no se puede eliminar evento.");
-    return;
-  }
-  if (!JSONBIN_KEY) {
-    throw new Error("JSONBIN_KEY no configurada; no se puede actualizar JSONBin.");
-  }
-
-  const deleteKeys = new Set(eventsToDelete.map((ev) => buildEventKey(ev)));
-  const currentEvents = Array.isArray(record?.events) ? record.events : Array.isArray(record) ? record : [];
-  const filteredEvents = currentEvents.filter((ev) => !deleteKeys.has(buildEventKey(ev)));
-
-  const putUrl = `https://api.jsonbin.io/v3/b/${JSONBIN_ID}`;
-  const bodyPayload =
-    record && typeof record === "object" && !Array.isArray(record)
-      ? { ...record, events: filteredEvents }
-      : filteredEvents;
-
-  const res = await fetch(putUrl, {
-    method: "PUT",
-    headers: {
-      "X-Master-Key": JSONBIN_KEY,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(bodyPayload),
-  });
-
-  if (!res.ok) {
-    const txt = await res.text().catch(() => "");
-    throw new Error(`No se pudo actualizar JSONBin: ${res.status} ${txt}`);
-  }
-
-  cachedEvents = filteredEvents;
-}
-
-async function getJsonBinSnapshot() {
-  const url = `https://api.jsonbin.io/v3/b/${JSONBIN_ID}/latest`;
+async function removeEventsBatch(eventsToDelete) {
+  const url = `${SERVER_URL}/events/delete-batch`;
   const res = await fetch(url, {
+    method: "POST",
     headers: {
-      "X-Master-Key": JSONBIN_KEY,
       "Content-Type": "application/json",
     },
+    body: JSON.stringify({ events: eventsToDelete }),
   });
+
   if (!res.ok) {
-    throw new Error("No se pudo leer JSONBin");
+    const txt = await res.text().catch(() => "");
+    throw new Error(`No se pudo eliminar eventos: ${res.status} ${txt}`);
   }
-  const json = await res.json();
-  const record = json.record || json;
-  if (Array.isArray(record)) {
-    return { events: record, record };
-  }
-  if (Array.isArray(record.events)) {
-    return { events: record.events, record };
-  }
-  return { events: [], record };
 }
+
 
 async function decrementSheetMetric(evData, count = 1) {
   if (!SHEETS_HOOK_URL) {
@@ -1238,7 +1142,7 @@ function mergeLeadRecords(current, incoming) {
     respuesta: current.respuesta || incoming.respuesta,
     tryOn: current.tryOn + incoming.tryOn,
     tryOnStarted: current.tryOnStarted + incoming.tryOnStarted,
-    eventos: current.eventos, 
+    eventos: current.eventos,
     score: 0,
     ultimaAccion: null,
   };
@@ -1299,8 +1203,8 @@ async function postToSheetsHook(payload) {
 
 async function postToLaunchWebhook(type, payload) {
   let action = "/launch/"
-  console.log(SERVER_URL+action+type)
-  const res = await fetch(SERVER_URL+action+type, {
+  console.log(SERVER_URL + action + type)
+  const res = await fetch(SERVER_URL + action + type, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",

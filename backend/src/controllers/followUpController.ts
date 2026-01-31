@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import https from 'https';
 import Papa from 'papaparse';
 import { Resend } from 'resend';
+import { StorageHelper } from '../utils/storageHelper';
 
 const CSV_URL = 'https://docs.google.com/spreadsheets/d/1UTNIkH7J9xPVrOHHL0RgqsZ0Yuz6r6StQWu6ASVQSww/export?format=csv';
 
@@ -36,11 +37,6 @@ let mailFrom = '';
 const SHEETS_HOOK_URL =
     process.env.SHEETS_HOOK_URL ||
     'https://script.google.com/macros/s/AKfycbzW6IyAaawNV2z665RTC3PthHqNWqJapgJZMQMm38SkAvTLCRqWl1Ni_Hrx6Mbo6Hhk/exec';
-const JSONBIN_BIN_ID = process.env.JSONBIN_BIN_ID;
-const JSONBIN_MASTER_KEY = process.env.JSONBIN_MASTER_KEY;
-const JSONBIN_API_URL =
-    process.env.JSONBIN_API_URL ||
-    (JSONBIN_BIN_ID ? `https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}` : '');
 
 const normalizeEmail = (value: unknown) => {
     const email = String(value ?? '').trim().toLowerCase();
@@ -72,56 +68,6 @@ const mergeLeadRecords = (a: Lead, b: Lead): Lead => ({
     score: Math.max(a.score, b.score),
     ultimaAccion: b.ultimaAccion || a.ultimaAccion,
 });
-
-const updateJsonBin = async (email: string, actionType: string): Promise<void> => {
-    if (!JSONBIN_BIN_ID || !JSONBIN_MASTER_KEY || !JSONBIN_API_URL) {
-        console.warn('JSONBin no configurado; omitiendo evento', actionType);
-        return;
-    }
-
-    try {
-        const getResponse = await fetch(`${JSONBIN_API_URL}/latest`, {
-            method: 'GET',
-            headers: {
-                'X-Master-Key': JSONBIN_MASTER_KEY
-            }
-        });
-
-        if (!getResponse.ok) {
-            throw new Error(`Error obteniendo bin: ${getResponse.status}`);
-        }
-
-        const binData = await getResponse.json();
-        const currentRecord = binData.record || [];
-
-        const newData = {
-            email,
-            timestamp: new Date().toISOString(),
-            action_type: actionType
-        };
-
-        const updatedRecord = Array.isArray(currentRecord)
-            ? [...currentRecord, newData]
-            : (currentRecord && Array.isArray(currentRecord.events))
-                ? { ...currentRecord, events: [...currentRecord.events, newData] }
-                : [newData];
-
-        const putResponse = await fetch(JSONBIN_API_URL, {
-            method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-Master-Key': JSONBIN_MASTER_KEY
-            },
-            body: JSON.stringify(updatedRecord)
-        });
-
-        if (!putResponse.ok) {
-            throw new Error(`Error actualizando bin: ${putResponse.status}`);
-        }
-    } catch (error) {
-        console.error('Error actualizando JSONBin:', error);
-    }
-};
 
 const fetchCsv = async (): Promise<CsvRow[]> => {
     const res = await fetch(CSV_URL);
@@ -193,7 +139,7 @@ const initializeNotifiers = () => {
             console.warn('Define RESEND_FROM (o EMAIL_FROM/SMTP_FROM) para el campo "from" de los correos.');
         }
     } else {
-        console.warn('RESEND_API_KEY no configurada; habilita RESEND_API_KEY y RESEND_FROM para enviar correos.');
+        console.warn('RESEND_API_KEY no configurada; habilita RESEND_API_KEY and RESEND_FROM para enviar correos.');
     }
 
     const { TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID } = process.env;
@@ -311,14 +257,14 @@ export const launchFollowUp = async (req: Request, res: Response) => {
     try {
         const batchsize = req.body.batchsize as number | undefined;
         const campaignID = req.body.campaignId as string | undefined;
-        console.log(batchsize,campaignID)
+        console.log(batchsize, campaignID)
 
         const [csvRows, events] = await Promise.all([fetchCsv(), fetchEvents()]);
         const { rowsWithoutAdmin, adminAction: csvAdminAction } = extractAdminControl(csvRows);
         adminAction = csvAdminAction;
 
         const leadsMap = buildLeadsFromCsv(rowsWithoutAdmin);
-        console.log("Leads encontrados: ",leadsMap.size);
+        console.log("Leads encontrados: ", leadsMap.size);
 
         // Asociar eventos a cada lead si los traes de otro origen (placeholder)
         events.forEach((_ev) => {
@@ -332,7 +278,7 @@ export const launchFollowUp = async (req: Request, res: Response) => {
 
         console.log("Leads filtrados: ", leads.length)
 
-        if (batchsize && batchsize > 0) leads = leads.slice(0, batchsize);        
+        if (batchsize && batchsize > 0) leads = leads.slice(0, batchsize);
 
         console.log("Leads tras filtrar batchsize: ", leads.length);
 
@@ -341,7 +287,7 @@ export const launchFollowUp = async (req: Request, res: Response) => {
             const res = await fetch(SHEETS_HOOK_URL, {
                 method: "POST",
                 headers: {
-                "Content-Type": "text/plain;charset=utf-8",
+                    "Content-Type": "text/plain;charset=utf-8",
                 },
                 body: JSON.stringify({ adminAction: "Corriendo" }),
             });
@@ -349,7 +295,7 @@ export const launchFollowUp = async (req: Request, res: Response) => {
             console.error('No se pudo actualizar la hoja para', sheetError);
         }
 
-        for (let i = 0; i < leads.length; i++) {            
+        for (let i = 0; i < leads.length; i++) {
             const lead = leads[i];
             const horarios = ['08:15-12:45', '14:45-17:00'];
             let diaValidado = false;
@@ -379,24 +325,24 @@ export const launchFollowUp = async (req: Request, res: Response) => {
 
                 if (!(diaSimple === 'viernes' || diaSimple === 'sabado' || diaSimple === 'domingo')) diaValidado = true;
 
-                if (diaValidado==false || horarioValidado==false){
-                    console.log("Horario/Día "+diaValidado+"/"+horarioValidado+"+ no validado, intentando en 30min");
+                if (diaValidado == false || horarioValidado == false) {
+                    console.log("Horario/Día " + diaValidado + "/" + horarioValidado + "+ no validado, intentando en 30min");
                     await new Promise(resolve => setTimeout(resolve, 30 * 60 * 1000));
                 }
-            } while (diaValidado==false || horarioValidado==false);
+            } while (diaValidado == false || horarioValidado == false);
 
             console.log("Horario y Día validado")
 
             const encodedEmail = Buffer.from(lead.email).toString('base64');
 
-            console.log("Codificando email de lead... ("+lead.email+")   => "+encodedEmail);
+            console.log("Codificando email de lead... (" + lead.email + ")   => " + encodedEmail);
 
             const [rows] = await Promise.all([fetchCsv()]);
             const { adminAction: csvAdminAction } = extractAdminControl(rows);
             adminAction = csvAdminAction;
 
             if (adminAction && adminAction.toLowerCase() === 'stop') {
-                console.log("Ending process, admin action: ",adminAction)
+                console.log("Ending process, admin action: ", adminAction)
                 return;
             }
 
@@ -404,10 +350,10 @@ export const launchFollowUp = async (req: Request, res: Response) => {
             await sendMail(
                 `${lead.email}`,
                 `¿Lo probamos con vuestras joyas?`,
-`Hola!<br><br>Te escribo porque el otro día te envié el probador virtual de joyas y no sé si pudiste llegar a probarlo.<br><br>Te dejo el enlace de nuevo por aquí por si acaso:<br><a href="https://visualizalo.es?id=${encodedEmail}">https://visualizalo.es</a><br><br>A varias joyerías les está funcionando bien para ayudar al cliente a decidirse cuando duda entre piezas, tanto en tienda como online.<br><br>Si te parece, puedo prepararos una prueba gratuita con alguna de vuestras joyas para que veáis si realmente os sirve o no.<br>En 5 minutos te lo enseño y listo, sin compromiso ni coste.<br><br>¿Te viene mejor esta semana o la siguiente?<br><br>Muchas gracias por su tiempo,<br>Alonso Valls<br><br><img src="https://api.visualizalo.es/api/trigger/follow-abierto?id=${encodedEmail}" alt="" width="1" height="1" style="display:none!important;min-height:0;height:0;max-height:0;width:0;max-width:0;opacity:0;overflow:hidden;mso-hide:all;" />`);
+                `Hola!<br><br>Te escribo porque el otro día te envié el probador virtual de joyas y no sé si pudiste llegar a probarlo.<br><br>Te dejo el enlace de nuevo por aquí por si acaso:<br><a href="https://visualizalo.es?id=${encodedEmail}">https://visualizalo.es</a><br><br>A varias joyerías les está funcionando bien para ayudar al cliente a decidirse cuando duda entre piezas, tanto en tienda como online.<br><br>Si te parece, puedo prepararos una prueba gratuita con alguna de vuestras joyas para que veáis si realmente os sirve o no.<br>En 5 minutos te lo enseño y listo, sin compromiso ni coste.<br><br>¿Te viene mejor esta semana o la siguiente?<br><br>Muchas gracias por su tiempo,<br>Alonso Valls<br><br><img src="https://api.visualizalo.es/api/trigger/follow-abierto?id=${encodedEmail}" alt="" width="1" height="1" style="display:none!important;min-height:0;height:0;max-height:0;width:0;max-width:0;opacity:0;overflow:hidden;mso-hide:all;" />`);
             console.log("Mail enviado, enviando notificacion de telegram")
 
-            await updateJsonBin(lead.email, "follow-up-sent");
+            await StorageHelper.updateEvents(lead.email, "follow-up-sent");
 
             await sendTelegramNotification(`Mail follow-up enviado a ${lead.email}`);
 
@@ -415,24 +361,24 @@ export const launchFollowUp = async (req: Request, res: Response) => {
 
             // Delay arbitrario para siguiente mail => Entre 10s y 20s
             if (!(i === leads.length - 1)) {
-                await new Promise(resolve => setTimeout(resolve, (Math.floor(Math.random() * (20 - 10 + 1)) + 10)*1000));
+                await new Promise(resolve => setTimeout(resolve, (Math.floor(Math.random() * (20 - 10 + 1)) + 10) * 1000));
             }
         }
-            // Actualizar estado de la campaña en Google Sheets a Acabado
-            try {
-                const res = await fetch(SHEETS_HOOK_URL, {
-                    method: "POST",
-                    headers: {
+        // Actualizar estado de la campaña en Google Sheets a Acabado
+        try {
+            const res = await fetch(SHEETS_HOOK_URL, {
+                method: "POST",
+                headers: {
                     "Content-Type": "text/plain;charset=utf-8",
-                    },
-                    body: JSON.stringify({ adminAction: "Acabado" }),
-                });
-            } catch (sheetError) {
-                console.error('No se pudo actualizar la hoja para', sheetError);
-            }
+                },
+                body: JSON.stringify({ adminAction: "Acabado" }),
+            });
+        } catch (sheetError) {
+            console.error('No se pudo actualizar la hoja para', sheetError);
+        }
 
         res.status(200).json({ message: 'Follow-up executed' });
-    }catch(error){
-            res.status(500).json({ message: 'Failed to execute follow-up' });
+    } catch (error) {
+        res.status(500).json({ message: 'Failed to execute follow-up' });
     }
 };

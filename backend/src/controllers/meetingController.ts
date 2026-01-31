@@ -3,9 +3,6 @@ import { Resend } from 'resend';
 import https from 'https';
 
 const SHEETS_HOOK_URL = process.env.SHEETS_HOOK_URL!;
-const JSONBIN_BIN_ID = process.env.JSONBIN_BIN_ID!;
-const JSONBIN_MASTER_KEY = process.env.JSONBIN_MASTER_KEY!;
-const JSONBIN_API_URL = process.env.JSONBIN_API_URL || `https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}`;
 
 type TelegramConfig = {
     botToken: string;
@@ -92,7 +89,7 @@ export const sendTelegramNotification = async (text: string) => {
 export const meeting = async (req: Request, res: Response) => {
     try {
         await sendTelegramNotification(`🚨 NUEVO MEETING ALERTA\n  Nombre: ${req.query.nombre}\n  Email: ${req.query.email}`);
-        return res.status(200).json({ status:"OK", message:"Notificación de meetinge enviada con éxito" })
+        return res.status(200).json({ status: "OK", message: "Notificación de meetinge enviada con éxito" })
     } catch (error) {
         console.error('Error general:', error);
         return res.status(500).json({ message: 'Server error during trigger log' });

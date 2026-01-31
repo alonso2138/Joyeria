@@ -1,59 +1,7 @@
 import { Request, Response } from 'express';
+import { StorageHelper } from '../utils/storageHelper';
 
 const SHEETS_HOOK_URL = process.env.SHEETS_HOOK_URL!;
-const JSONBIN_BIN_ID = process.env.JSONBIN_BIN_ID!;
-const JSONBIN_MASTER_KEY = process.env.JSONBIN_MASTER_KEY!;
-const JSONBIN_API_URL = process.env.JSONBIN_API_URL || `https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}`;
-
-// Función para actualizar el bin con el nuevo evento
-async function updateJsonBin(email: string): Promise<void> {
-    try {
-        // 1. Obtener el contenido actual del bin
-        const getResponse = await fetch(`${JSONBIN_API_URL}/latest`, {
-            method: 'GET',
-            headers: {
-                'X-Master-Key': JSONBIN_MASTER_KEY
-            }
-        });
-
-        if (!getResponse.ok) {
-            throw new Error(`Error obteniendo bin: ${getResponse.status}`);
-        }
-
-        const binData = await getResponse.json();
-        const currentRecord = binData.record || [];
-
-        // 2. Crear el nuevo evento
-        const newData = {
-            email: email,
-            timestamp: new Date().toISOString(),
-            action_type: "link-click"
-        };
-
-        // 3. Agregar al final del array existente
-        const updatedRecord = Array.isArray(currentRecord) 
-            ? [...currentRecord, newData] 
-            : [newData];
-
-        // 4. Actualizar el bin
-        const putResponse = await fetch(JSONBIN_API_URL, {
-            method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-Master-Key': JSONBIN_MASTER_KEY
-            },
-            body: JSON.stringify(updatedRecord)
-        });
-
-        if (!putResponse.ok) {
-            throw new Error(`Error actualizando bin: ${putResponse.status}`);
-        }
-
-    } catch (error) {
-        console.error('Error actualizando JSONBin:', error);
-        // No lanzamos el error para no interrumpir el flujo principal
-    }
-}
 
 export const linkClick = async (req: Request, res: Response) => {
     try {
@@ -61,7 +9,7 @@ export const linkClick = async (req: Request, res: Response) => {
         let ID = req.query.id as string;
         console.log(ID)
         // Pasarlo a email
-        if(ID=="") return res.status(401).json({ message: 'No se encontró el ID en la url' });        
+        if (ID == "") return res.status(401).json({ message: 'No se encontró el ID en la url' });
         ID = Buffer.from(ID, "base64").toString("ascii");
         console.log(ID)
         // Ejecutar ambas operaciones en paralelo
@@ -75,20 +23,20 @@ export const linkClick = async (req: Request, res: Response) => {
                         "Content-Type": "text/plain;charset=utf-8",
                     },
                     body: JSON.stringify({
-                        action:"trigger",
-                        email:ID,
-                        estado:"Aperturas de link"                   
+                        action: "trigger",
+                        email: ID,
+                        estado: "Aperturas de link"
                     })
                 }),
-                // Operación de JSONBin (en paralelo)
-                updateJsonBin(ID)
+                // Operación de Almacenamiento Local (en paralelo)
+                StorageHelper.updateEvents(ID, "link-click")
             ]);
 
             const text = await sheetsResult.text();
 
             // Google Apps Script puede devolver 200 incluso con redirect seguido
             if (sheetsResult.ok) {
-                return res.status(200).json({ status:"OK", message: 'Éxito guardando trigger de link abierto' });     
+                return res.status(200).json({ status: "OK", message: 'Éxito guardando trigger de link abierto' });
             } else {
                 throw new Error(`Hook HTTP ${sheetsResult.status} ${sheetsResult.statusText}: ${text}`);
             }

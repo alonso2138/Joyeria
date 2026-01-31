@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import https from 'https';
 import Papa from 'papaparse';
 import { Resend } from 'resend';
+import { StorageHelper } from '../utils/storageHelper';
 
 const CSV_URL = 'https://docs.google.com/spreadsheets/d/1UTNIkH7J9xPVrOHHL0RgqsZ0Yuz6r6StQWu6ASVQSww/export?format=csv';
 
@@ -36,11 +37,6 @@ let mailFrom = '';
 const SHEETS_HOOK_URL =
     process.env.SHEETS_HOOK_URL ||
     'https://script.google.com/macros/s/AKfycbzW6IyAaawNV2z665RTC3PthHqNWqJapgJZMQMm38SkAvTLCRqWl1Ni_Hrx6Mbo6Hhk/exec';
-const JSONBIN_BIN_ID = process.env.JSONBIN_BIN_ID;
-const JSONBIN_MASTER_KEY = process.env.JSONBIN_MASTER_KEY;
-const JSONBIN_API_URL =
-    process.env.JSONBIN_API_URL ||
-    (JSONBIN_BIN_ID ? `https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}` : '');
 
 const normalizeEmail = (value: unknown) => {
     const email = String(value ?? '').trim().toLowerCase();
@@ -72,56 +68,6 @@ const mergeLeadRecords = (a: Lead, b: Lead): Lead => ({
     score: Math.max(a.score, b.score),
     ultimaAccion: b.ultimaAccion || a.ultimaAccion,
 });
-
-const updateJsonBin = async (email: string, actionType: string): Promise<void> => {
-    if (!JSONBIN_BIN_ID || !JSONBIN_MASTER_KEY || !JSONBIN_API_URL) {
-        console.warn('JSONBin no configurado; omitiendo evento', actionType);
-        return;
-    }
-
-    try {
-        const getResponse = await fetch(`${JSONBIN_API_URL}/latest`, {
-            method: 'GET',
-            headers: {
-                'X-Master-Key': JSONBIN_MASTER_KEY
-            }
-        });
-
-        if (!getResponse.ok) {
-            throw new Error(`Error obteniendo bin: ${getResponse.status}`);
-        }
-
-        const binData = await getResponse.json();
-        const currentRecord = binData.record || [];
-
-        const newData = {
-            email,
-            timestamp: new Date().toISOString(),
-            action_type: actionType
-        };
-
-        const updatedRecord = Array.isArray(currentRecord)
-            ? [...currentRecord, newData]
-            : (currentRecord && Array.isArray(currentRecord.events))
-                ? { ...currentRecord, events: [...currentRecord.events, newData] }
-                : [newData];
-
-        const putResponse = await fetch(JSONBIN_API_URL, {
-            method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-Master-Key': JSONBIN_MASTER_KEY
-            },
-            body: JSON.stringify(updatedRecord)
-        });
-
-        if (!putResponse.ok) {
-            throw new Error(`Error actualizando bin: ${putResponse.status}`);
-        }
-    } catch (error) {
-        console.error('Error actualizando JSONBin:', error);
-    }
-};
 
 const fetchCsv = async (): Promise<CsvRow[]> => {
     const res = await fetch(CSV_URL);
@@ -312,14 +258,14 @@ export const launchColdApproach = async (req: Request, res: Response) => {
         const batchsize = req.body.batchsize as number | undefined;
         const campaignID = req.body.campaignId as string | undefined;
 
-        console.log(batchsize,campaignID)
+        console.log(batchsize, campaignID)
 
         const [csvRows, events] = await Promise.all([fetchCsv(), fetchEvents()]);
         const { rowsWithoutAdmin, adminAction: csvAdminAction } = extractAdminControl(csvRows);
         adminAction = csvAdminAction;
 
         const leadsMap = buildLeadsFromCsv(rowsWithoutAdmin);
-        console.log("Leads encontrados: ",leadsMap.size);
+        console.log("Leads encontrados: ", leadsMap.size);
 
         // Asociar eventos a cada lead si los traes de otro origen (placeholder)
         events.forEach((_ev) => {
@@ -344,7 +290,7 @@ export const launchColdApproach = async (req: Request, res: Response) => {
             const res = await fetch(SHEETS_HOOK_URL, {
                 method: "POST",
                 headers: {
-                "Content-Type": "text/plain;charset=utf-8",
+                    "Content-Type": "text/plain;charset=utf-8",
                 },
                 body: JSON.stringify({ adminAction: "Corriendo" }),
             });
@@ -357,16 +303,16 @@ export const launchColdApproach = async (req: Request, res: Response) => {
         res.status(200).json({ message: 'Cold approach executed' });
         console.log("Respuesta enviada correctamente")
 
-        for(let i = 0; i < leads.length; i++){
-            console.log("Empezando el lead numero ",i+1)
+        for (let i = 0; i < leads.length; i++) {
+            console.log("Empezando el lead numero ", i + 1)
 
             const [rows] = await Promise.all([fetchCsv()]);
             const { adminAction: csvAdminAction } = extractAdminControl(rows);
-            adminAction = csvAdminAction;   
+            adminAction = csvAdminAction;
 
             console.log(JSON.stringify(leads[i]))
 
-            const horarios = ['08:15-12:45', '14:45-17:00'];
+            const horarios = ['08:15-11:45', '14:45-17:00'];
             let diaValidado = false;
             let horarioValidado = false;
 
@@ -381,7 +327,7 @@ export const launchColdApproach = async (req: Request, res: Response) => {
 
                     const hEnd = parseInt(horario.substring(6, 8));
                     const mEnd = parseInt(horario.substring(9, 11));
-                    
+
                     const MIN_END = hEnd * 60 + mEnd;
                     if (MIN_START < now && now < MIN_END) horarioValidado = true;
                 });
@@ -392,24 +338,24 @@ export const launchColdApproach = async (req: Request, res: Response) => {
                     .normalize('NFD')
                     .replace(/[\u0300-\u036f]/g, '');
 
-                if (!(diaSimple === 'viernes' || diaSimple === 'sabado' || diaSimple === 'domingo')) diaValidado = true;                
+                if (!(diaSimple === 'viernes' || diaSimple === 'sabado' || diaSimple === 'domingo')) diaValidado = true;
 
-                if (diaValidado==false || horarioValidado==false){
-                    console.log("Horario/Día "+diaValidado+"/"+horarioValidado+"+ no validado, intentando en 30min");
+                if (diaValidado == false || horarioValidado == false) {
+                    console.log("Horario/Día " + diaValidado + "/" + horarioValidado + "+ no validado, intentando en 30min");
                     await new Promise(resolve => setTimeout(resolve, 30 * 60 * 1000));
                 }
-            } while (diaValidado==false || horarioValidado==false);
-           
+            } while (diaValidado == false || horarioValidado == false);
+
             console.log("Horario y Día validado")
 
             const encodedEmail = Buffer.from(leads[i].email).toString('base64');
 
-            console.log("Codificando email de lead... ("+leads[i].email+")   => "+encodedEmail);
-            
-            console.log("Admin action: ",adminAction)
+            console.log("Codificando email de lead... (" + leads[i].email + ")   => " + encodedEmail);
+
+            console.log("Admin action: ", adminAction)
 
             if (adminAction && adminAction.toLowerCase() === 'stop') {
-                console.log("Ending process, admin action: ",adminAction)
+                console.log("Ending process, admin action: ", adminAction)
                 return;
             }
 
@@ -418,20 +364,20 @@ export const launchColdApproach = async (req: Request, res: Response) => {
             await sendMail(
                 `${leads[i].email}`,
                 `Cuando un cliente duda entre dos piezas`,
-`Hola!<br><br>Seguro que te pasa a menudo: un cliente mira una pulsera o un reloj, le gusta pero no termina de decidirse.<br><br>Estoy ayudando a algunas joyerias a que el cliente se decida antes de comprar, usando una pagina donde puede verse la joya que quiera puesta desde el movil en segundos.<br><br>Puedes probarlo tu mismo aqui (sin registro) en apenas 10 segundos:<br><a href="https://visualizalo.es?id=${encodedEmail}">Probar el probador virtual</a><br><br>Si os parece interesante la idea, os invito a hacer una prueba gratuita, con vuestras piezas, para que veais si realmente os sirve en vuestro dia a dia.<br><br>Si no es algo que encaje con vuestra forma de vender, dimelo sin problema, se agradece cualquier feedback.<br><br>Muchas gracias por su tiempo,<br>Alonso Valls<br><br><img src="https://api.visualizalo.es/api/trigger/cold-abierto?id=${encodedEmail}" alt="" width="1" height="1" style="display:none!important;min-height:0;height:0;max-height:0;width:0;max-width:0;opacity:0;overflow:hidden;mso-hide:all;" />`);
+                `Hola!<br><br>Seguro que te pasa a menudo: un cliente mira una pulsera o un reloj, le gusta pero no termina de decidirse.<br><br>Estoy ayudando a algunas joyerias a que el cliente se decida antes de comprar, usando una pagina donde puede verse la joya que quiera puesta desde el movil en segundos.<br><br>Puedes probarlo tu mismo aqui (sin registro) en apenas 10 segundos:<br><a href="https://visualizalo.es?id=${encodedEmail}">Probar el probador virtual</a><br><br>Si os parece interesante la idea, os invito a hacer una prueba gratuita, con vuestras piezas, para que veais si realmente os sirve en vuestro dia a dia.<br><br>Si no es algo que encaje con vuestra forma de vender, dimelo sin problema, se agradece cualquier feedback.<br><br>Muchas gracias por su tiempo,<br>Alonso Valls<br><br><img src="https://api.visualizalo.es/api/trigger/cold-abierto?id=${encodedEmail}" alt="" width="1" height="1" style="display:none!important;min-height:0;height:0;max-height:0;width:0;max-width:0;opacity:0;overflow:hidden;mso-hide:all;" />`);
 
             console.log("Mail enviado, enviando notificacion de telegram")
 
-            await updateJsonBin(leads[i].email, "cold-sent");
+            await StorageHelper.updateEvents(leads[i].email, "cold-sent");
 
             await sendTelegramNotification(`Mail frio enviado a ${leads[i].email}`);
 
             await updateLeadEstadoInSheet(leads[i].email, "Cold-Approach enviado");
 
             // Delay arbitrario para siguiente mail => Entre 10 y 20s
-            if(!(i === leads.length - 1)){
-                await new Promise(resolve => setTimeout(resolve, (Math.floor(Math.random() * (20 - 10 + 1)) + 20)*1000));
-            }  
+            if (!(i === leads.length - 1)) {
+                await new Promise(resolve => setTimeout(resolve, (Math.floor(Math.random() * (20 - 10 + 1)) + 20) * 1000));
+            }
         }
 
         // Cambiando estado a Acabado
@@ -439,19 +385,15 @@ export const launchColdApproach = async (req: Request, res: Response) => {
             const res = await fetch(SHEETS_HOOK_URL, {
                 method: "POST",
                 headers: {
-                "Content-Type": "text/plain;charset=utf-8",
+                    "Content-Type": "text/plain;charset=utf-8",
                 },
                 body: JSON.stringify({ adminAction: "Acabado" }),
             });
         } catch (sheetError) {
             console.error('No se pudo actualizar la hoja para', sheetError);
         }
-        
-    }catch(error){
-            res.status(500).json({ message: 'Failed to execute cold approach' });
+
+    } catch (error) {
+        res.status(500).json({ message: 'Failed to execute cold approach' });
     }
 };
-
-
-
-
