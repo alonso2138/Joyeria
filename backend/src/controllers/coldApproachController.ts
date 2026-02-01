@@ -53,6 +53,13 @@ const toInt = (value: unknown) => {
     return Number.isFinite(parsed) ? parsed : 0;
 };
 
+const resolveSpintax = (text: string): string => {
+    return text.replace(/\{([^{}]+)\}/g, (_, options) => {
+        const choices = options.split('|');
+        return choices[Math.floor(Math.random() * choices.length)];
+    });
+};
+
 const mergeLeadRecords = (a: Lead, b: Lead): Lead => ({
     nombre: b.nombre || a.nombre,
     email: a.email,
@@ -312,7 +319,7 @@ export const launchColdApproach = async (req: Request, res: Response) => {
 
             console.log(JSON.stringify(leads[i]))
 
-            const horarios = ['08:15-11:45', '14:45-17:00'];
+            const horarios = ['09:15-13:00', '15:00-18:00'];
             let diaValidado = false;
             let horarioValidado = false;
 
@@ -361,10 +368,10 @@ export const launchColdApproach = async (req: Request, res: Response) => {
 
             console.log("Enviando mail...")
 
-            await sendMail(
-                `${leads[i].email}`,
-                `Cuando un cliente duda entre dos piezas`,
-                `Hola!<br><br>Seguro que te pasa a menudo: un cliente mira una pulsera o un reloj, le gusta pero no termina de decidirse.<br><br>Estoy ayudando a algunas joyerias a que el cliente se decida antes de comprar, usando una pagina donde puede verse la joya que quiera puesta desde el movil en segundos.<br><br>Puedes probarlo tu mismo aqui (sin registro) en apenas 10 segundos:<br><a href="https://visualizalo.es?id=${encodedEmail}">Probar el probador virtual</a><br><br>Si os parece interesante la idea, os invito a hacer una prueba gratuita, con vuestras piezas, para que veais si realmente os sirve en vuestro dia a dia.<br><br>Si no es algo que encaje con vuestra forma de vender, dimelo sin problema, se agradece cualquier feedback.<br><br>Muchas gracias por su tiempo,<br>Alonso Valls<br><br><img src="https://api.visualizalo.es/api/trigger/cold-abierto?id=${encodedEmail}" alt="" width="1" height="1" style="display:none!important;min-height:0;height:0;max-height:0;width:0;max-width:0;opacity:0;overflow:hidden;mso-hide:all;" />`);
+            const subject = resolveSpintax(`{Cuando un cliente duda entre dos piezas|Dudas entre dos joyas|Ayudar al cliente a decidir entre piezas|Sobre la duda de los clientes con las joyas}`);
+            const body = resolveSpintax(`{Hola!|Buenas,|Qué tal?|Buenos días,}<br><br>{Seguro que te pasa a menudo|Te escribo porque seguro que te pasa}: un cliente mira una pulsera o un reloj, le gusta pero no termina de decidirse.<br><br>{Estoy ayudando a algunas joyerias a|Ayudo a joyerías a} que el cliente se decida antes de comprar, usando una pagina donde puede verse la joya que quiera puesta desde el movil en segundos.<br><br>{Puedes probarlo tu mismo aqui|Pruébalo tú mismo aquí} (sin registro) en apenas 10 segundos:<br><a href="https://visualizalo.es?id=${encodedEmail}">Probar el probador virtual</a><br><br>Si {os parece interesante la idea|te interesa}, os invito a hacer una prueba gratuita, con vuestras piezas, para que veais si realmente os sirve en vuestro dia a dia.<br><br>{Si no es algo que encaje con vuestra forma de vender, dimelo sin problema|Cualquier feedback es bienvenido si crees que no encaja con vosotros}, se agradece cualquier feedback.<br><br>Muchas gracias por su tiempo,<br>Alonso Valls<br><br><img src="https://api.visualizalo.es/api/trigger/cold-abierto?id=${encodedEmail}" alt="" width="1" height="1" style="display:none!important;min-height:0;height:0;max-height:0;width:0;max-width:0;opacity:0;overflow:hidden;mso-hide:all;" />`);
+
+            await sendMail(`${leads[i].email}`, subject, body);
 
             console.log("Mail enviado, enviando notificacion de telegram")
 
@@ -376,7 +383,7 @@ export const launchColdApproach = async (req: Request, res: Response) => {
 
             // Delay arbitrario para siguiente mail => Entre 10 y 20s
             if (!(i === leads.length - 1)) {
-                await new Promise(resolve => setTimeout(resolve, (Math.floor(Math.random() * (20 - 10 + 1)) + 20) * 1000));
+                await new Promise(resolve => setTimeout(resolve, (Math.floor(Math.random() * (25 - 15 + 1)) + 15) * 1000));
             }
         }
 

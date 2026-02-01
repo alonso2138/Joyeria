@@ -53,6 +53,13 @@ const toInt = (value: unknown) => {
     return Number.isFinite(parsed) ? parsed : 0;
 };
 
+const resolveSpintax = (text: string): string => {
+    return text.replace(/\{([^{}]+)\}/g, (_, options) => {
+        const choices = options.split('|');
+        return choices[Math.floor(Math.random() * choices.length)];
+    });
+};
+
 const mergeLeadRecords = (a: Lead, b: Lead): Lead => ({
     nombre: b.nombre || a.nombre,
     email: a.email,
@@ -295,9 +302,14 @@ export const launchFollowUp = async (req: Request, res: Response) => {
             console.error('No se pudo actualizar la hoja para', sheetError);
         }
 
+        // Le decimos al admin que se han pasado las validaciones y el proceso está en marcha
+        console.log("Campaña validada, diciendoselo al admin")
+        res.status(200).json({ message: 'Follow-up executed' });
+        console.log("Respuesta enviada correctamente")
+
         for (let i = 0; i < leads.length; i++) {
             const lead = leads[i];
-            const horarios = ['08:15-12:45', '14:45-17:00'];
+            const horarios = ['09:15-13:00', '15:00-18:00'];
             let diaValidado = false;
             let horarioValidado = false;
 
@@ -347,10 +359,10 @@ export const launchFollowUp = async (req: Request, res: Response) => {
             }
 
             console.log("Enviando mail...")
-            await sendMail(
-                `${lead.email}`,
-                `¿Lo probamos con vuestras joyas?`,
-                `Hola!<br><br>Te escribo porque el otro día te envié el probador virtual de joyas y no sé si pudiste llegar a probarlo.<br><br>Te dejo el enlace de nuevo por aquí por si acaso:<br><a href="https://visualizalo.es?id=${encodedEmail}">https://visualizalo.es</a><br><br>A varias joyerías les está funcionando bien para ayudar al cliente a decidirse cuando duda entre piezas, tanto en tienda como online.<br><br>Si te parece, puedo prepararos una prueba gratuita con alguna de vuestras joyas para que veáis si realmente os sirve o no.<br>En 5 minutos te lo enseño y listo, sin compromiso ni coste.<br><br>¿Te viene mejor esta semana o la siguiente?<br><br>Muchas gracias por su tiempo,<br>Alonso Valls<br><br><img src="https://api.visualizalo.es/api/trigger/follow-abierto?id=${encodedEmail}" alt="" width="1" height="1" style="display:none!important;min-height:0;height:0;max-height:0;width:0;max-width:0;opacity:0;overflow:hidden;mso-hide:all;" />`);
+            const subject = resolveSpintax(`{¿Lo probamos con vuestras joyas?|¿Hacemos la prueba con vuestras piezas?|Prueba gratuita con vuestras joyas|Sobre vuestro probador virtual (prueba gratuita)}`);
+            const body = resolveSpintax(`{Hola!|Buenas,|Qué tal?|Hola de nuevo,}<br><br>{Te escribo porque el otro día te envié|Hace unos días te mandé} el probador virtual de joyas y no sé si pudiste llegar a probarlo.<br><br>Te dejo el enlace de nuevo por aquí por si acaso:<br><a href="https://visualizalo.es?id=${encodedEmail}">https://visualizalo.es</a><br><br>{A varias joyerías|A otros compañeros} les está funcionando bien para ayudar al cliente a decidirse cuando duda entre piezas, tanto en tienda como online.<br><br>Si te parece, puedo prepararos una prueba gratuita con {alguna de vuestras joyas|alguna pieza vuestra} para que veáis si realmente os sirve o no.<br>En 5 minutos te lo enseño y listo, sin compromiso ni coste.<br><br>¿Te viene mejor esta semana o la siguiente?<br><br>Muchas gracias por su tiempo,<br>Alonso Valls<br><br><img src="https://api.visualizalo.es/api/trigger/follow-abierto?id=${encodedEmail}" alt="" width="1" height="1" style="display:none!important;min-height:0;height:0;max-height:0;width:0;max-width:0;opacity:0;overflow:hidden;mso-hide:all;" />`);
+
+            await sendMail(`${lead.email}`, subject, body);
             console.log("Mail enviado, enviando notificacion de telegram")
 
             await StorageHelper.updateEvents(lead.email, "follow-up-sent");
@@ -359,9 +371,9 @@ export const launchFollowUp = async (req: Request, res: Response) => {
 
             await updateLeadEstadoInSheet(lead.email, "Follow-up enviado");
 
-            // Delay arbitrario para siguiente mail => Entre 10s y 20s
+            // Delay arbitrario para siguiente mail => Entre 15s y 25s
             if (!(i === leads.length - 1)) {
-                await new Promise(resolve => setTimeout(resolve, (Math.floor(Math.random() * (20 - 10 + 1)) + 10) * 1000));
+                await new Promise(resolve => setTimeout(resolve, (Math.floor(Math.random() * (25 - 15 + 1)) + 15) * 1000));
             }
         }
         // Actualizar estado de la campaña en Google Sheets a Acabado
@@ -376,9 +388,9 @@ export const launchFollowUp = async (req: Request, res: Response) => {
         } catch (sheetError) {
             console.error('No se pudo actualizar la hoja para', sheetError);
         }
-
-        res.status(200).json({ message: 'Follow-up executed' });
     } catch (error) {
-        res.status(500).json({ message: 'Failed to execute follow-up' });
+        if (!res.headersSent) {
+            res.status(500).json({ message: 'Failed to execute follow-up' });
+        }
     }
 };
