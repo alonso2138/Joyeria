@@ -6,9 +6,9 @@ import { CustomJewelOptions } from '../types';
 import { useConfig } from '../hooks/useConfig';
 import Spinner from '../components/ui/Spinner';
 
-type StepId = 'tipo' | 'material' | 'piedra' | 'talla' | 'grabado' | 'resumen';
+type StepId = 'tipo' | 'material' | 'piedra' | 'grabado' | 'resumen';
 
-const stepOrder: StepId[] = ['tipo', 'material', 'piedra', 'talla', 'grabado', 'resumen'];
+const stepOrder: StepId[] = ['tipo', 'material', 'piedra', 'grabado', 'resumen'];
 
 const cardMotion = {
   initial: { opacity: 0, y: 12 },
@@ -22,24 +22,9 @@ const CustomizePage: React.FC = () => {
   const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState<StepId>('tipo');
   const [options, setOptions] = useState<CustomJewelOptions>({ pieceType: '', material: '', stonesOrColors: '', measurements: '', engraving: '', description: '' });
-  const [sizeValue, setSizeValue] = useState<number | null>(null);
   const [errors, setErrors] = useState<string | null>(null);
 
   const customization = config?.customizationOptions;
-
-  const sizeConfig = useMemo(() => {
-    if (!customization?.sizePresets) return { label: 'Talla', unit: '', min: 0, max: 100, step: 1, description: '' };
-    return customization.sizePresets[options.pieceType] || Object.values(customization.sizePresets)[0];
-  }, [options.pieceType, customization]);
-
-  useEffect(() => {
-    if (sizeConfig) {
-      setSizeValue(sizeConfig.min);
-      const label = sizeConfig.label;
-      const valueText = sizeConfig.unit === 'talla' ? `Talla ${sizeConfig.min}` : `${sizeConfig.min} ${sizeConfig.unit}`;
-      setOptions(prev => ({ ...prev, measurements: `${label}: ${valueText}` }));
-    }
-  }, [sizeConfig]);
 
   const goTo = (step: StepId) => {
     setErrors(null);
@@ -49,7 +34,6 @@ const CustomizePage: React.FC = () => {
   const validateStep = (step: StepId) => {
     if (step === 'tipo' && !options.pieceType) return 'Selecciona el tipo de pieza para continuar.';
     if (step === 'material' && !options.material) return 'Elige un material para continuar.';
-    if (step === 'talla' && !options.measurements) return 'Define la talla/longitud para continuar.';
     return null;
   };
 
@@ -71,7 +55,7 @@ const CustomizePage: React.FC = () => {
 
   const handleSubmit = (e?: React.FormEvent) => {
     if (e) e.preventDefault();
-    const message = validateStep('talla') || validateStep('material') || validateStep('tipo');
+    const message = validateStep('material') || validateStep('tipo');
     if (message) {
       setErrors(message);
       setCurrentStep(stepOrder.find(s => validateStep(s) === message) || 'tipo');
@@ -220,44 +204,7 @@ const CustomizePage: React.FC = () => {
               </StepWrapper>
             )}
 
-            {currentStep === 'talla' && (
-              <StepWrapper key="talla">
-                <div className="flex items-start justify-between gap-4 mb-6">
-                  <div>
-                    <h2 className="text-2xl font-serif">4. Medidas</h2>
-                    <p className="text-sm text-gray-300">{sizeConfig.description}</p>
-                  </div>
-                  <span className="text-sm text-gray-400">Obligatorio</span>
-                </div>
-                <div className="space-y-4">
-                  <div className="flex justify-between text-sm text-gray-200">
-                    <span>{sizeConfig.label}</span>
-                    <span className="font-semibold text-[var(--primary-color)]">
-                      {sizeValue !== null ? (sizeConfig.unit === 'talla' ? `Talla ${sizeValue}` : `${sizeValue} ${sizeConfig.unit}`) : '—'}
-                    </span>
-                  </div>
-                  <motion.input
-                    type="range"
-                    min={sizeConfig.min}
-                    max={sizeConfig.max}
-                    step={sizeConfig.step}
-                    value={sizeValue ?? sizeConfig.min}
-                    onChange={(e) => {
-                      const val = parseFloat(e.target.value);
-                      setSizeValue(val);
-                      const valueText = sizeConfig.unit === 'talla' ? `Talla ${val}` : `${val} ${sizeConfig.unit}`;
-                      setOptions(prev => ({ ...prev, measurements: `${sizeConfig.label}: ${valueText}` }));
-                    }}
-                    className="w-full accent-[var(--primary-color)]"
-                    whileTap={{ scale: 0.99 }}
-                  />
-                  <div className="flex justify-between text-xs text-gray-500">
-                    <span>{sizeConfig.min} {sizeConfig.unit === 'talla' ? '' : sizeConfig.unit}</span>
-                    <span>{sizeConfig.max} {sizeConfig.unit === 'talla' ? '' : sizeConfig.unit}</span>
-                  </div>
-                </div>
-              </StepWrapper>
-            )}
+
 
             {currentStep === 'grabado' && (
               <StepWrapper key="grabado">

@@ -43,41 +43,19 @@ export const generateTryOnImage = async (
     const userImagePart = userImageToInlineData(userImageBase64);
     const jewelryImagePart = await urlToInlineData(jewelryOverlayUrl);
 
-    // Obtener prompt específico por categoría desde la config o usar fallbacks refinados
+    // Obtener prompt específico por categoría desde la config
     const categoryPrompts = config?.aiPrompts?.categoryPrompts || {};
     const itemKey = itemType.toLowerCase();
 
-    const fallbacks: Record<string, string> = {
-      // Anillos
-      ring: "Photorealistic virtual try-on: Place this ring accurately on the base of the person's finger. Match perspective, metallic luster, and lighting.",
-      anillo: "Photorealistic virtual try-on: Place this ring accurately on the base of the person's finger. Match perspective, metallic luster, and lighting.",
+    console.log("itemKey", itemKey);
 
-      // Collares
-      necklace: "Photorealistic virtual try-on: Place this necklace naturally around the person's neck. Match skin tone, gravity, and lighting.",
-      collar: "Photorealistic virtual try-on: Place this necklace naturally around the person's neck. Match skin tone, gravity, and lighting.",
-
-      // Pendientes
-      earring: "Photorealistic virtual try-on: Place this earring exactly on the earlobe. Maintain correct scale and orientation. Match lighting and create a subtle shadow on the skin for realism.",
-      pendiente: "Photorealistic virtual try-on: Place this earring exactly on the earlobe. Maintain correct scale and orientation. Match lighting and create a subtle shadow on the skin for realism.",
-
-      // Pulseras
-      bracelet: "Photorealistic virtual try-on: Fit this bracelet around the wrist with realistic metal reflections and natural drape.",
-      pulsera: "Photorealistic virtual try-on: Fit this bracelet around the wrist with realistic metal reflections and natural drape.",
-
-      // Relojes
-      watch: "Photorealistic virtual try-on: Place this watch precisely on the person's wrist. Adjust the strap curvature to fit the wrist perfectly. Match lighting, metallic reflections, and skin shadows.",
-      reloj: "Photorealistic virtual try-on: Place this watch precisely on the person's wrist. Adjust the strap curvature to fit the wrist perfectly. Match lighting, metallic reflections, and skin shadows.",
-
-      // Moda / Complementos
-      bolso: "Photorealistic virtual try-on: Place this bag as if being held or worn. Match shadows, perspective, and lighting.",
-      camiseta: "Photorealistic virtual fashion: Fit this t-shirt over the person's torso. Match body shape and fabric wrinkles.",
-      camisa: "Photorealistic virtual fashion: Fit this shirt over the person's torso. Match shoulder profile and fabric drape."
-    };
-
-    const finalPrompt = categoryPrompts[itemKey] || fallbacks[itemKey] || `Photorealistic virtual try-on: Place this ${itemKey} on the person accurately. Match lighting and shadows.`;
+    const finalPrompt = categoryPrompts[itemKey] || `Photorealistic virtual try-on: Place this ${itemKey} on the person accurately. Match lighting and shadows.`;
     const model = 'gemini-2.5-flash-image';
     console.log(`[Gemini Try-On] Model: ${model}`);
     console.log(`[Gemini Try-On] Prompt: ${finalPrompt}`);
+
+    console.log("userImagePart", userImagePart);
+    console.log("jewelryImagePart", jewelryImagePart);
 
     const response = await client.models.generateContent({
       model: model,

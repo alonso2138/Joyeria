@@ -1,13 +1,13 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { JewelryItem, EventType } from '../types';
-import { getJewelryBySlug, logEvent, getImageUrl } from '../services/api';
+import { getJewelryBySlug, logEvent } from '../services/api';
 import { trackIfAvailable } from '../services/tracking';
-import { generateTryOnImage } from '../services/geminiService';
 import Spinner from '../components/ui/Spinner';
 import Button from '../components/ui/Button';
 import { useConfig } from '../hooks/useConfig';
+import { useTryOn } from '../hooks/useTryOn';
 
 type TryOnStep = 'loading_item' | 'instructions' | 'camera' | 'processing' | 'result';
 
@@ -17,19 +17,35 @@ const TryOnPage: React.FC = () => {
     const navigate = useNavigate();
     const [item, setItem] = useState<JewelryItem | null>(null);
     const [step, setStep] = useState<TryOnStep>('loading_item');
-    const [resultImage, setResultImage] = useState<string | null>(null);
-    const [previewImage, setPreviewImage] = useState<string | null>(null);
-    const [showFirstPassDebug, setShowFirstPassDebug] = useState(false);
     const [showDetails, setShowDetails] = useState(false);
-    const [isProcessingAI, setIsProcessingAI] = useState(false);
-    const [error, setError] = useState<string | null>(null);
-    const isProcessingRef = useRef(false);
-    const [facingMode, setFacingMode] = useState<'user' | 'environment'>('user');
-    const [countdown, setCountdown] = useState<number | null>(null);
 
-    const videoRef = useRef<HTMLVideoElement>(null);
-    const canvasRef = useRef<HTMLCanvasElement>(null);
-    const progressPreviewTimeout = useRef<number | null>(null);
+    const {
+        cameraStatus,
+        cameraReady,
+        isProcessing,
+        countdown,
+        previewImage,
+        resultImage,
+        tryOnError,
+        videoRef,
+        canvasRef,
+        itemMetadata,
+        startCamera,
+        stopCamera,
+        toggleCamera,
+        triggerCapture,
+        reset
+    } = useTryOn({
+        selectedItem: item,
+        config,
+        onSuccess: () => {
+            logEvent(EventType.TRYON_SUCCESS, item?.id || '');
+            trackIfAvailable('try-on');
+            setStep('result');
+            setTimeout(() => setShowDetails(true), 500);
+        },
+        isMirrorMode: false // Demo traditionally doesn't mirror, but we could enable it if requested
+    });
 
     useEffect(() => {
         const fetchItem = async () => {
@@ -46,31 +62,6 @@ const TryOnPage: React.FC = () => {
         fetchItem();
     }, [slug, navigate]);
 
-    const stopCamera = useCallback(() => {
-        if (videoRef.current && videoRef.current.srcObject) {
-            const stream = videoRef.current.srcObject as MediaStream;
-            stream.getTracks().forEach(track => track.stop());
-            videoRef.current.srcObject = null;
-        }
-    }, []);
-
-    const startCamera = useCallback(async () => {
-        if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia && videoRef.current) {
-            try {
-                // Stop previous tracks before starting new ones to avoid conflicts on some devices
-                stopCamera();
-                const stream = await navigator.mediaDevices.getUserMedia({
-                    video: { facingMode: facingMode }
-                });
-                videoRef.current.srcObject = stream;
-            } catch (err) {
-                console.error('Error accessing camera: ', err);
-                alert('No se pudo acceder a la cámara. Por favor, revisa los permisos.');
-                navigate(`/jewelry/${slug}`);
-            }
-        }
-    }, [slug, navigate, facingMode, stopCamera]);
-
     useEffect(() => {
         if (step === 'camera') {
             startCamera();
@@ -78,135 +69,19 @@ const TryOnPage: React.FC = () => {
             stopCamera();
         }
         return () => { stopCamera(); };
-    }, [step, startCamera, stopCamera, facingMode]);
+    }, [step, startCamera, stopCamera]);
 
-    const toggleCamera = () => {
-        setFacingMode(prev => prev === 'user' ? 'environment' : 'user');
-    };
-
-    const captureToBase64 = (video: HTMLVideoElement, canvas: HTMLCanvasElement) => {
-        const maxWidth = 1280;
-        const maxHeight = 720;
-        const { videoWidth, videoHeight } = video;
-
-        if (!videoWidth || !videoHeight) {
-            return null;
-        }
-
-        const aspect = videoWidth / videoHeight;
-        let targetWidth = maxWidth;
-        let targetHeight = Math.round(targetWidth / aspect);
-        if (targetHeight > maxHeight) {
-            targetHeight = maxHeight;
-            targetWidth = Math.round(targetHeight * aspect);
-        }
-
-        canvas.width = targetWidth;
-        canvas.height = targetHeight;
-        const context = canvas.getContext('2d');
-        context?.drawImage(video, 0, 0, targetWidth, targetHeight);
-        return canvas.toDataURL('image/jpeg', 0.7);
-    };
-
-    const capturePhoto = async () => {
-        if (isProcessingRef.current || countdown !== null) return;
-        setError(null);
-
-        if (videoRef.current && canvasRef.current && item && step !== 'processing') {
-            const needsTimer = ['bolso', 'camiseta', 'camisa'].includes(item.category.toLowerCase());
-
-            if (needsTimer && countdown === null) {
-                setCountdown(3);
-                const timerId = setInterval(() => {
-                    setCountdown(prev => {
-                        if (prev === 1) {
-                            clearInterval(timerId);
-                            setCountdown(null);
-                            executeCapture();
-                            return null;
-                        }
-                        return prev !== null ? prev - 1 : null;
-                    });
-                }, 1000);
-            } else {
-                executeCapture();
-            }
-        }
-    };
-
-    const executeCapture = async () => {
-        if (!videoRef.current || !canvasRef.current || !item || isProcessingRef.current) return;
-
-        isProcessingRef.current = true;
-        setIsProcessingAI(true);
-        setError(null);
-
-        try {
-            const video = videoRef.current;
-            const canvas = canvasRef.current;
-
-            // Intentos de captura con reintento aumentado para mayor robustez
-            let userImageBase64 = null;
-            for (let i = 0; i < 10; i++) {
-                userImageBase64 = captureToBase64(video, canvas);
-                if (userImageBase64 && userImageBase64.length > 2000) break;
-                await new Promise(r => setTimeout(r, 200));
-            }
-
-            if (!userImageBase64) {
-                throw new Error('La cámara no está lista para capturar. Reintenta asegurándote de que el video se ve.');
-            }
-
+    useEffect(() => {
+        if (isProcessing && step !== 'processing') {
             setStep('processing');
-            setPreviewImage(userImageBase64); // Freeze immediately
-            stopCamera();
-
-            const composedImage = await generateTryOnImage(
-                userImageBase64,
-                getImageUrl(item.overlayAssetUrl),
-                item.category.toLowerCase(),
-                config
-            );
-
-            setResultImage(composedImage);
-
-            // Give time to see the swap while blurred
-            await new Promise(r => setTimeout(r, 800));
-
-            logEvent(EventType.TRYON_SUCCESS, item.id);
-            trackIfAvailable('try-on');
-
-            // Unblur starts
-            setIsProcessingAI(false);
-            setStep('result');
-            setTimeout(() => setShowDetails(true), 500);
-        } catch (err: any) {
-            console.error('Error in virtual try-on:', err);
-            setError(err.message || 'Error inesperado al procesar el probador.');
-            setStep('camera');
-            setPreviewImage(null);
-            setIsProcessingAI(false);
-        } finally {
-            isProcessingRef.current = false;
         }
-    };
+    }, [isProcessing, step]);
 
     const renderContent = () => {
         switch (step) {
             case 'loading_item':
                 return <div className="h-full flex items-center justify-center"><Spinner text="Preparando probador..." /></div>;
             case 'instructions':
-                const getPoseAdvice = () => {
-                    switch (item?.category) {
-                        case 'Anillo': return 'Muestra tu mano abierta con los dedos relajados frente a la cámara.';
-                        case 'Collar': return 'Encuadra tu cuello y parte superior del pecho de forma frontal.';
-                        case 'Pulsera': case 'Reloj': return 'Muestra tu muñeca de lado o de frente, evitando sombras fuertes.';
-                        case 'Pendiente': return 'Muestra tu oreja de perfil con el pelo retirado.';
-                        case 'Bolso': return 'Sujeta el bolso en tu mano o cuélgalo de tu hombro frente a la cámara.';
-                        case 'Camiseta': case 'Camisa': return 'Colócate frente a la cámara mostrando tu torso completo. Intenta que la iluminación sea uniforme.';
-                        default: return 'Colócate en el centro del encuadre para ver el resultado.';
-                    }
-                };
                 return (
                     <div className="h-full flex flex-col items-center justify-center p-8 text-center bg-black/90">
                         <motion.div
@@ -222,7 +97,7 @@ const TryOnPage: React.FC = () => {
                             </div>
                             <h2 className="text-3xl font-serif text-white mb-4">Consejo de Posado</h2>
                             <p className="text-gray-300 text-lg mb-8 leading-relaxed">
-                                {getPoseAdvice()}
+                                {itemMetadata.poseAdvice}
                             </p>
                             <Button variant="primary" className="w-full py-4 text-lg" onClick={() => setStep('camera')}>
                                 Entendido, abrir cámara
@@ -241,24 +116,18 @@ const TryOnPage: React.FC = () => {
                             className="absolute inset-0 w-full h-full object-cover"
                         ></video>
 
-                        {/* Overlay de Carga durante la captura */}
-                        {isProcessingAI && (
-                            <div className="absolute inset-0 z-40 bg-black/60 backdrop-blur-sm flex items-center justify-center">
-                                <Spinner text="Capturando..." />
-                            </div>
-                        )}
                         <canvas ref={canvasRef} className="hidden"></canvas>
                         <div className="absolute inset-0 bg-black bg-opacity-30"></div>
                         <div className="z-10 text-center text-white p-4">
                             <h2 className="text-3xl font-serif">Pruébate: {item?.name}</h2>
                             <p className="mt-2">{config?.uiLabels?.tryOnInstruction || 'Coloca la pieza en el encuadre y captura.'}</p>
-                            {error && (
+                            {tryOnError && (
                                 <motion.div
                                     initial={{ opacity: 0, y: -10 }}
                                     animate={{ opacity: 1, y: 0 }}
                                     className="mt-4 bg-red-500/80 backdrop-blur-md px-4 py-2 rounded-lg text-sm border border-red-400"
                                 >
-                                    {error}
+                                    {tryOnError}
                                 </motion.div>
                             )}
                         </div>
@@ -291,8 +160,8 @@ const TryOnPage: React.FC = () => {
                         </AnimatePresence>
 
                         <button
-                            onClick={capturePhoto}
-                            disabled={countdown !== null}
+                            onClick={triggerCapture}
+                            disabled={countdown !== null || !cameraReady}
                             className={`absolute bottom-10 z-10 w-20 h-20 rounded-full border-4 border-gray-800 transition-all flex items-center justify-center overflow-hidden
                                 ${countdown !== null ? 'bg-red-500 border-red-700' : 'bg-white'}
                             `}
@@ -312,10 +181,11 @@ const TryOnPage: React.FC = () => {
                             <img
                                 src={resultImage || previewImage!}
                                 className="absolute inset-0 w-full h-full object-cover blur-xl scale-110 transition-all duration-1000"
+                                alt="Fondo borroso"
                             />
                         )}
                         <div className="relative z-10 flex flex-col items-center bg-black/20 p-8 rounded-full backdrop-blur-sm">
-                            <Spinner text={config?.uiLabels?.processingTryOn || 'Aplicando IA...'} />
+                            <Spinner text={itemMetadata.loadingText || 'Aplicando IA...'} />
                             <p className="mt-4 text-gray-300">Nuestra IA esta creando tu imagen personalizada.</p>
                         </div>
                     </div>
@@ -344,8 +214,11 @@ const TryOnPage: React.FC = () => {
                                     <div className="w-12 h-1.5 bg-gray-600 rounded-full mx-auto mb-4 cursor-pointer" onClick={() => setShowDetails(false)}></div>
                                     <h2 className="text-3xl font-serif text-white">{item?.name}</h2>
                                     <p className="text-xl text-[var(--primary-color)] my-2">{new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(item?.price || 0)}</p>
-                                    <p className="text-gray-300 text-sm mb-6">{item?.description.substring(0, 150)}...</p>
-                                    <Button variant="primary" className="w-full" onClick={() => logEvent(EventType.CLICK_BUY, item?.id || '')}>{config?.uiLabels?.buyButton || 'Quiero esto'}</Button>
+                                    <p className="text-gray-300 text-sm mb-6">{item?.description?.substring(0, 150)}...</p>
+                                    <div className="flex gap-4">
+                                        <Button variant="secondary" className="flex-1" onClick={() => { reset(); setStep('camera'); }}>Repetir</Button>
+                                        <Button variant="primary" className="flex-2" onClick={() => logEvent(EventType.CLICK_BUY, item?.id || '')}>{config?.uiLabels?.buyButton || 'Quiero esto'}</Button>
+                                    </div>
                                 </motion.div>
                             )}
                         </AnimatePresence>
