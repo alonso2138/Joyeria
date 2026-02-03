@@ -18,7 +18,7 @@ const TryOnPage: React.FC = () => {
     const [item, setItem] = useState<JewelryItem | null>(null);
     const [step, setStep] = useState<TryOnStep>('loading_item');
     const [resultImage, setResultImage] = useState<string | null>(null);
-    const [firstPassImage, setFirstPassImage] = useState<string | null>(null);
+    const [previewImage, setPreviewImage] = useState<string | null>(null);
     const [showFirstPassDebug, setShowFirstPassDebug] = useState(false);
     const [showDetails, setShowDetails] = useState(false);
     const [isProcessingAI, setIsProcessingAI] = useState(false);
@@ -149,7 +149,7 @@ const TryOnPage: React.FC = () => {
             let userImageBase64 = null;
             for (let i = 0; i < 10; i++) {
                 userImageBase64 = captureToBase64(video, canvas);
-                if (userImageBase64) break;
+                if (userImageBase64 && userImageBase64.length > 2000) break;
                 await new Promise(r => setTimeout(r, 200));
             }
 
@@ -158,6 +158,7 @@ const TryOnPage: React.FC = () => {
             }
 
             setStep('processing');
+            setPreviewImage(userImageBase64); // Freeze immediately
             stopCamera();
 
             const composedImage = await generateTryOnImage(
@@ -168,17 +169,25 @@ const TryOnPage: React.FC = () => {
             );
 
             setResultImage(composedImage);
+
+            // Give time to see the swap while blurred
+            await new Promise(r => setTimeout(r, 800));
+
             logEvent(EventType.TRYON_SUCCESS, item.id);
             trackIfAvailable('try-on');
+
+            // Unblur starts
+            setIsProcessingAI(false);
             setStep('result');
             setTimeout(() => setShowDetails(true), 500);
         } catch (err: any) {
             console.error('Error in virtual try-on:', err);
             setError(err.message || 'Error inesperado al procesar el probador.');
             setStep('camera');
+            setPreviewImage(null);
+            setIsProcessingAI(false);
         } finally {
             isProcessingRef.current = false;
-            setIsProcessingAI(false);
         }
     };
 
@@ -298,8 +307,14 @@ const TryOnPage: React.FC = () => {
                 );
             case 'processing':
                 return (
-                    <div className="relative h-full w-full flex flex-col items-center justify-center text-center p-4 overflow-hidden bg-black">
-                        <div className="relative z-10 flex flex-col items-center">
+                    <div className="relative h-full w-full flex flex-col items-center justify-center text-center overflow-hidden bg-black">
+                        {(previewImage || resultImage) && (
+                            <img
+                                src={resultImage || previewImage!}
+                                className="absolute inset-0 w-full h-full object-cover blur-xl scale-110 transition-all duration-1000"
+                            />
+                        )}
+                        <div className="relative z-10 flex flex-col items-center bg-black/20 p-8 rounded-full backdrop-blur-sm">
                             <Spinner text={config?.uiLabels?.processingTryOn || 'Aplicando IA...'} />
                             <p className="mt-4 text-gray-300">Nuestra IA esta creando tu imagen personalizada.</p>
                         </div>
@@ -308,7 +323,16 @@ const TryOnPage: React.FC = () => {
             case 'result':
                 return (
                     <div className="relative w-full h-full bg-black">
-                        {resultImage && <img src={resultImage} alt="Virtual try-on result" className="w-full h-full object-contain" />}
+                        {resultImage && (
+                            <motion.img
+                                initial={{ filter: 'blur(20px)', scale: 1.1 }}
+                                animate={{ filter: 'blur(0px)', scale: 1 }}
+                                transition={{ duration: 0.8 }}
+                                src={resultImage}
+                                alt="Virtual try-on result"
+                                className="w-full h-full object-contain"
+                            />
+                        )}
                         <AnimatePresence>
                             {showDetails && (
                                 <motion.div

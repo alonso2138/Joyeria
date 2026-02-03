@@ -110,10 +110,12 @@ const HomePage: React.FC = () => {
       return;
     }
     videoEl.srcObject = stream;
-    setCameraReady(true);
+    // We don't setCameraReady(true) here anymore, we wait for metadata and play event
     videoEl.onloadedmetadata = () => {
       console.log('[CAM] metadata cargada. Dimensiones', videoEl.videoWidth, videoEl.videoHeight);
-      setCameraReady(videoEl.videoWidth > 0 && videoEl.videoHeight > 0);
+      if (videoEl.videoWidth > 0 && videoEl.videoHeight > 0) {
+        setCameraReady(true);
+      }
       playVideoStream();
     };
     playVideoStream();
@@ -308,43 +310,61 @@ const HomePage: React.FC = () => {
     try {
       let userImageBase64: string | null = providedBase64 ?? previewImage;
       if (cameraStatus === 'granted' && videoRef.current && canvasRef.current) {
-        const captured = captureToBase64(videoRef.current, canvasRef.current);
+        // Robust retry loop
+        let captured = null;
+        for (let i = 0; i < 10; i++) {
+          captured = captureToBase64(videoRef.current, canvasRef.current);
+          if (captured && captured.length > 2000) break;
+          await new Promise(r => setTimeout(r, 200));
+        }
+
         if (captured) {
           userImageBase64 = captured;
-          setPreviewImage(captured);
-          console.log('[CAM] Captura realizada. Tamano base64:', captured.length);
+          setPreviewImage(captured); // Freeze image immediately
+          // Set backdrop for processing transition
+          processingTimeoutRef.current = window.setTimeout(() => {
+            setProcessingBackdrop(captured);
+          }, 1500);
         } else {
-          console.warn('[CAM] Captura devolvio null');
+          throw new Error('La cámara no está lista para capturar.');
         }
       }
-      if (userImageBase64) {
-        processingTimeoutRef.current = window.setTimeout(() => {
-          setProcessingBackdrop(userImageBase64);
-        }, 1500);
-      }
-      if (!userImageBase64) {
-        throw new Error('Necesitamos una foto para aplicar la joya.');
-      }
-      stopCamera();
+
+      if (!userImageBase64) throw new Error('Necesitamos una foto.');
+
+      // Inicia procesamiento (se pone borrosa la imagen en el UI)
+      setIsProcessing(true);
       const overlayUrl = getImageUrl(selectedItem.overlayAssetUrl);
-      console.log('[TRYON] Llamando a Gemini con overlay:', overlayUrl);
+
       const composed = await generateTryOnImage(userImageBase64, overlayUrl);
-      console.log('[TRYON] Imagen compuesta recibida. Tamano:', composed?.length || 0);
+
+      // Sustituye la imagen mientras sigue el blur activo
       setResultImage(composed);
+
+      // Pequeña pausa con la imagen ya cambiada pero borrosa
+      await new Promise(r => setTimeout(r, 800));
+
       if (!trackedStepsRef.current.finished) {
         trackIfAvailable('try-on');
         trackedStepsRef.current.finished = true;
       }
-      setStep(5); // Avanza sin pulsar continuar
+
+      // Quita el procesamiento (inicia el des-borroseo)
+      setIsProcessing(false);
+
+      // Espera a que termine la animación de unblur antes de saltar al paso 5
+      await new Promise(r => setTimeout(r, 600));
+      setStep(5);
     } catch (err) {
       console.error('Error en try-on', err);
-      setTryOnError('No se pudo procesar la imagen. Prueba otra vez o sube una foto.');
+      setTryOnError('No se pudo procesar la imagen. Prueba otra vez.');
+      setIsProcessing(false);
+      setPreviewImage(null); // Return to live video on error
     } finally {
       if (processingTimeoutRef.current) {
         clearTimeout(processingTimeoutRef.current);
         processingTimeoutRef.current = null;
       }
-      setIsProcessing(false);
     }
   };
 
@@ -524,7 +544,7 @@ const HomePage: React.FC = () => {
               Colóquese dentro del encuadre y haz la foto.
             </h2>
             <div className="relative rounded-2xl overflow-hidden border border-white/10 bg-black/50">
-              {cameraStatus === 'granted' ? (
+              {cameraStatus === 'granted' && !previewImage ? (
                 <div className={`relative ${cameraFrameClass} overflow-hidden`}>
                   <video
                     ref={videoRef}
@@ -532,7 +552,7 @@ const HomePage: React.FC = () => {
                     playsInline
                     muted
                     className="absolute inset-0 w-full h-full object-cover"
-                    style={{ opacity: isProcessing ? 0.05 : 1, transform: 'scaleX(-1)' }}
+                    style={{ transform: 'scaleX(-1)' }}
                     onLoadedMetadata={playVideoStream}
                     onPlay={() => {
                       const v = videoRef.current;
@@ -543,40 +563,33 @@ const HomePage: React.FC = () => {
                     }}
                   />
                 </div>
-              ) : previewImage ? (
-                <img src={previewImage} alt="Vista previa" className={`${cameraFrameClass} object-cover opacity-90`} />
+              ) : (previewImage || resultImage) ? (
+                <div className={`relative ${cameraFrameClass} overflow-hidden`}>
+                  <img
+                    src={resultImage || previewImage!}
+                    alt="Vista previa"
+                    className={`w-full h-full object-cover transition-all duration-1000 ${isProcessing ? 'blur-xl scale-105' : 'blur-0 scale-100'}`}
+                  />
+                </div>
               ) : (
                 <div className={`${cameraFrameClass} bg-gradient-to-br from-black/40 via-black/20 to-black/40 flex items-center justify-center text-gray-500 text-sm`}>
-                  Activa la camara o sube una foto para ver aqui la vista previa.
+                  Activa la cámara o sube una foto para ver aquí la vista previa.
                 </div>
               )}
               {isProcessing && (
-                <div className="absolute inset-0">
-                  <div className="absolute inset-0 bg-black/80"></div>
-                  <div
-                    className="absolute inset-0 bg-center bg-cover blur-2xl transition-opacity duration-500"
-                    style={{
-                      backgroundImage: processingBackdrop ? `url(${processingBackdrop})` : undefined,
-                      opacity: processingBackdrop ? 0.6 : 0,
-                    }}
-                  ></div>
-                  <div className="absolute inset-0 bg-black/60"></div>
-                  <div className="relative z-10 h-full flex flex-col items-center justify-center">
-                    <Spinner size={48} text={config?.uiLabels?.processingTryOn || "Aplicando la joya elegida..."} />
-                  </div>
+                <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-black/20 backdrop-blur-[2px]">
+                  <Spinner size={48} text={config?.uiLabels?.processingTryOn || "Aplicando joya..."} />
                 </div>
               )}
               <canvas ref={canvasRef} className="hidden" />
-              <div className="absolute bottom-4 inset-x-0 text-center text-sm text-white/80"></div>
             </div>
             {tryOnError && <p className="text-sm text-red-400">{tryOnError}</p>}
             {cameraError && <p className="text-sm text-red-400">{cameraError}</p>}
             <div className="flex flex-wrap gap-2 items-center">
-              <Button variant="primary" className="px-6 py-2 text-xs md:text-sm" onClick={capturePhotoAndTryOn} disabled={isProcessing}>
-                {isProcessing ? 'Procesando...' : 'Hacer foto y ver resultado'}
+              <Button variant="primary" className="px-6 py-2 text-xs md:text-sm" onClick={capturePhotoAndTryOn} disabled={isProcessing || (cameraStatus === 'granted' && !cameraReady)}>
+                {isProcessing ? 'Procesando...' : (!cameraReady && cameraStatus === 'granted') ? 'Iniciando cámara...' : 'Hacer foto y ver resultado'}
               </Button>
               <Button variant="secondary" className="px-6 py-2 text-xs md:text-sm" onClick={handleUploadClick}>Usar imagen del ordenador</Button>
-
             </div>
             <input
               ref={fileInputRef}
@@ -618,7 +631,7 @@ const HomePage: React.FC = () => {
               </div>
             </div>
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-              <Button variant="secondary" onClick={() => setStep(4)}>Repetir captura</Button>
+              <Button variant="secondary" onClick={() => { setPreviewImage(null); setResultImage(null); setStep(4); }}>Repetir captura</Button>
               <div className="flex flex-col sm:flex-row gap-3">
                 <Button variant="secondary" onClick={() => setStep(2)}>Probar otra pieza</Button>
                 <Button variant="primary" onClick={handleUseResult}>Usar esto con mis joyas</Button>

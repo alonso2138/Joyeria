@@ -141,7 +141,7 @@
       "watch": "Simulate a photorealistic virtual try-on: Place this watch on the wrist. Match the wrist curvature and environment lighting.",
       "bolso": "Simulate a photorealistic virtual try-on: Place this bag as if being held or worn. Integrate the handle naturally with the person's hand or shoulder. Ensure shadows and perspective match perfectly.",
       "camiseta": "Simulate a high-end virtual fashion try-on: Replace the person's current upper garment with this t-shirt. Adapt the fabric to the person's body shape, muscle contours, and posture. Ensure realistic wrinkles, fabric texture, and shadows.",
-      "camisa": "Simulate a high-end virtual fashion try-on: Replace the person's current upper garment with this button-down shirt. Ensure the collar, buttons, and fabric drape naturally over the shoulders and torso with professional photography lighting."
+      "camisa": "Simulate a high-end virtual fashion try-on: Replace the person's current upper garment with this exact shirt. Ensure the collar, buttons, and fabric drape naturally over the shoulders and torso with professional photography lighting as the model picture. Make sure all the details in the original product are included in the try-on."
     },
     "customJewelPrompt": "CAD luxury {sectorName} rendering. Piece: {pieceType}. Material: {material}. Details: {details}.",
     "customJewelRenderPrompt": "Studio {sectorName} product photo. {pieceType}, {material}, {details}."
