@@ -134,13 +134,13 @@
   },
   "aiPrompts": {
     "categoryPrompts": {
-      "ring": "Simulate a photorealistic virtual try-on: Place this ring accurately on the person's finger. Match lighting, skin tone reflections, and hand posture.",
-      "necklace": "Simulate a photorealistic virtual try-on: Place this necklace naturally around the person's neck. Ensure it rests on the skin/chest with realistic gravity and depth.",
-      "earring": "Simulate a photorealistic virtual try-on: Place this earring on the earlobe. Match ear angle and lighting for a seamless integration.",
-      "bracelet": "Simulate a photorealistic virtual try-on: Fit this bracelet around the wrist. Consider arm posture and realistic metal reflections.",
-      "watch": "Simulate a photorealistic virtual try-on: Place this watch on the wrist. Match the wrist curvature and environment lighting.",
-      "bolso": "Simulate a photorealistic virtual try-on: Place this bag as if being held or worn. Integrate the handle naturally with the person's hand or shoulder. Ensure shadows and perspective match perfectly.",
-      "camiseta": "Simulate a high-end virtual fashion try-on: Replace the person's current upper garment with this t-shirt. Adapt the fabric to the person's body shape, muscle contours, and posture. Ensure realistic wrinkles, fabric texture, and shadows.",
+      "ring": "Simulate a high-end virtual jewelry try-on: Place this ring accurately on the base of the person's finger. Adapt the band to the finger's curvature and skin tone. Ensure realistic metal reflections, gemstone sparkle, and soft shadows on the skin. Match the professional photography lighting of the product.",
+      "necklace": "Simulate a high-end virtual jewelry try-on: Place this necklace naturally around the person's neck. Ensure it drapes realistically over the collarbone and skin with proper gravity. Match lighting, metal luster, and create realistic shadows on the chest/neck area.",
+      "earring": "Simulate a high-end virtual jewelry try-on: Attach this earring precisely to the earlobe. Match the ear's angle and orientation perfectly. Ensure realistic metal reflections and that the piece appears to be hanging or fastened naturally with subtle skin shadows.",
+      "bracelet": "Simulate a high-end virtual jewelry try-on: Fit this bracelet around the person's wrist. Match the wrist curvature and arm posture. Ensure realistic metal reflections and appropriate skin contact shadows. Match the lighting environment of the person's photo.",
+      "watch": "Simulate a high-end virtual watch try-on: Wrap this watch precisely around the person's wrist. Adjust the strap curvature and depth to fit the wrist perfectly. Maintain the dial's clarity, crystal reflections, and metallic finish. Ensure perspective and lighting match seamlessly.",
+      "bolso": "Simulate a high-end virtual fashion try-on: Place this bag naturally as if being held by the hand or worn on the shoulder. Integrate the handles/straps with the person's body or grip. Ensure realistic fabric/leather texture, shadows, and perfect perspective alignment.",
+      "camiseta": "Simulate a high-end virtual fashion try-on: Replace the person's current upper garment with this exact t-shirt. Adapt the fabric to the person's body shape, muscle contours, and posture. Ensure realistic wrinkles, fabric texture, and shadows. Match professional photography lighting.",
       "camisa": "Simulate a high-end virtual fashion try-on: Replace the person's current upper garment with this exact shirt. Ensure the collar, buttons, and fabric drape naturally over the shoulders and torso with professional photography lighting as the model picture. Make sure all the details in the original product are included in the try-on."
     },
     "customJewelPrompt": "CAD luxury {sectorName} rendering. Piece: {pieceType}. Material: {material}. Details: {details}.",
