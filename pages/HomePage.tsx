@@ -6,8 +6,10 @@ import { JewelryItem } from '../types';
 import { getFeaturedJewelryItems, getImageUrl } from '../services/api';
 import { generateTryOnImage } from '../services/geminiService';
 import { trackIfAvailable, trackMeeting, trackStepCompleted } from '../services/tracking';
+import { useConfig } from '../hooks/useConfig';
 
 const HomePage: React.FC = () => {
+  const { config, isLoading: configLoading } = useConfig();
   const totalSteps = 6;
   const [step, setStep] = useState(1);
   const [items, setItems] = useState<JewelryItem[]>([]);
@@ -62,7 +64,7 @@ const HomePage: React.FC = () => {
       setItemsLoading(true);
       setItemsError(null);
       try {
-        const data = await getFeaturedJewelryItems();
+        const data = await getFeaturedJewelryItems('main');
         const valid = Array.isArray(data) ? data.filter((it) => it && it.slug && it.imageUrl) : [];
         setItems(valid);
         if (!selectedItemId && valid.length > 0) {
@@ -364,12 +366,12 @@ const HomePage: React.FC = () => {
         return (
           <div className="grid md:grid-cols-5 gap-8 items-start">
             <div className="md:col-span-3 space-y-4">
-              <p className="text-xs uppercase tracking-[0.3em] text-gray-400">Bienvenida</p>
+              <p className="text-xs uppercase tracking-[0.3em] text-gray-400">{config?.branding?.sectorNamePlural || 'Bienvenida'}</p>
               <h1 className="text-[clamp(2.3rem,4.5vh,3.2rem)] font-serif font-bold leading-tight">
-                Convierte visitas en clientes mostrando joyas en tiempo real.
+                {config?.uiLabels?.heroTitle || 'Convierte visitas en clientes mostrando joyas en tiempo real.'}
               </h1>
               <p className="text-base md:text-lg text-gray-300">
-                Las joyerías que lo usan reducen dudas y cierran más ventas online y en tienda.
+                {config?.uiLabels?.heroSubtitle || 'Las joyerías que lo usan reducen dudas y cierran más ventas online y en tienda.'}
               </p>
               <p className="text-sm md:text-base text-gray-400">
                 Probado con clientes reales
@@ -458,11 +460,10 @@ const HomePage: React.FC = () => {
                   <button
                     key={item.id || item._id}
                     onClick={() => handlePieceSelect(item.id || item._id!)}
-                    className={`p-3 rounded-xl border transition-all text-left bg-black/30 ${
-                      selectedItemId === (item.id || item._id)
-                        ? 'border-[var(--primary-color)] bg-white/5'
-                        : 'border-white/10 hover:border-[var(--primary-color)]/60'
-                    }`}
+                    className={`p-3 rounded-xl border transition-all text-left bg-black/30 ${selectedItemId === (item.id || item._id)
+                      ? 'border-[var(--primary-color)] bg-white/5'
+                      : 'border-white/10 hover:border-[var(--primary-color)]/60'
+                      }`}
                   >
                     <div className="aspect-[3/2] w-full overflow-hidden rounded-lg mb-2 bg-gradient-to-br from-black/40 to-black/20">
                       <img
@@ -561,7 +562,7 @@ const HomePage: React.FC = () => {
                   ></div>
                   <div className="absolute inset-0 bg-black/60"></div>
                   <div className="relative z-10 h-full flex flex-col items-center justify-center">
-                    <Spinner size={48} text="Aplicando la joya elegida..." />
+                    <Spinner size={48} text={config?.uiLabels?.processingTryOn || "Aplicando la joya elegida..."} />
                   </div>
                 </div>
               )}
@@ -630,7 +631,7 @@ const HomePage: React.FC = () => {
           <div className="space-y-6">
             <p className="text-xs uppercase tracking-[0.3em] text-gray-400">Contacto</p>
             <h2 className="text-3xl md:text-4xl font-serif font-bold">
-               ¿Quieres ofrecer esta experiencia a tus clientes?
+              ¿Quieres ofrecer esta experiencia a tus clientes?
             </h2>
             <p className="text-lg text-gray-300 max-w-3xl">
               Te preparamos una prueba gratuita sin compromiso y la vemos en 5 minutos.
@@ -683,9 +684,8 @@ const HomePage: React.FC = () => {
       className="relative overflow-hidden"
     >
       <section
-        className={`relative min-h-[calc(100vh-130px)] px-4 ${
-          isCompactStep ? 'py-1 md:py-2' : 'py-4'
-        }`}
+        className={`relative min-h-[calc(100vh-130px)] px-4 ${isCompactStep ? 'py-1 md:py-2' : 'py-4'
+          }`}
       >
         <div className={`max-w-6xl mx-auto flex flex-col ${isCompactStep ? 'gap-2' : 'gap-3'}`} style={{ zoom: 1 }}>
           <div className="flex items-center gap-4 shrink-0">
@@ -700,9 +700,8 @@ const HomePage: React.FC = () => {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
               transition={{ duration: 0.25 }}
-              className={`bg-black/30 backdrop-blur-md border border-white/10 rounded-2xl ${
-                isIntroStep ? 'p-4 md:p-5 border-b-transparent' : isCompactStep ? 'p-3 md:p-4' : 'p-4 md:p-6'
-              } shadow-2xl flex-1 flex flex-col gap-4 overflow-hidden`}
+              className={`bg-black/30 backdrop-blur-md border border-white/10 rounded-2xl ${isIntroStep ? 'p-4 md:p-5 border-b-transparent' : isCompactStep ? 'p-3 md:p-4' : 'p-4 md:p-6'
+                } shadow-2xl flex-1 flex flex-col gap-4 overflow-hidden`}
             >
               <div className="flex-1">
                 {renderStepContent()}

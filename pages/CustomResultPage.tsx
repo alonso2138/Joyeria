@@ -6,6 +6,7 @@ import { CustomJewelOptions, CustomRequestPayload, GeneratedJewelResult } from '
 import { createCustomRequest } from '../services/api';
 import { generateCustomJewelWithTryOn, generateCustomJewelRender } from '../services/geminiService';
 import { trackIfAvailable } from '../services/tracking';
+import { useConfig } from '../hooks/useConfig';
 
 type Step = 'rendering' | 'result' | 'tryon-capture' | 'tryon-processing' | 'tryon-result';
 
@@ -31,6 +32,7 @@ const compressFromVideo = (video: HTMLVideoElement, canvas: HTMLCanvasElement) =
 const CustomResultPage: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
+  const { config } = useConfig();
   const options = (location.state as { options?: CustomJewelOptions })?.options;
 
   const [step, setStep] = useState<Step>('rendering');
@@ -96,7 +98,7 @@ const CustomResultPage: React.FC = () => {
       return;
     }
     try {
-      const generated = await generateCustomJewelWithTryOn(base64, options);
+      const generated = await generateCustomJewelWithTryOn(base64, options, config);
       setTryOnResult(generated);
       trackIfAvailable('try-on');
       setStep('tryon-result');
@@ -113,7 +115,7 @@ const CustomResultPage: React.FC = () => {
       setStep('rendering');
       setError(null);
       try {
-        const generated = await generateCustomJewelRender(options);
+        const generated = await generateCustomJewelRender(options, config);
         setDesignResult(generated);
         trackIfAvailable('personalizada-generada');
         setStep('result');

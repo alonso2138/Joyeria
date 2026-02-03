@@ -7,7 +7,7 @@ export interface JewelryItem {
   description: string;
   price: number;
   currency: string;
-  category: 'Anillo' | 'Collar' | 'Pulsera' | 'Pendiente' | 'Reloj';
+  category: 'Anillo' | 'Collar' | 'Pulsera' | 'Pendiente' | 'Reloj' | 'Bolso' | 'Camiseta' | 'Camisa';
   imageUrl: string;
   overlayAssetUrl: string;
   hashtags: string[];

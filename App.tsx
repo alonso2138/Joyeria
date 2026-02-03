@@ -3,7 +3,6 @@ import React, { useEffect } from 'react';
 import { HashRouter, Routes, Route, useLocation } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
 
-import { brandingConfig } from './config/branding';
 import { captureTrackingIdFromUrl } from './services/tracking';
 
 import Header from './components/layout/Header';
@@ -13,15 +12,20 @@ import JewelryDetailPage from './pages/JewelryDetailPage';
 import TryOnPage from './pages/TryOnPage';
 import CustomizePage from './pages/CustomizePage';
 import CustomResultPage from './pages/CustomResultPage';
+import DemoCatalog from './pages/DemoCatalog';
+import DemoDetail from './pages/DemoDetail';
+import AdminDemoListPage from './pages/admin/AdminDemoListPage';
+import AdminDemoEditPage from './pages/admin/AdminDemoEditPage';
 
 // Admin Pages
 import AdminLayout from './pages/admin/AdminLayout';
 import AdminLoginPage from './pages/admin/AdminLoginPage';
 import AdminJewelryListPage from './pages/admin/AdminJewelryListPage';
 import AdminJewelryEditPage from './pages/admin/AdminJewelryEditPage';
-import AdminCustomRequestsPage from './pages/admin/AdminCustomRequestsPage';
 import AdminLegacyPanelPage from './pages/admin/AdminLegacyPanelPage';
+import AdminCampaignPage from './pages/admin/AdminCampaignPage';
 import { AuthProvider } from './hooks/useAuth';
+import { ConfigProvider } from './hooks/useConfig';
 
 const PageLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const location = useLocation();
@@ -47,39 +51,45 @@ const PageLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 const App: React.FC = () => {
   useEffect(() => {
     captureTrackingIdFromUrl();
-    document.documentElement.style.setProperty('--primary-color', brandingConfig.primaryColor);
-    document.documentElement.style.setProperty('--secondary-color', brandingConfig.secondaryColor);
-    document.documentElement.style.setProperty('--accent-color', brandingConfig.accentColor);
-    document.body.style.background = brandingConfig.backgroundGradient;
   }, []);
 
   return (
     <AuthProvider>
       <HashRouter>
-        <Routes>
-          <Route path="/try-on/:slug" element={<TryOnPage />} />
-          <Route path="/personalizar" element={<PageLayout><CustomizePage /></PageLayout>} />
-          <Route path="/personalizar/resultado" element={<CustomResultPage />} />
-          <Route path="/admin/login" element={<AdminLoginPage />} />
-          <Route path="/admin" element={<AdminLayout><AdminJewelryListPage /></AdminLayout>} />
-          <Route path="/admin/jewelry" element={<AdminLayout><AdminJewelryListPage /></AdminLayout>} />
-          <Route path="/admin/jewelry/new" element={<AdminLayout><AdminJewelryEditPage /></AdminLayout>} />
-          <Route path="/admin/jewelry/edit/:id" element={<AdminLayout><AdminJewelryEditPage /></AdminLayout>} />
-          <Route path="/admin/custom-requests" element={<AdminLayout><AdminCustomRequestsPage /></AdminLayout>} />
-          <Route path="/admin/legacy-panel" element={<AdminLayout><AdminLegacyPanelPage /></AdminLayout>} />
+        <ConfigProvider>
+          <Routes>
+            <Route path="/try-on/:slug" element={<TryOnPage />} />
+            <Route path="/personalizar" element={<PageLayout><CustomizePage /></PageLayout>} />
+            <Route path="/personalizar/resultado" element={<CustomResultPage />} />
+            <Route path="/admin/login" element={<AdminLoginPage />} />
+            <Route path="/admin" element={<AdminLayout><AdminJewelryListPage /></AdminLayout>} />
+            <Route path="/admin/jewelry" element={<AdminLayout><AdminJewelryListPage /></AdminLayout>} />
+            <Route path="/admin/jewelry/new" element={<AdminLayout><AdminJewelryEditPage /></AdminLayout>} />
+            <Route path="/admin/jewelry/edit/:id" element={<AdminLayout><AdminJewelryEditPage /></AdminLayout>} />
+            <Route path="/admin/demos" element={<AdminLayout><AdminDemoListPage /></AdminLayout>} />
+            <Route path="/admin/demos/new" element={<AdminLayout><AdminDemoEditPage /></AdminLayout>} />
+            <Route path="/admin/demos/edit/:tag" element={<AdminLayout><AdminDemoEditPage /></AdminLayout>} />
+            <Route path="/admin/campaign" element={<AdminLayout><AdminCampaignPage /></AdminLayout>} />
+            <Route path="/admin/legacy-panel" element={<AdminLayout><AdminLegacyPanelPage /></AdminLayout>} />
 
-          <Route path="*" element={
-            <PageLayout>
-              <Routes>
-                <Route path="/" element={<HomePage />} />
-                <Route path="/catalog" element={<CatalogPage />} />
-                <Route path="/jewelry/:slug" element={<JewelryDetailPage />} />
-                <Route path="/personalizar" element={<CustomizePage />} />
-                <Route path="/personalizar/resultado" element={<CustomResultPage />} />
-              </Routes>
-            </PageLayout>
-          }/>
-        </Routes>
+            {/* Demo Routes - Isolated from Main Layout */}
+            <Route path="/demo/:tag" element={<DemoCatalog />} />
+            <Route path="/demo/:tag/jewelry/:slug" element={<DemoDetail />} />
+            <Route path="/demo/:tag/try-on/:slug" element={<TryOnPage />} />
+
+            <Route path="*" element={
+              <PageLayout>
+                <Routes>
+                  <Route path="/" element={<HomePage />} />
+                  <Route path="/catalog" element={<CatalogPage />} />
+                  <Route path="/jewelry/:slug" element={<JewelryDetailPage />} />
+                  <Route path="/personalizar" element={<CustomizePage />} />
+                  <Route path="/personalizar/resultado" element={<CustomResultPage />} />
+                </Routes>
+              </PageLayout>
+            } />
+          </Routes>
+        </ConfigProvider>
       </HashRouter>
     </AuthProvider>
   );

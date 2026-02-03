@@ -1,223 +1,130 @@
 import { CustomJewelOptions, GeneratedJewelResult } from '../types';
 
-// Lazy import to avoid cargar Gemini hasta que sea necesario
 const getGenAI = async () => {
   const { GoogleGenAI, Modality } = await import('@google/genai');
   const apiKey = import.meta.env.VITE_API_KEY;
-  if (!apiKey) {
-    throw new Error('Gemini API key is missing');
-  }
+  if (!apiKey) throw new Error('Gemini API key is missing');
   return { client: new GoogleGenAI({ apiKey }), Modality };
 };
 
-// Helper to convert an image URL to the format required by the Gemini API
 const urlToInlineData = async (url: string) => {
-    const response = await fetch(url);
-    if (!response.ok) {
-        throw new Error(`Failed to fetch image from ${url}: ${response.statusText}`);
-    }
-    const blob = await response.blob();
-    const mimeType = blob.type;
-
-    const base64Data = await new Promise<string>((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onloadend = () => resolve((reader.result as string).split(',')[1]);
-        reader.onerror = reject;
-        reader.readAsDataURL(blob);
-    });
-
-    return {
-        inlineData: {
-            data: base64Data,
-            mimeType,
-        },
-    };
+  const response = await fetch(url);
+  if (!response.ok) throw new Error(`Failed to fetch image: ${response.statusText}`);
+  const blob = await response.blob();
+  const base64Data = await new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onloadend = () => resolve((reader.result as string).split(',')[1]);
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
+  });
+  return { inlineData: { data: base64Data, mimeType: blob.type } };
 };
 
 const userImageToInlineData = (base64String: string) => {
-    // The incoming string is 'data:image/jpeg;base64,xxxxxxxx'
-    const [header, data] = base64String.split(',');
-    const mimeType = header.match(/:(.*?);/)?.[1] || 'image/jpeg';
-
-    return {
-        inlineData: {
-            data,
-            mimeType,
-        },
-    };
+  const [header, data] = base64String.split(',');
+  const mimeType = header.match(/:(.*?);/)?.[1] || 'image/jpeg';
+  return { inlineData: { data, mimeType } };
 };
 
 const extractImageDataUrl = (response: any) => {
-    const candidate = response?.candidates?.[0];
-    if (!candidate?.content?.parts) return null;
-
-    for (const part of candidate.content.parts) {
-        if (part.inlineData) {
-            const base64ImageBytes: string = part.inlineData.data;
-            const mimeType = part.inlineData.mimeType || 'image/jpeg';
-            return `data:${mimeType};base64,${base64ImageBytes}`;
-        }
-    }
-    return null;
+  const part = response?.candidates?.[0]?.content?.parts?.find((p: any) => p.inlineData);
+  if (!part) return null;
+  return `data:${part.inlineData.mimeType || 'image/jpeg'};base64,${part.inlineData.data}`;
 };
 
-
-/**
- * Generates a virtual try-on image using the Gemini 'gemini-2.5-flash-image' model.
- *
- * @param userImageBase64 The base64 encoded string of the photo taken by the user.
- * @param jewelryOverlayUrl The URL of the transparent PNG asset of the jewelry to be overlaid.
- * @returns A promise that resolves to the composed image.
- */
 export const generateTryOnImage = async (
   userImageBase64: string,
-  jewelryOverlayUrl: string
+  jewelryOverlayUrl: string,
+  itemType: string = 'ring',
+  config?: any
 ): Promise<string> => {
-  console.log('GEMINI SERVICE: Initiating virtual try-on with gemini-2.5-flash-image.');
   try {
     const { client, Modality } = await getGenAI();
-
-    // Prepare the images and the prompt for the model
     const userImagePart = userImageToInlineData(userImageBase64);
     const jewelryImagePart = await urlToInlineData(jewelryOverlayUrl);
-    const textPart = {
-        text: `
-Simulate a virtual try-on returning an image with 1:1 SQUARE ASPECT RATIO: Realistically place the second image (a piece of jewelry with a transparent background) onto the first image (a person). The jewelry should be positioned where it would naturally be worn. For example, a ring goes on a finger, a necklace on the neck, an earring on an earlobe, etc. Maintain the original lighting and perspective as much as possible.
-        `,};
+
+    // Obtener prompt específico por categoría desde la config o usar fallbacks refinados
+    const categoryPrompts = config?.aiPrompts?.categoryPrompts || {};
+    const itemKey = itemType.toLowerCase();
+
+    const fallbacks: Record<string, string> = {
+      ring: "Simulate a photorealistic virtual try-on: Place this ring accurately on the person's finger. Match lighting and reflections.",
+      necklace: "Simulate a photorealistic virtual try-on: Place this necklace naturally around the person's neck. Match skin tone and lighting.",
+      earring: "Simulate a photorealistic virtual try-on: Place this earring on the earlobe accurately.",
+      bracelet: "Simulate a photorealistic virtual try-on: Fit this bracelet around the wrist with realistic metal reflections.",
+      watch: "Simulate a photorealistic virtual try-on: Place this watch on the wrist, matching curvature and lighting.",
+      bolso: "Simulate a photorealistic virtual try-on: Place this bag as if being held or worn. Match shadows and perspective.",
+      camiseta: "Simulate a high-end virtual fashion try-on: Fit this t-shirt over the person's torso. Match body shape and fabric wrinkles.",
+      camisa: "Simulate a high-end virtual fashion try-on: Fit this shirt over the person's torso. Match shoulder profile and fabric drape."
+    };
+
+    const finalPrompt = categoryPrompts[itemKey] || fallbacks[itemKey] || `Simulate a photorealistic virtual try-on of this ${itemKey}.`;
+    const model = 'gemini-2.5-flash-image';
+
+    console.log(`[Gemini Try-On] Model: ${model}`);
+    console.log(`[Gemini Try-On] Prompt: ${finalPrompt}`);
 
     const firstPassResponse = await client.models.generateContent({
-        model: 'gemini-2.5-flash-image',
-        contents: {
-            parts: [userImagePart, jewelryImagePart, textPart],
-        },
-        config: {
-            responseModalities: [Modality.IMAGE],
-        },
+      model: model,
+      contents: { parts: [userImagePart, jewelryImagePart, { text: finalPrompt }] },
+      config: { responseModalities: [Modality.IMAGE] },
     });
 
-    console.log(textPart)
-
-    const firstPassImage = extractImageDataUrl(firstPassResponse);
-    if (!firstPassImage) {
-        throw new Error("No image was generated by the model on the first pass.");
-    }
-
-    console.log('GEMINI SERVICE: Virtual try-on image generated successfully.');
-    return firstPassImage;
-
+    return extractImageDataUrl(firstPassResponse) || 'https://picsum.photos/800/1200';
   } catch (error) {
-    console.error("Error during Gemini API call:", error);
-    // Return a placeholder or throw the error to be handled by the UI
-    // Using a static image from picsum to represent an error.
-    return 'https://picsum.photos/seed/tryon-error/800/1200';
+    console.error(error);
+    return 'https://picsum.photos/800/1200';
   }
 };
 
-// Genera una joya personalizada y la coloca en la foto del usuario
 export const generateCustomJewelWithTryOn = async (
   userPhotoBase64: string,
-  options: CustomJewelOptions
+  options: CustomJewelOptions,
+  config?: any
 ): Promise<GeneratedJewelResult> => {
-  const prompt = [
-    'You are a deterministic luxury jewelry CAD renderer and compositor. Return exactly one photorealistic image.',
-    'Keep the camera neutral (35mm equivalent, chest-up framing), soft studio key light, clean background. No artistic filters or random props.',
-    'Respect the user photo: preserve skin tone, hands, face and body proportions. Only add the jewelry.',
-    `Piece type: ${options.pieceType || 'joya'}. Place it precisely where it belongs (finger, neck, ear, wrist) with natural scale.`,
-    options.material ? `Primary material: ${options.material}.` : '',
-    options.measurements ? `Exact measurements: ${options.measurements}.` : 'If no measurements, keep proportions minimal and unobtrusive.',
-    options.stonesOrColors ? `Stones and dominant colors: ${options.stonesOrColors}.` : '',
-    options.engraving ? `Engraving text/font/placement: ${options.engraving}.` : '',
-    options.description ? `Usage context and constraints: ${options.description}.` : '',
-    'Consistency rules: do not change camera angle, pose, hair, makeup, nails, or background; avoid reflections that alter the scene; no extra jewelry or clothing changes.',
-    'Lighting must match the user photo; keep shadows and highlights coherent with the body orientation.',
-  ].filter(Boolean).join(' ');
-
+  const basePrompt = config?.aiPrompts?.customJewelPrompt || "CAD luxury {sectorName} rendering. Piece: {pieceType}. Material: {material}. Details: {details}.";
+  const sector = config?.branding?.sectorName || "jewelry";
+  const prompt = basePrompt
+    .replace(/{sectorName}/g, sector)
+    .replace(/{pieceType}/g, options.pieceType)
+    .replace(/{material}/g, options.material)
+    .replace(/{details}/g, options.stonesOrColors);
   try {
     const { client, Modality } = await getGenAI();
-    const userImagePart = userImageToInlineData(userPhotoBase64);
-
+    const model = 'gemini-2.5-flash-image';
+    console.log(`[Gemini Custom Try-On] Model: ${model}`);
+    console.log(`[Gemini Custom Try-On] Prompt: ${prompt}`);
     const response = await client.models.generateContent({
-      model: 'gemini-2.5-flash-image',
-      contents: {
-        parts: [
-          userImagePart,
-          { text: prompt }
-        ],
-      },
-      config: {
-        responseModalities: [Modality.IMAGE],
-      },
+      model: model,
+      contents: { parts: [userImageToInlineData(userPhotoBase64), { text: prompt }] },
+      config: { responseModalities: [Modality.IMAGE] },
     });
-
-    for (const part of response.candidates[0].content.parts) {
-      if (part.inlineData) {
-        const base64ImageBytes: string = part.inlineData.data;
-        const mimeType = part.inlineData.mimeType;
-        return {
-          imageBase64: `data:${mimeType};base64,${base64ImageBytes}`,
-          promptUsed: prompt,
-          options,
-        };
-      }
-    }
-    throw new Error('No image was generated by the model.');
+    return { imageBase64: extractImageDataUrl(response) || '', promptUsed: prompt, options };
   } catch (error) {
-    console.error('Error during custom Gemini generation:', error);
-    return {
-      imageBase64: 'https://picsum.photos/seed/custom-tryon-error/800/1200',
-      promptUsed: prompt,
-      options,
-    };
+    return { imageBase64: '', promptUsed: prompt, options };
   }
 };
 
-// Genera solo el render de la joya (sin foto del usuario)
-export const generateCustomJewelRender = async (
-  options: CustomJewelOptions
-): Promise<GeneratedJewelResult> => {
-  const prompt = [
-    'You are a deterministic luxury jewelry CAD renderer. Return exactly one photorealistic studio image of the jewelry only.',
-    'Keep neutral camera (35mm equivalent), soft studio lighting, clean background, no hands or people.',
-    `Piece type: ${options.pieceType || 'joya'}.`,
-    options.material ? `Primary material: ${options.material}.` : '',
-    options.measurements ? `Exact measurements: ${options.measurements}.` : '',
-    options.stonesOrColors ? `Stones and dominant colors: ${options.stonesOrColors}.` : '',
-    options.engraving ? `Engraving text/font/placement: ${options.engraving}.` : '',
-    options.description ? `Usage context and constraints: ${options.description}.` : '',
-    'Do not add props, boxes, or models. White/charcoal seamless background only.',
-  ].filter(Boolean).join(' ');
-
+export const generateCustomJewelRender = async (options: CustomJewelOptions, config?: any): Promise<GeneratedJewelResult> => {
+  const basePrompt = config?.aiPrompts?.customJewelRenderPrompt || "Studio {sectorName} product photo. {pieceType}, {material}, {details}.";
+  const sector = config?.branding?.sectorName || "jewelry";
+  const prompt = basePrompt
+    .replace(/{sectorName}/g, sector)
+    .replace(/{pieceType}/g, options.pieceType)
+    .replace(/{material}/g, options.material)
+    .replace(/{details}/g, options.stonesOrColors);
   try {
     const { client, Modality } = await getGenAI();
-
+    const model = 'gemini-2.5-flash-image';
+    console.log(`[Gemini Custom Render] Model: ${model}`);
+    console.log(`[Gemini Custom Render] Prompt: ${prompt}`);
     const response = await client.models.generateContent({
-      model: 'gemini-2.5-flash-image',
-      contents: {
-        parts: [{ text: prompt }],
-      },
-      config: {
-        responseModalities: [Modality.IMAGE],
-      },
+      model: model,
+      contents: { parts: [{ text: prompt }] },
+      config: { responseModalities: [Modality.IMAGE] },
     });
-
-    for (const part of response.candidates[0].content.parts) {
-      if (part.inlineData) {
-        const base64ImageBytes: string = part.inlineData.data;
-        const mimeType = part.inlineData.mimeType;
-        return {
-          imageBase64: `data:${mimeType};base64,${base64ImageBytes}`,
-          promptUsed: prompt,
-          options,
-        };
-      }
-    }
-    throw new Error('No image was generated by the model.');
+    return { imageBase64: extractImageDataUrl(response) || '', promptUsed: prompt, options };
   } catch (error) {
-    console.error('Error during custom Gemini render:', error);
-    return {
-      imageBase64: 'https://picsum.photos/seed/custom-render-error/800/1200',
-      promptUsed: '',
-      options,
-    };
+    return { imageBase64: '', promptUsed: prompt, options };
   }
 };

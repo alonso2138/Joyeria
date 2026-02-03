@@ -5593,5 +5593,35 @@
     "email": "atorremena@yahoo.es",
     "timestamp": "2026-01-20T16:35:50.658Z",
     "action_type": "cold-sent"
+  },
+  {
+    "email": "alonso.valls@icloud.com",
+    "timestamp": "2026-02-03T13:29:02.070Z",
+    "action_type": "try-on-started"
+  },
+  {
+    "email": "alonso.valls@icloud.com",
+    "timestamp": "2026-02-03T13:29:02.076Z",
+    "action_type": "step-1-completed"
+  },
+  {
+    "email": "alonso.valls@icloud.com",
+    "timestamp": "2026-02-03T13:29:11.254Z",
+    "action_type": "try-on-started"
+  },
+  {
+    "email": "alonso.valls@icloud.com",
+    "timestamp": "2026-02-03T13:29:11.270Z",
+    "action_type": "step-1-completed"
+  },
+  {
+    "email": "alonso.valls@icloud.com",
+    "timestamp": "2026-02-03T13:29:18.132Z",
+    "action_type": "try-on-started"
+  },
+  {
+    "email": "alonso.valls@icloud.com",
+    "timestamp": "2026-02-03T13:29:18.138Z",
+    "action_type": "step-1-completed"
   }
 ]

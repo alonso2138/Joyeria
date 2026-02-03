@@ -10,7 +10,7 @@ const AdminJewelryEditPage: React.FC = () => {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
     const { token } = useAuth();
-    
+
     const [item, setItem] = useState<Partial<JewelryItem>>({
         name: '',
         slug: '',
@@ -23,12 +23,13 @@ const AdminJewelryEditPage: React.FC = () => {
         hashtags: [],
         sku: '',
         isFeatured: false,
+        catalogId: 'main',
     });
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
     const [imagePreview, setImagePreview] = useState<string>('');
     const [isLoading, setIsLoading] = useState(false);
     const [isFetching, setIsFetching] = useState(false);
-    
+
     const isEditing = Boolean(id);
 
     useEffect(() => {
@@ -46,14 +47,14 @@ const AdminJewelryEditPage: React.FC = () => {
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
         const { name, value, type } = e.target;
-        
+
         if (type === 'checkbox') {
             const { checked } = e.target as HTMLInputElement;
             setItem(prev => ({ ...prev, [name]: checked }));
         } else {
             setItem(prev => {
                 const updated = { ...prev, [name]: value };
-                
+
                 // Si se actualiza imageUrl y overlayAssetUrl está vacío o igual al imageUrl anterior,
                 // actualizar overlayAssetUrl también
                 if (name === 'imageUrl') {
@@ -61,12 +62,12 @@ const AdminJewelryEditPage: React.FC = () => {
                         updated.overlayAssetUrl = value;
                     }
                 }
-                
+
                 return updated;
             });
         }
     };
-    
+
     const handleHashtagsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const hashtags = e.target.value.split(',').map(tag => tag.trim()).filter(Boolean);
         setItem(prev => ({ ...prev, hashtags }));
@@ -76,7 +77,7 @@ const AdminJewelryEditPage: React.FC = () => {
         const file = e.target.files?.[0];
         if (file) {
             setSelectedFile(file);
-            
+
             // Crear preview de la imagen
             const reader = new FileReader();
             reader.onload = (e) => {
@@ -98,7 +99,7 @@ const AdminJewelryEditPage: React.FC = () => {
         try {
             // Preparar FormData
             const formData = new FormData();
-            
+
             // Basic slug generation
             const finalItem = { ...item };
             if (!finalItem.slug) {
@@ -106,13 +107,13 @@ const AdminJewelryEditPage: React.FC = () => {
                 const timestamp = Date.now().toString().slice(-6);
                 finalItem.slug = `${baseSlug}-${timestamp}`;
             }
-            
+
             // Generate SKU if empty
             if (!finalItem.sku) {
                 const timestamp = Date.now().toString().slice(-8);
-                finalItem.sku = `AUR-${finalItem.category?.substring(0,1)}-${timestamp}`;
+                finalItem.sku = `AUR-${finalItem.category?.substring(0, 1)}-${timestamp}`;
             }
-            
+
             // Agregar todos los campos al FormData
             Object.keys(finalItem).forEach(key => {
                 if (key === 'hashtags') {
@@ -121,7 +122,7 @@ const AdminJewelryEditPage: React.FC = () => {
                     formData.append(key, finalItem[key].toString());
                 }
             });
-            
+
             // Agregar imagen si se seleccionó una
             if (selectedFile) {
                 formData.append('image', selectedFile);
@@ -153,7 +154,7 @@ const AdminJewelryEditPage: React.FC = () => {
     if (isFetching) {
         return <Spinner text="Cargando datos de la joya..." />;
     }
-    
+
     const formInputClasses = "mt-1 block w-full bg-gray-800 border border-gray-600 rounded-md shadow-sm text-white px-3 py-2 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-900 focus:ring-[var(--primary-color)]";
 
     return (
@@ -170,11 +171,11 @@ const AdminJewelryEditPage: React.FC = () => {
                         <label className="block text-sm font-medium text-gray-300">SKU</label>
                         <input type="text" name="sku" value={item.sku} onChange={handleChange} className={formInputClasses} />
                     </div>
-                     <div>
+                    <div>
                         <label className="block text-sm font-medium text-gray-300">Precio</label>
                         <input type="number" name="price" value={item.price} onChange={handleChange} className={formInputClasses} required />
                     </div>
-                     <div>
+                    <div>
                         <label className="block text-sm font-medium text-gray-300">Categoría</label>
                         <select name="category" value={item.category} onChange={handleChange} className={formInputClasses}>
                             <option>Anillo</option>
@@ -182,21 +183,24 @@ const AdminJewelryEditPage: React.FC = () => {
                             <option>Pulsera</option>
                             <option>Pendiente</option>
                             <option>Reloj</option>
+                            <option>Bolso</option>
+                            <option>Camiseta</option>
+                            <option>Camisa</option>
                         </select>
                     </div>
-                     <div className="md:col-span-2">
+                    <div className="md:col-span-2">
                         <label className="block text-sm font-medium text-gray-300">Descripción</label>
                         <textarea name="description" value={item.description} onChange={handleChange} rows={4} className={formInputClasses}></textarea>
                     </div>
-                     <div className="md:col-span-2">
+                    <div className="md:col-span-2">
                         <label className="block text-sm font-medium text-gray-300 mb-2">Imagen de la Joya</label>
-                        
+
                         {/* Mostrar imagen actual o preview */}
                         {imagePreview && (
                             <div className="mb-4">
-                                <img 
-                                    src={imagePreview} 
-                                    alt="Preview" 
+                                <img
+                                    src={imagePreview}
+                                    alt="Preview"
                                     className="w-32 h-32 object-cover rounded-md border border-gray-600"
                                 />
                                 <p className="text-xs text-gray-400 mt-1">
@@ -204,10 +208,10 @@ const AdminJewelryEditPage: React.FC = () => {
                                 </p>
                             </div>
                         )}
-                        
+
                         {/* Input de archivo */}
-                        <input 
-                            type="file" 
+                        <input
+                            type="file"
                             accept="image/*"
                             onChange={handleFileChange}
                             className="block w-full text-sm text-gray-300 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-[var(--primary-color)] file:text-black hover:file:bg-opacity-90"
@@ -217,15 +221,27 @@ const AdminJewelryEditPage: React.FC = () => {
                             {isEditing ? 'Sube una nueva imagen para reemplazar la actual' : 'Selecciona una imagen para la joya (máximo 5MB)'}
                         </p>
                     </div>
-                     <div className="md:col-span-2">
+                    <div className="md:col-span-2">
                         <label className="block text-sm font-medium text-gray-300">Hashtags (separados por comas)</label>
                         <input type="text" name="hashtags" value={item.hashtags?.join(', ')} onChange={handleHashtagsChange} className={formInputClasses} />
                     </div>
                     <div>
                         <label className="flex items-center space-x-2 text-sm font-medium text-gray-300">
-                             <input type="checkbox" name="isFeatured" checked={item.isFeatured} onChange={handleChange} className="rounded bg-gray-700 border-gray-500 text-[var(--primary-color)] focus:ring-[var(--primary-color)] focus:ring-offset-2 focus:ring-offset-gray-900" />
                             <span>¿Es una joya destacada?</span>
                         </label>
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium text-gray-300">Catálogo / ID de Demo</label>
+                        <input
+                            type="text"
+                            name="catalogId"
+                            value={item.catalogId}
+                            onChange={handleChange}
+                            className={formInputClasses}
+                            placeholder="main"
+                            required
+                        />
+                        <p className="text-[10px] text-gray-400 mt-1">Usa 'main' para la web oficial o el 'tag' del cliente para una demo.</p>
                     </div>
                 </div>
 

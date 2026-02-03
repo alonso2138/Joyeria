@@ -3,6 +3,10 @@ import https from 'https';
 import Papa from 'papaparse';
 import { Resend } from 'resend';
 import { StorageHelper } from '../utils/storageHelper';
+import fs from 'fs';
+import path from 'path';
+
+const CONFIG_PATH = path.join(__dirname, '../../data/campaignConfig.json');
 
 const CSV_URL = 'https://docs.google.com/spreadsheets/d/1UTNIkH7J9xPVrOHHL0RgqsZ0Yuz6r6StQWu6ASVQSww/export?format=csv';
 
@@ -294,7 +298,7 @@ export const launchColdApproach = async (req: Request, res: Response) => {
 
         // Cambiando estado a Corriendo
         try {
-            const res = await fetch(SHEETS_HOOK_URL, {
+            const sheetRes = await fetch(SHEETS_HOOK_URL, {
                 method: "POST",
                 headers: {
                     "Content-Type": "text/plain;charset=utf-8",
@@ -368,8 +372,16 @@ export const launchColdApproach = async (req: Request, res: Response) => {
 
             console.log("Enviando mail...")
 
-            const subject = resolveSpintax(`{Cuando un cliente duda entre dos piezas|Dudas entre dos joyas|Ayudar al cliente a decidir entre piezas|Sobre la duda de los clientes con las joyas}`);
-            const body = resolveSpintax(`{Hola!|Buenas,|Qué tal?|Buenos días,}<br><br>{Seguro que te pasa a menudo|Te escribo porque seguro que te pasa}: un cliente mira una pulsera o un reloj, le gusta pero no termina de decidirse.<br><br>{Estoy ayudando a algunas joyerias a|Ayudo a joyerías a} que el cliente se decida antes de comprar, usando una pagina donde puede verse la joya que quiera puesta desde el movil en segundos.<br><br>{Puedes probarlo tu mismo aqui|Pruébalo tú mismo aquí} (sin registro) en apenas 10 segundos:<br><a href="https://visualizalo.es?id=${encodedEmail}">Probar el probador virtual</a><br><br>Si {os parece interesante la idea|te interesa}, os invito a hacer una prueba gratuita, con vuestras piezas, para que veais si realmente os sirve en vuestro dia a dia.<br><br>{Si no es algo que encaje con vuestra forma de vender, dimelo sin problema|Cualquier feedback es bienvenido si crees que no encaja con vosotros}, se agradece cualquier feedback.<br><br>Muchas gracias por su tiempo,<br>Alonso Valls<br><br><img src="https://api.visualizalo.es/api/trigger/cold-abierto?id=${encodedEmail}" alt="" width="1" height="1" style="display:none!important;min-height:0;height:0;max-height:0;width:0;max-width:0;opacity:0;overflow:hidden;mso-hide:all;" />`);
+
+            let config;
+            try {
+                config = JSON.parse(fs.readFileSync(CONFIG_PATH, 'utf-8'));
+            } catch (err) {
+                console.error('Error reading config in cold approach:', err);
+            }
+
+            const subject = resolveSpintax(config?.marketing?.emailSubject || `{Cuando un cliente duda entre dos piezas|Dudas entre dos joyas|Ayudar al cliente a decidir entre piezas|Sobre la duda de los clientes con las joyas}`);
+            const body = resolveSpintax((config?.marketing?.emailBody || `{Hola!|Buenas,|Qué tal?|Buenos días,}<br><br>{Seguro que te pasa a menudo|Te escribo porque seguro que te pasa}: un cliente mira una pulsera o un reloj, le gusta pero no termina de decidirse.<br><br>{Estoy ayudando a algunas joyerias a|Ayudo a joyerías a} que el cliente se decida antes de comprar, usando una pagina donde puede verse la joya que quiera puesta desde el movil en segundos.<br><br>{Puedes probarlo tu mismo aqui|Pruébalo tú mismo aquí} (sin registro) en apenas 10 segundos:<br><a href="https://visualizalo.es?id=${encodedEmail}">Probar el probador virtual</a><br><br>Si {os parece interesante la idea|te interesa}, os invito a hacer una prueba gratuita, con vuestras piezas, para que veais si realmente os sirve en vuestro dia a dia.<br><br>{Si no es algo que encaje con vuestra forma de vender, dimelo sin problema|Cualquier feedback es bienvenido si crees que no encaja con vosotros}, se agradece cualquier feedback.<br><br>Muchas gracias por su tiempo,<br>Alonso Valls<br><br><img src="https://api.visualizalo.es/api/trigger/cold-abierto?id=${encodedEmail}" alt="" width="1" height="1" style="display:none!important;min-height:0;height:0;max-height:0;width:0;max-width:0;opacity:0;overflow:hidden;mso-hide:all;" />`).replace('${encodedEmail}', encodedEmail));
 
             await sendMail(`${leads[i].email}`, subject, body);
 
@@ -389,7 +401,7 @@ export const launchColdApproach = async (req: Request, res: Response) => {
 
         // Cambiando estado a Acabado
         try {
-            const res = await fetch(SHEETS_HOOK_URL, {
+            const sheetRes = await fetch(SHEETS_HOOK_URL, {
                 method: "POST",
                 headers: {
                     "Content-Type": "text/plain;charset=utf-8",
@@ -401,6 +413,9 @@ export const launchColdApproach = async (req: Request, res: Response) => {
         }
 
     } catch (error) {
-        res.status(500).json({ message: 'Failed to execute cold approach' });
+        console.error('Error in launchColdApproach:', error);
+        if (!res.headersSent) {
+            res.status(500).json({ message: 'Failed to execute cold approach' });
+        }
     }
 };

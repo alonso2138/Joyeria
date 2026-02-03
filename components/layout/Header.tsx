@@ -1,9 +1,21 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { brandingConfig } from '../../config/branding';
+import { useConfig } from '../../hooks/useConfig';
 
 const Header: React.FC = () => {
+  const { config } = useConfig();
+  const location = useLocation();
+  const brandName = config?.branding?.brandName;
+  const logoUrl = config?.branding?.logoLightUrl || "/logo.png";
+
+  // Check if we are in a demo route
+  const isDemo = location.pathname.startsWith('/demo/');
+
+  // Extract demo tag if present to redirect logo to demo root
+  const demoTag = isDemo ? location.pathname.split('/')[2] : null;
+  const logoLink = isDemo && demoTag ? `/demo/${demoTag}` : '/';
+
   return (
     <motion.header
       className="sticky top-0 z-50 py-1.5 px-4 md:px-8 bg-black bg-opacity-30 backdrop-blur-lg"
@@ -12,22 +24,26 @@ const Header: React.FC = () => {
       transition={{ duration: 0.5 }}
     >
       <div className="container mx-auto flex justify-between items-center">
-        <Link to="/" className="flex items-center space-x-3">
-          <img src={brandingConfig.logoLightUrl} alt={`${brandingConfig.brandName} Logo`} className="h-8 md:h-10" />
-          <span className="font-serif text-xl md:text-2xl font-bold tracking-wider" style={{ color: brandingConfig.accentColor }}>
-            {brandingConfig.brandName}
+        <Link to={logoLink} className="flex items-center space-x-3">
+          <img src={logoUrl} alt={`${brandName} Logo`} className="h-8 md:h-10" />
+          <span className="font-serif text-xl md:text-2xl font-bold tracking-wider" style={{ color: config?.branding?.accentColor || 'white' }}>
+            {brandName}
           </span>
         </Link>
         <div className="flex items-center">
-          <nav className="hidden md:flex items-center space-x-8 text-sm font-medium tracking-widest uppercase">
-            <Link to="/" className="hover:text-[var(--primary-color)] transition-colors duration-300">Home</Link>
-            <Link to="/catalog" className="hover:text-[var(--primary-color)] transition-colors duration-300">Todas las joyas</Link>
-          </nav>
-          <Link to="/admin/login" title="Admin Login" className="md:ml-8 text-gray-400 hover:text-white transition-colors">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-              <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
-            </svg>
-          </Link>
+          {!isDemo && (
+            <nav className="hidden md:flex items-center space-x-8 text-sm font-medium tracking-widest uppercase">
+              <Link to="/" className="hover:text-[var(--primary-color)] transition-colors duration-300">Home</Link>
+              <Link to="/catalog" className="hover:text-[var(--primary-color)] transition-colors duration-300">Colección</Link>
+            </nav>
+          )}
+          {!isDemo && (
+            <Link to="/admin/login" title="Admin Login" className="md:ml-8 text-gray-400 hover:text-white transition-colors">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
+              </svg>
+            </Link>
+          )}
         </div>
       </div>
     </motion.header>

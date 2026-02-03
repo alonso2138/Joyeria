@@ -14,8 +14,8 @@ const AdminJewelryListPage: React.FC = () => {
 
     const fetchItems = useCallback(async () => {
         setIsLoading(true);
-        // Using getJewelryItems with no filters to get all items
-        const results = await getJewelryItems({});
+        // Request 'all' catalogs to see everything in admin
+        const results = await getJewelryItems({ catalogId: 'all' });
         setItems(results);
         setIsLoading(false);
     }, []);
@@ -27,10 +27,10 @@ const AdminJewelryListPage: React.FC = () => {
     const handleDelete = async (id: string) => {
         if (window.confirm('¿Estás seguro de que quieres eliminar esta joya? Esta acción no se puede deshacer.')) {
             try {
-                if(!token) throw new Error("No auth token");
+                if (!token) throw new Error("No auth token");
                 await deleteJewelryItem(id, token);
                 // Refetch items after deletion
-                fetchItems(); 
+                fetchItems();
             } catch (error) {
                 console.error("Failed to delete item:", error);
                 alert("No se pudo eliminar la joya.");
@@ -58,6 +58,7 @@ const AdminJewelryListPage: React.FC = () => {
                             <th className="p-4">Nombre</th>
                             <th className="p-4">SKU</th>
                             <th className="p-4">Precio</th>
+                            <th className="p-4">Catálogo</th>
                             <th className="p-4">Destacado</th>
                             <th className="p-4">Acciones</th>
                         </tr>
@@ -65,10 +66,15 @@ const AdminJewelryListPage: React.FC = () => {
                     <tbody>
                         {items.map(item => (
                             <tr key={item.id} className="border-b border-gray-800 hover:bg-gray-800 transition-colors">
-                                <td className="p-4"><img src={getImageUrl(item.imageUrl)} alt={item.name} className="w-16 h-16 object-cover rounded-md"/></td>
+                                <td className="p-4"><img src={getImageUrl(item.imageUrl)} alt={item.name} className="w-16 h-16 object-cover rounded-md" /></td>
                                 <td className="p-4 font-semibold">{item.name}</td>
                                 <td className="p-4 text-gray-400">{item.sku}</td>
                                 <td className="p-4">{new Intl.NumberFormat('es-ES', { style: 'currency', currency: item.currency }).format(item.price)}</td>
+                                <td className="p-4">
+                                    <span className={`px-2 py-1 rounded-full text-[10px] font-bold uppercase ${item.catalogId === 'main' ? 'bg-blue-900/30 text-blue-400' : 'bg-purple-900/30 text-purple-400'}`}>
+                                        {item.catalogId || 'main'}
+                                    </span>
+                                </td>
                                 <td className="p-4">{item.isFeatured ? 'Sí' : 'No'}</td>
                                 <td className="p-4">
                                     <div className="flex gap-2">
@@ -80,7 +86,7 @@ const AdminJewelryListPage: React.FC = () => {
                         ))}
                     </tbody>
                 </table>
-                 {items.length === 0 && <p className="p-8 text-center text-gray-400">No se encontraron joyas.</p>}
+                {items.length === 0 && <p className="p-8 text-center text-gray-400">No se encontraron joyas.</p>}
             </div>
         </div>
     );

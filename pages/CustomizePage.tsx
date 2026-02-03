@@ -3,37 +3,10 @@ import { useNavigate } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import Button from '../components/ui/Button';
 import { CustomJewelOptions } from '../types';
+import { useConfig } from '../hooks/useConfig';
+import Spinner from '../components/ui/Spinner';
 
 type StepId = 'tipo' | 'material' | 'piedra' | 'talla' | 'grabado' | 'resumen';
-
-const pieceOptions = [
-  { value: 'Anillo', label: 'Anillo', accent: '#f5c14c', image: '/personalizar/tipo-anillo.jpg', gradient: 'radial-gradient(circle at 20% 30%, #f1cf6a, #0c0c0f 60%)' },
-  { value: 'Collar', label: 'Collar', accent: '#8dd5ff', image: '/personalizar/tipo-collar.jpg', gradient: 'linear-gradient(135deg, #8dd5ff, #0a1018)' },
-  { value: 'Pulsera', label: 'Pulsera', accent: '#e2b0ff', image: '/personalizar/tipo-pulsera.jpg', gradient: 'radial-gradient(circle at 70% 20%, #e2b0ff, #0b0b11 65%)' },
-  { value: 'Pendientes', label: 'Pendientes', accent: '#f78fb3', image: '/personalizar/tipo-pendientes.jpg', gradient: 'linear-gradient(160deg, #f78fb3, #0b0d14)' },
-];
-
-const materialOptions = [
-  { value: 'Oro amarillo', label: 'Oro amarillo', accent: '#f6d35f', image: '/personalizar/material-oro-amarillo.jpg', gradient: 'linear-gradient(135deg, #f6d35f, #171308)' },
-  { value: 'Oro blanco', label: 'Oro blanco', accent: '#dfe5f2', image: '/personalizar/material-oro-blanco.jpg', gradient: 'linear-gradient(135deg, #eef2f7, #0f1116)' },
-  { value: 'Plata', label: 'Plata', accent: '#cfd5dd', image: '/personalizar/material-plata.jpg', gradient: 'linear-gradient(135deg, #d8e0ea, #0d0f15)' },
-  { value: 'Platino', label: 'Platino', accent: '#d2d7e3', image: '/personalizar/material-platino.jpg', gradient: 'linear-gradient(135deg, #d2d7e3, #0c0d12)' },
-];
-
-const stoneOptions = [
-  { value: 'Sin piedra', label: 'Sin piedra', accent: '#888', image: '/personalizar/piedra-sin.jpg', gradient: 'linear-gradient(135deg, #3a3a3a, #0b0c0f)' },
-  { value: 'Diamante', label: 'Diamante', accent: '#e2f2ff', image: '/personalizar/piedra-diamante.jpg', gradient: 'linear-gradient(135deg, #e2f2ff, #0d1017)' },
-  { value: 'Zafiro', label: 'Zafiro', accent: '#6db5ff', image: '/personalizar/piedra-zafiro.jpg', gradient: 'linear-gradient(135deg, #6db5ff, #09111c)' },
-  { value: 'Circonita', label: 'Circonita', accent: '#f3e6ff', image: '/personalizar/piedra-circonita.jpg', gradient: 'linear-gradient(135deg, #f3e6ff, #0f0f15)' },
-  { value: 'Esmeralda', label: 'Esmeralda', accent: '#7ae4a8', image: '/personalizar/piedra-esmeralda.jpg', gradient: 'linear-gradient(135deg, #7ae4a8, #0a130f)' },
-];
-
-const sizePresets: Record<string, { label: string; unit: 'cm' | 'mm' | 'talla'; min: number; max: number; step: number; description: string }> = {
-  Anillo: { label: 'Talla (ES)', unit: 'talla', min: 8, max: 24, step: 0.5, description: 'Talla numérica española' },
-  Collar: { label: 'Longitud del collar', unit: 'cm', min: 36, max: 65, step: 1, description: 'Corto (36cm) a largo (65cm)' },
-  Pulsera: { label: 'Longitud de pulsera', unit: 'cm', min: 14, max: 22, step: 0.5, description: 'Ajuste ceñido a holgado' },
-  Pendientes: { label: 'Largo del pendiente', unit: 'mm', min: 4, max: 60, step: 1, description: 'De botón a cascada' },
-};
 
 const stepOrder: StepId[] = ['tipo', 'material', 'piedra', 'talla', 'grabado', 'resumen'];
 
@@ -45,20 +18,28 @@ const cardMotion = {
 };
 
 const CustomizePage: React.FC = () => {
+  const { config, isLoading: configLoading } = useConfig();
   const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState<StepId>('tipo');
   const [options, setOptions] = useState<CustomJewelOptions>({ pieceType: '', material: '', stonesOrColors: '', measurements: '', engraving: '', description: '' });
   const [sizeValue, setSizeValue] = useState<number | null>(null);
   const [errors, setErrors] = useState<string | null>(null);
 
-  const sizeConfig = useMemo(() => sizePresets[options.pieceType] || sizePresets.Anillo, [options.pieceType]);
+  const customization = config?.customizationOptions;
+
+  const sizeConfig = useMemo(() => {
+    if (!customization?.sizePresets) return { label: 'Talla', unit: '', min: 0, max: 100, step: 1, description: '' };
+    return customization.sizePresets[options.pieceType] || Object.values(customization.sizePresets)[0];
+  }, [options.pieceType, customization]);
 
   useEffect(() => {
-    setSizeValue(sizeConfig.min);
-    const label = sizeConfig.label;
-    const valueText = sizeConfig.unit === 'talla' ? `Talla ${sizeConfig.min}` : `${sizeConfig.min} ${sizeConfig.unit}`;
-    setOptions(prev => ({ ...prev, measurements: `${label}: ${valueText}` }));
-  }, [sizeConfig.label, sizeConfig.min, sizeConfig.unit]);
+    if (sizeConfig) {
+      setSizeValue(sizeConfig.min);
+      const label = sizeConfig.label;
+      const valueText = sizeConfig.unit === 'talla' ? `Talla ${sizeConfig.min}` : `${sizeConfig.min} ${sizeConfig.unit}`;
+      setOptions(prev => ({ ...prev, measurements: `${label}: ${valueText}` }));
+    }
+  }, [sizeConfig]);
 
   const goTo = (step: StepId) => {
     setErrors(null);
@@ -99,7 +80,7 @@ const CustomizePage: React.FC = () => {
     navigate('/personalizar/resultado', { state: { options } });
   };
 
-  const OptionCard = ({ option, selected, onSelect, helper }: { option: { value: string; label: string; accent: string; image?: string; gradient: string }; selected: boolean; onSelect: () => void; helper?: string }) => (
+  const OptionCard = ({ option, selected, onSelect, helper }: { option: any; selected: boolean; onSelect: () => void; helper?: string; key?: any }) => (
     <motion.button
       type="button"
       className={`relative overflow-hidden rounded-xl border ${selected ? 'border-[var(--primary-color)] ring-2 ring-[var(--primary-color)]' : 'border-gray-800'} bg-gray-900/60 text-left transition`}
@@ -133,11 +114,13 @@ const CustomizePage: React.FC = () => {
     </motion.div>
   );
 
+  if (configLoading) return <Spinner text="Cargando configuración..." />;
+
   const summaryLines = [
     { label: 'Tipo', value: options.pieceType || '—' },
     { label: 'Material', value: options.material || '—' },
-    { label: 'Piedra', value: options.stonesOrColors || 'Sin piedra' },
-    { label: 'Talla / longitud', value: options.measurements || '—' },
+    { label: 'Detalle', value: options.stonesOrColors || 'Sin detalle' },
+    { label: 'Medida', value: options.measurements || '—' },
     { label: 'Grabado', value: options.engraving || 'Sin grabado' },
   ];
 
@@ -145,9 +128,9 @@ const CustomizePage: React.FC = () => {
     <div className="container mx-auto px-4 py-12 text-white">
       <div className="max-w-5xl mx-auto space-y-8">
         <div className="text-center space-y-3">
-          <p className="text-xs uppercase tracking-[0.3em] text-gray-400">Personalización guiada</p>
-          <h1 className="text-4xl font-serif">Diseña tu joya a medida</h1>
-          <p className="text-gray-300 max-w-2xl mx-auto">Selecciona tipo, material, piedra y talla con controles fluidos. El resumen final genera el render y CTA.</p>
+          <p className="text-xs uppercase tracking-[0.3em] text-gray-400">Diseño Personalizado</p>
+          <h1 className="text-4xl font-serif">{config?.uiLabels?.customizationTitle || "Diseña tu pieza"}</h1>
+          <p className="text-gray-300 max-w-2xl mx-auto">{config?.uiLabels?.customizationSubtitle || "Personaliza cada detalle a tu gusto"}</p>
         </div>
 
         <div className="flex items-center gap-3">
@@ -173,18 +156,18 @@ const CustomizePage: React.FC = () => {
                 <div className="flex items-start justify-between gap-4 mb-4">
                   <div>
                     <h2 className="text-2xl font-serif">1. Selección de tipo</h2>
-                    <p className="text-sm text-gray-300">Anillo, collar, pulsera o pendientes. Prepara cada opción para su imagen de fondo.</p>
+                    <p className="text-sm text-gray-300">Escoge el tipo de producto base.</p>
                   </div>
                   <span className="text-sm text-gray-400">Obligatorio</span>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-                  {pieceOptions.map(opt => (
+                  {customization?.pieceTypes?.map((opt: any) => (
                     <OptionCard
-                      key={opt.value}
+                      key={opt.id}
                       option={opt}
-                      selected={options.pieceType === opt.value}
-                      onSelect={() => setOptions(prev => ({ ...prev, pieceType: opt.value }))}
-                      helper={`Opción ${opt.label}`}
+                      selected={options.pieceType === opt.id}
+                      onSelect={() => setOptions(prev => ({ ...prev, pieceType: opt.id }))}
+                      helper={opt.label}
                     />
                   ))}
                 </div>
@@ -195,18 +178,18 @@ const CustomizePage: React.FC = () => {
               <StepWrapper key="material">
                 <div className="flex items-start justify-between gap-4 mb-4">
                   <div>
-                    <h2 className="text-2xl font-serif">2. Material base</h2>
-                    <p className="text-sm text-gray-300">Oro amarillo, oro blanco, plata o platino. Pensado para superponer una imagen de referencia.</p>
+                    <h2 className="text-2xl font-serif">2. Material</h2>
+                    <p className="text-sm text-gray-300">Elige el material de acabado.</p>
                   </div>
                   <span className="text-sm text-gray-400">Obligatorio</span>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-                  {materialOptions.map(opt => (
+                  {customization?.materials?.map((opt: any) => (
                     <OptionCard
-                      key={opt.value}
+                      key={opt.id}
                       option={opt}
-                      selected={options.material === opt.value}
-                      onSelect={() => setOptions(prev => ({ ...prev, material: opt.value }))}
+                      selected={options.material === opt.label}
+                      onSelect={() => setOptions(prev => ({ ...prev, material: opt.label }))}
                       helper={opt.label}
                     />
                   ))}
@@ -218,19 +201,19 @@ const CustomizePage: React.FC = () => {
               <StepWrapper key="piedra">
                 <div className="flex items-start justify-between gap-4 mb-4">
                   <div>
-                    <h2 className="text-2xl font-serif">3. Piedra (opcional)</h2>
-                    <p className="text-sm text-gray-300">Diamante, zafiro, circonita u otra gema. Escoge “Sin piedra” si no aplica.</p>
+                    <h2 className="text-2xl font-serif">3. Detalles y Piedras</h2>
+                    <p className="text-sm text-gray-300">Añade gemas o detalles adicionales.</p>
                   </div>
                   <span className="text-sm text-gray-400">Opcional</span>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                  {stoneOptions.map(opt => (
+                  {customization?.stones?.map((opt: any) => (
                     <OptionCard
-                      key={opt.value}
+                      key={opt.id}
                       option={opt}
-                      selected={(options.stonesOrColors || 'Sin piedra') === opt.value}
-                      onSelect={() => setOptions(prev => ({ ...prev, stonesOrColors: opt.value === 'Sin piedra' ? '' : opt.value }))}
-                      helper={opt.value === 'Sin piedra' ? 'Liso, sin gema' : opt.label}
+                      selected={options.stonesOrColors === opt.label}
+                      onSelect={() => setOptions(prev => ({ ...prev, stonesOrColors: opt.label }))}
+                      helper={opt.label}
                     />
                   ))}
                 </div>
@@ -241,8 +224,8 @@ const CustomizePage: React.FC = () => {
               <StepWrapper key="talla">
                 <div className="flex items-start justify-between gap-4 mb-6">
                   <div>
-                    <h2 className="text-2xl font-serif">4. Talla / longitud</h2>
-                    <p className="text-sm text-gray-300">{sizeConfig.description}. Usa el slider animado.</p>
+                    <h2 className="text-2xl font-serif">4. Medidas</h2>
+                    <p className="text-sm text-gray-300">{sizeConfig.description}</p>
                   </div>
                   <span className="text-sm text-gray-400">Obligatorio</span>
                 </div>
@@ -280,8 +263,8 @@ const CustomizePage: React.FC = () => {
               <StepWrapper key="grabado">
                 <div className="flex items-start justify-between gap-4 mb-4">
                   <div>
-                    <h2 className="text-2xl font-serif">5. Grabado (opcional)</h2>
-                    <p className="text-sm text-gray-300">Texto breve para el interior o reverso. Se incluirá en el prompt.</p>
+                    <h2 className="text-2xl font-serif">5. Otros detalles</h2>
+                    <p className="text-sm text-gray-300">Anota cualquier preferencia adicional.</p>
                   </div>
                   <span className="text-sm text-gray-400">Opcional</span>
                 </div>
@@ -289,14 +272,14 @@ const CustomizePage: React.FC = () => {
                   <input
                     value={options.engraving || ''}
                     onChange={(e) => setOptions(prev => ({ ...prev, engraving: e.target.value }))}
-                    placeholder="Iniciales, fecha, tipografía..."
+                    placeholder="Grabado, fecha, iniciales..."
                     className="w-full px-4 py-3 rounded-lg bg-gray-900 border border-gray-800 focus:ring-2 focus:ring-[var(--primary-color)]"
                   />
                   <textarea
                     value={options.description || ''}
                     onChange={(e) => setOptions(prev => ({ ...prev, description: e.target.value }))}
                     rows={3}
-                    placeholder="Notas adicionales: ajuste, preferencia de color, contexto de uso."
+                    placeholder="Notas adicionales..."
                     className="w-full px-4 py-3 rounded-lg bg-gray-900 border border-gray-800 focus:ring-2 focus:ring-[var(--primary-color)]"
                   />
                 </div>
@@ -307,8 +290,8 @@ const CustomizePage: React.FC = () => {
               <StepWrapper key="resumen">
                 <div className="flex items-start justify-between gap-4 mb-4">
                   <div>
-                    <h2 className="text-2xl font-serif">6. Resumen y CTA</h2>
-                    <p className="text-sm text-gray-300">Verifica los datos antes de generar el render.</p>
+                    <h2 className="text-2xl font-serif">6. Resumen</h2>
+                    <p className="text-sm text-gray-300">Verifica tu configuración.</p>
                   </div>
                   <span className="text-sm text-gray-400">Checklist</span>
                 </div>
@@ -322,16 +305,10 @@ const CustomizePage: React.FC = () => {
                     ))}
                   </div>
                   <div className="bg-gradient-to-br from-[var(--primary-color)]/15 to-transparent border border-[var(--primary-color)]/30 rounded-lg p-4">
-                    <p className="text-sm text-gray-300 mb-3">Generaremos un prompt con estas características y pasaremos al CTA final.</p>
-                    <ul className="text-sm text-gray-200 space-y-1 list-disc list-inside">
-                      <li>Tipo definido y material listo</li>
-                      <li>Piedra opcional o diseño liso</li>
-                      <li>Talla/longitud con slider animado</li>
-                      <li>Grabado opcional incluido</li>
-                    </ul>
+                    <p className="text-sm text-gray-300 mb-3">Generaremos una propuesta basada en tus elecciones.</p>
                     <div className="mt-4 flex flex-col gap-2">
-                      <Button variant="primary" type="submit" className="w-full">Generar mi joya</Button>
-                      <Button variant="outline" type="button" onClick={() => goTo('tipo')}>Reiniciar selección</Button>
+                      <Button variant="primary" type="submit" className="w-full">Finalizar diseño</Button>
+                      <Button variant="outline" type="button" onClick={() => goTo('tipo')}>Reiniciar</Button>
                     </div>
                   </div>
                 </div>

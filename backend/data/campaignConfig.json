@@ -1,0 +1,149 @@
+{
+  "demoConfigs": {
+    "banoffee": {
+      "branding": {
+        "brandName": "Proba",
+        "primaryColor": "#812134",
+        "secondaryColor": "#000000",
+        "accentColor": "#ffffff",
+        "textColor": "#812134",
+        "headerBackground": "#ffffff",
+        "cardBorderColor": "#888888",
+        "secondaryTextColor": "#888888",
+        "priceColor": "#000000",
+        "fontFamily": "serif",
+        "backgroundGradient": "#ffffff",
+        "logoLightUrl": "https://banoffeebcn.com/cdn/shop/files/Diseno_sin_titulo_42.png?v=1689833303&width=500",
+        "logoDarkUrl": "https://banoffeebcn.com/cdn/shop/files/Diseno_sin_titulo_42.png?v=1689833303&width=500",
+        "faviconUrl": "https://banoffeebcn.com/cdn/shop/files/Favicon_Banoffee.png?v=1614323756&width=25"
+      },
+      "uiLabels": {
+        "heroTitle": "Probador virtual",
+        "heroDescription": "",
+        "ctaText": ""
+      },
+      "aiPrompts": {}
+    }
+  },
+  "branding": {
+    "brandName": "",
+    "primaryColor": "#D4AF37",
+    "secondaryColor": "#111111",
+    "accentColor": "#FFFFFF",
+    "backgroundGradient": "linear-gradient(135deg, #050509, #1C1C24)",
+    "logoLightUrl": "/logo.png",
+    "logoDarkUrl": "/logo.png",
+    "sectorName": "joya",
+    "sectorNamePlural": "joyas"
+  },
+  "uiLabels": {
+    "heroTitle": "Convierte visitas en clientes mostrando joyas en tiempo real.",
+    "heroSubtitle": "Las joyerías que lo usan reducen dudas y cierran más ventas online y en tienda.",
+    "tryOnInstruction": "Coloca tu mano, cuello o muñeca en el centro y captura.",
+    "processingTryOn": "Aplicando la joya elegida...",
+    "buyButton": "Quiero esta joya",
+    "ctaTryOn": "Probar en mi piel",
+    "catalogTitle": "Nuestra Colección",
+    "catalogSubtitle": "Joyas disponibles para probar",
+    "loadingItems": "Cargando catálogo...",
+    "noItemsFound": "No se encontraron piezas",
+    "tryChangingFilters": "Prueba a cambiar los filtros o el término de búsqueda.",
+    "backToCatalog": "Volver a la colección",
+    "viewDetails": "Ver Detalles",
+    "customizationTitle": "Diseña tu joya",
+    "customizationSubtitle": "Personaliza cada detalle a tu gusto"
+  },
+  "customizationOptions": {
+    "pieceTypes": [
+      {
+        "id": "Anillo",
+        "label": "Anillo",
+        "accent": "#f5c14c",
+        "image": "/personalizar/tipo-anillo.jpg",
+        "gradient": "radial-gradient(circle at 20% 30%, #f1cf6a, #0c0c0f 60%)"
+      },
+      {
+        "id": "Collar",
+        "label": "Collar",
+        "accent": "#8dd5ff",
+        "image": "/personalizar/tipo-collar.jpg",
+        "gradient": "linear-gradient(135deg, #8dd5ff, #0a1018)"
+      },
+      {
+        "id": "Pulsera",
+        "label": "Pulsera",
+        "accent": "#e2b0ff",
+        "image": "/personalizar/tipo-pulsera.jpg",
+        "gradient": "radial-gradient(circle at 70% 20%, #e2b0ff, #0b0b11 65%)"
+      }
+    ],
+    "materials": [
+      {
+        "id": "oro",
+        "label": "Oro 18K",
+        "accent": "#f6d35f",
+        "gradient": "linear-gradient(135deg, #f6d35f, #171308)"
+      },
+      {
+        "id": "plata",
+        "label": "Plata Ley",
+        "accent": "#cfd5dd",
+        "gradient": "linear-gradient(135deg, #d8e0ea, #0d0f15)"
+      }
+    ],
+    "stones": [
+      {
+        "id": "none",
+        "label": "Sin piedra",
+        "accent": "#888",
+        "gradient": "linear-gradient(135deg, #3a3a3a, #0b0c0f)"
+      },
+      {
+        "id": "diamante",
+        "label": "Diamante",
+        "accent": "#e2f2ff",
+        "gradient": "linear-gradient(135deg, #e2f2ff, #0d1017)"
+      }
+    ],
+    "sizePresets": {
+      "Anillo": {
+        "label": "Talla (ES)",
+        "unit": "talla",
+        "min": 8,
+        "max": 24,
+        "step": 0.5,
+        "description": "Talla numérica española"
+      },
+      "Collar": {
+        "label": "Longitud",
+        "unit": "cm",
+        "min": 36,
+        "max": 65,
+        "step": 1,
+        "description": "Largo del collar"
+      },
+      "Pulsera": {
+        "label": "Longitud",
+        "unit": "cm",
+        "min": 14,
+        "max": 22,
+        "step": 0.5,
+        "description": "Largo de pulsera"
+      }
+    }
+  },
+  "aiPrompts": {
+    "categoryPrompts": {
+      "ring": "Simulate a photorealistic virtual try-on: Place this ring accurately on the person's finger. Match lighting, skin tone reflections, and hand posture.",
+      "necklace": "Simulate a photorealistic virtual try-on: Place this necklace naturally around the person's neck. Ensure it rests on the skin/chest with realistic gravity and depth.",
+      "earring": "Simulate a photorealistic virtual try-on: Place this earring on the earlobe. Match ear angle and lighting for a seamless integration.",
+      "bracelet": "Simulate a photorealistic virtual try-on: Fit this bracelet around the wrist. Consider arm posture and realistic metal reflections.",
+      "watch": "Simulate a photorealistic virtual try-on: Place this watch on the wrist. Match the wrist curvature and environment lighting.",
+      "bolso": "Simulate a photorealistic virtual try-on: Place this bag as if being held or worn. Integrate the handle naturally with the person's hand or shoulder. Ensure shadows and perspective match perfectly.",
+      "camiseta": "Simulate a high-end virtual fashion try-on: Replace the person's current upper garment with this t-shirt. Adapt the fabric to the person's body shape, muscle contours, and posture. Ensure realistic wrinkles, fabric texture, and shadows.",
+      "camisa": "Simulate a high-end virtual fashion try-on: Replace the person's current upper garment with this button-down shirt. Ensure the collar, buttons, and fabric drape naturally over the shoulders and torso with professional photography lighting."
+    },
+    "customJewelPrompt": "CAD luxury {sectorName} rendering. Piece: {pieceType}. Material: {material}. Details: {details}.",
+    "customJewelRenderPrompt": "Studio {sectorName} product photo. {pieceType}, {material}, {details}."
+  }
+}
