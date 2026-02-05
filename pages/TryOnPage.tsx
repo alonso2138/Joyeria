@@ -192,10 +192,10 @@ const TryOnPage: React.FC = () => {
                 );
             case 'result':
                 return (
-                    <div className="relative w-full h-full bg-[#050505] overflow-hidden flex flex-col items-center justify-center">
+                    <div className="relative w-full h-full bg-[#050505] overflow-y-auto md:overflow-hidden flex flex-col items-center">
                         {/* Immersive blurred backdrop */}
                         {resultImage && (
-                            <div className="absolute inset-0 z-0">
+                            <div className="fixed inset-0 z-0">
                                 <img
                                     src={resultImage}
                                     className="w-full h-full object-cover blur-3xl opacity-30 scale-110"
@@ -205,66 +205,68 @@ const TryOnPage: React.FC = () => {
                             </div>
                         )}
 
-                        {resultImage && (
-                            <motion.img
-                                initial={{ opacity: 0, scale: 0.9, filter: 'blur(10px)' }}
-                                animate={{ opacity: 1, scale: 1, filter: 'blur(0px)' }}
-                                transition={{ duration: 1, ease: "easeOut" }}
-                                src={resultImage}
-                                alt="Virtual try-on result"
-                                className="relative z-10 max-w-full max-h-[75vh] object-contain shadow-[0_0_50px_rgba(0,0,0,0.5)] rounded-lg"
-                            />
-                        )}
-
-                        <AnimatePresence>
-                            {showDetails && (
-                                <motion.div
-                                    initial={{ y: 100, opacity: 0 }}
-                                    animate={{ y: 0, opacity: 1 }}
-                                    exit={{ y: 100, opacity: 0 }}
-                                    transition={{ type: "spring", damping: 25, stiffness: 200 }}
-                                    className="absolute bottom-6 left-4 right-4 md:left-auto md:right-8 md:w-96 z-20"
-                                >
-                                    <div className="bg-black/60 backdrop-blur-2xl border border-white/10 p-6 rounded-[2rem] shadow-2xl flex flex-col gap-4">
-                                        <div className="flex justify-between items-start">
-                                            <div>
-                                                <h2 className="text-2xl font-serif font-bold text-white tracking-tight">{item?.name}</h2>
-                                                <p className="text-lg font-medium text-[var(--primary-color)] mt-1">
-                                                    {new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(item?.price || 0)}
-                                                </p>
-                                            </div>
-                                            <button
-                                                onClick={() => {
-                                                    const link = document.createElement('a');
-                                                    link.href = resultImage!;
-                                                    link.download = `try-on-${item?.slug}.jpg`;
-                                                    link.click();
-                                                }}
-                                                className="p-3 bg-white/5 hover:bg-white/10 rounded-full transition-colors border border-white/5 group"
-                                                title="Descargar imagen"
-                                            >
-                                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-300 group-hover:text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                                                </svg>
-                                            </button>
-                                        </div>
-
-                                        <p className="text-gray-400 text-sm leading-relaxed line-clamp-2">
-                                            {item?.description}
-                                        </p>
-
-                                        <div className="mt-2">
-                                            <button
-                                                onClick={() => { reset(); setStep('camera'); }}
-                                                className="w-full py-4 px-6 rounded-2xl bg-white/5 hover:bg-white/10 text-white font-medium transition-all border border-white/10 active:scale-95"
-                                            >
-                                                Repetir
-                                            </button>
-                                        </div>
-                                    </div>
-                                </motion.div>
+                        <div className="relative z-10 w-full flex flex-col items-center min-h-full py-12 px-4 md:py-0 md:justify-center">
+                            {resultImage && (
+                                <motion.img
+                                    initial={{ opacity: 0, scale: 0.9, filter: 'blur(10px)' }}
+                                    animate={{ opacity: 1, scale: 1, filter: 'blur(0px)' }}
+                                    transition={{ duration: 1, ease: "easeOut" }}
+                                    src={resultImage}
+                                    alt="Virtual try-on result"
+                                    className="max-w-full max-h-[60vh] md:max-h-[75vh] object-contain shadow-[0_0_50px_rgba(0,0,0,0.5)] rounded-lg mb-8 md:mb-0"
+                                />
                             )}
-                        </AnimatePresence>
+
+                            <AnimatePresence>
+                                {showDetails && (
+                                    <motion.div
+                                        initial={{ y: 50, opacity: 0 }}
+                                        animate={{ y: 0, opacity: 1 }}
+                                        exit={{ y: 50, opacity: 0 }}
+                                        transition={{ type: "spring", damping: 25, stiffness: 200 }}
+                                        className="relative w-full md:absolute md:bottom-8 md:right-8 md:w-96"
+                                    >
+                                        <div className="bg-black/80 backdrop-blur-2xl border border-white/10 p-6 rounded-[2rem] shadow-2xl flex flex-col gap-4">
+                                            <div className="flex justify-between items-start">
+                                                <div>
+                                                    <h2 className="text-2xl font-serif font-bold text-white tracking-tight">{item?.name}</h2>
+                                                    <p className="text-lg font-medium text-[var(--primary-color)] mt-1">
+                                                        {new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(item?.price || 0)}
+                                                    </p>
+                                                </div>
+                                                <button
+                                                    onClick={() => {
+                                                        const link = document.createElement('a');
+                                                        link.href = resultImage!;
+                                                        link.download = `try-on-${item?.slug}.jpg`;
+                                                        link.click();
+                                                    }}
+                                                    className="p-3 bg-white/5 hover:bg-white/10 rounded-full transition-colors border border-white/5 group"
+                                                    title="Descargar imagen"
+                                                >
+                                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-300 group-hover:text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                                                    </svg>
+                                                </button>
+                                            </div>
+
+                                            <p className="text-gray-400 text-sm leading-relaxed line-clamp-2">
+                                                {item?.description}
+                                            </p>
+
+                                            <div className="mt-2">
+                                                <button
+                                                    onClick={() => { reset(); setStep('camera'); }}
+                                                    className="w-full py-4 px-6 rounded-2xl bg-white/5 hover:bg-white/10 text-white font-medium transition-all border border-white/10 active:scale-95"
+                                                >
+                                                    Repetir
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
+                        </div>
                     </div>
                 );
         }
