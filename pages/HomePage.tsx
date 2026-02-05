@@ -103,12 +103,12 @@ const HomePage: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    if (step === 4 && !useUploadFlow) {
+    if (step === 4 && !useUploadFlow && !isProcessing && !resultImage) {
       startCamera();
     } else {
       stopCamera();
     }
-  }, [step, useUploadFlow, startCamera, stopCamera]);
+  }, [step, useUploadFlow, isProcessing, resultImage, startCamera, stopCamera]);
 
   useEffect(() => {
     if (step !== 4) {
@@ -440,36 +440,68 @@ const HomePage: React.FC = () => {
       case 5:
         return (
           <div className="space-y-6">
-            <p className="text-xs uppercase tracking-[0.3em] text-gray-400">Resultado</p>
-            <div className="flex flex-col md:flex-row md:items-center gap-8">
-              <div className="md:w-2/3">
-                <div className="relative rounded-2xl overflow-hidden border border-white/10 bg-black/60 shadow-2xl">
+            <div className="flex justify-between items-center">
+              <p className="text-xs uppercase tracking-[0.3em] text-gray-400">Resultado</p>
+              {resultImage && (
+                <button
+                  onClick={() => {
+                    const link = document.createElement('a');
+                    link.href = resultImage;
+                    link.download = `joyeria-tryon.jpg`;
+                    link.click();
+                  }}
+                  className="flex items-center gap-2 text-xs text-gray-300 hover:text-white transition-colors"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                  </svg>
+                  Guardar resultado
+                </button>
+              )}
+            </div>
+            <div className="flex flex-col lg:grid lg:grid-cols-12 gap-8">
+              <div className="lg:col-span-8">
+                <div className="relative rounded-2xl overflow-hidden border border-white/5 bg-black/60 shadow-2xl aspect-video md:aspect-auto">
                   {resultImage ? (
-                    <img src={resultImage} alt="Resultado de la prueba" className="w-full h-[360px] md:h-[460px] object-cover" />
+                    <motion.img
+                      initial={{ scale: 1.1, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      transition={{ duration: 1 }}
+                      src={resultImage}
+                      alt="Resultado de la prueba"
+                      className="w-full h-full md:h-[500px] object-cover"
+                    />
                   ) : (
-                    <div className="w-full h-[360px] md:h-[460px] bg-black/40 flex items-center justify-center text-gray-400">
-                      Toma una foto para ver el resultado aqui.
+                    <div className="w-full h-[360px] md:h-[460px] bg-black/40 flex items-center justify-center text-gray-400 italic">
+                      Toma una foto para ver el resultado aquí.
                     </div>
                   )}
+                  {/* Subtle vignette */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent pointer-events-none" />
                 </div>
               </div>
-              <div className="md:w-1/3 space-y-4">
-                <h3 className="text-2xl font-serif font-bold">Asi lo vería tu cliente.</h3>
-                <p className="text-gray-300">Listo para decidir sin dudas.</p>
+              <div className="lg:col-span-4 space-y-6">
+                <div className="space-y-2">
+                  <h3 className="text-3xl font-serif font-bold text-white tracking-tight">Visto. Probado. Decidido.</h3>
+                  <p className="text-gray-400 leading-relaxed">Así es como tus clientes experimentarán tus piezas en tiempo real, desde cualquier lugar.</p>
+                </div>
+
                 {selectedItem && (
-                  <div className="p-4 rounded-lg border border-white/10 bg-black/40">
-                    <div className="text-sm uppercase tracking-[0.2em] text-gray-400">Probado</div>
-                    <div className="text-lg font-serif">{selectedItem.name}</div>
-                    <div className="text-xs text-gray-400 mt-1">{selectedItem.category}</div>
-                  </div>
+                  <motion.div
+                    initial={{ x: 20, opacity: 0 }}
+                    animate={{ x: 0, opacity: 1 }}
+                    className="p-6 rounded-2xl border border-white/10 bg-gradient-to-br from-white/10 to-transparent backdrop-blur-sm"
+                  >
+                    <div className="text-[10px] uppercase tracking-[0.2em] text-[var(--primary-color)] font-bold mb-2">Pieza actual</div>
+                    <div className="text-xl font-serif text-white">{selectedItem.name}</div>
+                    <div className="text-xs text-gray-500 mt-1">{selectedItem.category}</div>
+                  </motion.div>
                 )}
-              </div>
-            </div>
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-              <Button variant="secondary" onClick={() => { reset(); setStep(4); }}>Repetir captura</Button>
-              <div className="flex flex-col sm:flex-row gap-3">
-                <Button variant="secondary" onClick={() => { reset(); setStep(2); }}>Probar otra pieza</Button>
-                <Button variant="primary" onClick={handleUseResult}>Usar esto con mis joyas</Button>
+
+                <div className="pt-4 flex gap-2">
+                  <Button variant="secondary" className="flex-1 py-4" onClick={() => { reset(); setStep(4); }}>Nueva foto</Button>
+                  <Button variant="secondary" className="flex-1 py-4" onClick={() => { reset(); setStep(2); }}>Cambiar joya</Button>
+                </div>
               </div>
             </div>
           </div>

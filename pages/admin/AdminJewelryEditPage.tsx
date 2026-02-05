@@ -24,6 +24,7 @@ const AdminJewelryEditPage: React.FC = () => {
         sku: '',
         isFeatured: false,
         catalogId: 'main',
+        aiModel: 'gemini-2.5-flash-image',
     });
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
     const [imagePreview, setImagePreview] = useState<string>('');
@@ -187,6 +188,13 @@ const AdminJewelryEditPage: React.FC = () => {
                             <option>Camiseta</option>
                             <option>Camisa</option>
                         </select>
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium text-gray-300">Modelo de IA para Try-On</label>
+                        <select name="aiModel" value={item.aiModel} onChange={handleChange} className={formInputClasses}>
+                            <option value="gemini-2.5-flash-image">Gemini 2.5 Flash (Velocidad)</option>
+                        </select>
+                        <p className="text-[10px] text-gray-400 mt-1">Selecciona el modelo optimizado para esta pieza.</p>
                     </div>
                     <div className="md:col-span-2">
                         <label className="block text-sm font-medium text-gray-300">Descripción</label>

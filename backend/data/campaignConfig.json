@@ -23,6 +23,30 @@
         "ctaText": ""
       },
       "aiPrompts": {}
+    },
+    "platapura": {
+      "branding": {
+        "brandName": "Platapura",
+        "primaryColor": "#779ECB",
+        "secondaryColor": "#111111",
+        "accentColor": "#9CA3AF",
+        "textColor": "#111111",
+        "headerBackground": "#ffffff",
+        "cardBorderColor": "rgba(255, 255, 255, 0.1)",
+        "secondaryTextColor": "#9CA3AF",
+        "priceColor": "#779ECB",
+        "fontFamily": "sans",
+        "backgroundGradient": "#ffffff",
+        "logoLightUrl": "/logo.png",
+        "logoDarkUrl": "/logo.png",
+        "faviconUrl": ""
+      },
+      "uiLabels": {
+        "heroTitle": "Probador virtual",
+        "heroDescription": "",
+        "ctaText": ""
+      },
+      "aiPrompts": {}
     }
   },
   "branding": {
@@ -39,7 +63,7 @@
   "uiLabels": {
     "heroTitle": "Convierte visitas en clientes mostrando joyas en tiempo real.",
     "heroSubtitle": "Las joyerías que lo usan reducen dudas y cierran más ventas online y en tienda.",
-    "tryOnInstruction": "Coloca tu mano, cuello o muñeca en el centro y captura.",
+    "tryOnInstruction": "",
     "processingTryOn": "Aplicando la joya elegida...",
     "buyButton": "Quiero esta joya",
     "ctaTryOn": "Probar en mi piel",
@@ -108,12 +132,12 @@
   },
   "aiPrompts": {
     "categoryPrompts": {
-      "anillo": "High-end virtual jewelry try-on: Place this ring precisely on the base of one of the fingers (ring or middle finger) shown in the hand image. THE PIECE IS A RING, NOT A BRACELET; it must be scaled appropriately for a finger. The ring must wrap around the finger realistically, with its back portion hidden. PRESERVE EVERY DETAIL: maintain the exact stones, colors, metallic textures, and intricate designs of the provided jewelry asset. Match the skin's lighting, skin tone, and perspective perfectly for a photorealistic blend.",
-      "necklace": "High-end virtual jewelry try-on: Place this necklace naturally around the person's neck. The chain should follow the curve of the neck and collarbones realistically, with the pendant resting on the chest. PRESERVE EVERY DETAIL: maintain the exact stones, colors, metallic textures, and intricate designs of the provided jewelry asset. Match the skin tone and lighting perfectly, ensuring the jewelry reflects the environment. Create soft contact shadows on the skin and simulate gravity on the pendant.",
-      "pendiente": "High-end virtual jewelry try-on: Attach this earring exactly to the earlobe. The earring should hang realistically, following the orientation of ahead. PRESERVE EVERY DETAIL: maintain the exact stones, colors, metallic textures, and intricate designs of the provided jewelry asset. Match the lighting, create a realistic shadow on the skin, and ensure the metal has a realistic luster and reflections that match the scene.",
-      "pulsera": "High-end virtual jewelry try-on: Fit this bracelet around the wrist. The bracelet should appear to wrap around the arm, with the back portion hidden. PRESERVE EVERY DETAIL: maintain the exact stones, colors, metallic textures, and intricate designs of the provided jewelry asset. Match the skin's lighting and tone, and ensure realistic shadows and reflections for a photorealistic integration.",
-      "reloj": "High-end virtual watch try-on: Place this watch precisely on the wrist. Adjust the strap curvature to wrap around the arm perfectly. PRESERVE EVERY DETAIL: maintain the exact materials, colors, textures, and face details of the provided watch asset. Match the luxury lighting, metallic reflections, and cast a realistic shadow on the skin. The watch should look firmly attached to the wrist.",
-      "bolso": "High-end virtual fashion try-on: Place this bag as if being held or worn. Match realistic shadows, perspective, and studio lighting environment.",
+      "anillo": "High-end virtual jewelry try-on: Place this ring precisely on the base of the appropriate finger shown in the hand image. THE PIECE IS A RING, NOT A BRACELET; it must be scaled appropriately for a finger. STRICT SCALE: The ring diameter must match the finger thickness perfectly. It must wrap around the finger realistically, with its back portion hidden. PRESERVE EVERY DETAIL: maintain the exact stones, colors, metallic textures, and intricate designs of the provided jewelry asset. Match the skin's lighting, skin tone, and perspective perfectly for a photorealistic blend.",
+      "necklace": "High-end virtual jewelry try-on: Place this necklace naturally around the person's neck. STRICT SCALE: The chain thickness and pendant size must look realistic compared to the person's torso size. The chain should follow the curve of the neck and collarbones realistically, with the pendant resting on the chest. PRESERVE EVERY DETAIL: maintain the exact stones, colors, metallic textures, and intricate designs of the provided jewelry asset. Match the skin tone and lighting perfectly, ensuring the jewelry reflects the environment. Create soft contact shadows on the skin and simulate gravity on the pendant.",
+      "pendiente": "High-end virtual jewelry try-on: Attach this earring exactly to the earlobe. STRICT SCALE: The earring size must be proportional to the ear. The earring should hang realistically, following the orientation of ahead. PRESERVE EVERY DETAIL: maintain the exact stones, colors, metallic textures, and intricate designs of the provided jewelry asset. Match the lighting, create a realistic shadow on the skin, and ensure the metal has a realistic luster and reflections that match the scene.",
+      "pulsera": "High-end virtual jewelry try-on: Fit this bracelet around the wrist. STRICT SCALE: The bracelet must fit the width of the wrist naturally, not as a giant ring. The bracelet should appear to wrap around the arm, with the back portion hidden. PRESERVE EVERY DETAIL: maintain the exact stones, colors, metallic textures, and intricate designs of the provided jewelry asset. Match the skin's lighting and tone, and ensure realistic shadows and reflections for a photorealistic integration.",
+      "reloj": "High-end virtual watch try-on: Place this watch precisely on the wrist. STRICT SCALE: The watch face diameter must be roughly 30-45% of the wrist width. Adjust the strap curvature to wrap around the arm perfectly. PRESERVE EVERY DETAIL: maintain the exact materials, colors, textures, and face details of the provided watch asset. Match the luxury lighting, metallic reflections, and cast a realistic shadow on the skin. The watch should look firmly attached to the wrist.",
+      "bolso": "High-end virtual fashion try-on: Place this bag as if being held or worn. STRICT SCALE: Match realistic bag proportions relative to the human body. Match realistic shadows, perspective, and studio lighting environment.",
       "camiseta": "High-end virtual fashion try-on: Fit this t-shirt over the torso. Match body shape, muscle contours, and realistic fabric wrinkles.",
       "camisa": "High-end virtual fashion try-on: Fit this shirt over the torso. Match shoulder profile, fabric drape, and collar structure perfectly."
     },

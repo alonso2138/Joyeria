@@ -42,76 +42,69 @@ export const useTryOn = ({
 
     const stopCamera = useCallback(() => {
         if (streamRef.current) {
-            streamRef.current.getTracks().forEach((track) => track.stop());
+            streamRef.current.getTracks().forEach(track => track.stop());
             streamRef.current = null;
         }
         if (videoRef.current) {
             videoRef.current.srcObject = null;
         }
         setCameraReady(false);
+        setCameraStatus('idle');
     }, []);
 
     const startCamera = useCallback(async () => {
-        if (streamRef.current) stopCamera();
+        // Idempotent: don't restart if already running with same facingMode
+        if (streamRef.current && cameraStatus === 'granted') return;
 
         if (!navigator.mediaDevices?.getUserMedia) {
             setCameraStatus('denied');
-            setCameraError('Tu dispositivo no permite abrir la cámara.');
+            setCameraError('Cámara no soportada.');
             return;
         }
 
         try {
             const stream = await navigator.mediaDevices.getUserMedia({
-                video: { facingMode: facingMode }
+                video: { facingMode, width: { ideal: 1280 }, height: { ideal: 720 } }
             });
+
             streamRef.current = stream;
             setCameraStatus('granted');
             setCameraError(null);
 
-            // Try to attach immediately if ref exists
             if (videoRef.current) {
                 videoRef.current.srcObject = stream;
-                videoRef.current.play().catch(e => console.warn('[useTryOn] Play error:', e));
-                videoRef.current.onloadedmetadata = () => {
-                    if (videoRef.current && videoRef.current.videoWidth > 0) {
-                        setCameraReady(true);
-                    }
-                };
+                videoRef.current.play().catch(() => { });
             }
         } catch (err) {
-            console.error('[useTryOn] Camera error:', err);
+            console.error('[useTryOn] startCamera error:', err);
             setCameraStatus('denied');
-            setCameraError('No se pudo acceder a la cámara.');
+            setCameraError('Error al acceder a la cámara.');
         }
-    }, [facingMode, stopCamera]);
+    }, [facingMode, cameraStatus]);
 
-    // Effect to attach stream when video element appears (handles race condition)
+    // Robust attachment effect
     useEffect(() => {
-        if (cameraStatus === 'granted' && streamRef.current && videoRef.current) {
-            const video = videoRef.current;
-            if (!video.srcObject) {
+        const video = videoRef.current;
+        if (cameraStatus === 'granted' && streamRef.current && video) {
+            if (video.srcObject !== streamRef.current) {
                 video.srcObject = streamRef.current;
-                video.play().catch(e => console.warn('[useTryOn] Play error:', e));
+                video.play().catch(() => { });
             }
 
-            const handleMetadata = () => {
-                if (video.videoWidth > 0) {
-                    setCameraReady(true);
-                }
+            const checkReady = () => {
+                if (video.videoWidth > 0) setCameraReady(true);
             };
 
-            if (video.videoWidth > 0) {
-                setCameraReady(true);
-            } else {
-                video.addEventListener('loadedmetadata', handleMetadata);
-                video.addEventListener('canplay', handleMetadata);
-                return () => {
-                    video.removeEventListener('loadedmetadata', handleMetadata);
-                    video.removeEventListener('canplay', handleMetadata);
-                };
-            }
+            video.addEventListener('loadedmetadata', checkReady);
+            video.addEventListener('canplay', checkReady);
+            if (video.videoWidth > 0) setCameraReady(true);
+
+            return () => {
+                video.removeEventListener('loadedmetadata', checkReady);
+                video.removeEventListener('canplay', checkReady);
+            };
         }
-    }, [cameraStatus, facingMode]);
+    }, [cameraStatus]); // Only re-run when status changes to granted
 
     const toggleCamera = useCallback(() => {
         setFacingMode(prev => prev === 'user' ? 'environment' : 'user');
@@ -159,28 +152,68 @@ export const useTryOn = ({
 
         try {
             let userImageBase64 = providedBase64 || null;
+            let isCropped = false;
 
-            if (!userImageBase64 && cameraStatus === 'granted') {
-                // Robust retry loop
-                for (let i = 0; i < 10; i++) {
-                    userImageBase64 = captureToBase64();
-                    if (userImageBase64 && userImageBase64.length > 2000) break;
-                    await new Promise(r => setTimeout(r, 200));
+            // 1. CAPTURA INMEDIATA (Freeze Frame)
+            // Esto soluciona ambos problemas: congela la imagen para que no te veas moviéndote
+            // y asegura que la IA procese la foto EXACTA del momento del disparo.
+            if (!userImageBase64 && cameraStatus === 'granted' && videoRef.current) {
+                // Capturamos el frame actual al canvas de forma síncrona/inmediata
+                userImageBase64 = captureToBase64();
+
+                if (userImageBase64) {
+                    setPreviewImage(userImageBase64); // Mostramos el preview inmediatamente
+                    stopCamera(); // Apagamos la cámara ya
+                }
+            }
+
+            // 2. PROCESAMIENTO DE VISIÓN (Smart Crop + 3D Pose)
+            // Intentamos buscar la mano/cara sobre la imagen ya capturada
+            let orientationDesc = '';
+            if (userImageBase64 && !providedBase64) {
+                try {
+                    const { detectAndCrop } = await import('../services/visionService');
+                    const category = selectedItem.category || 'ring';
+
+                    // Creamos un canvas temporal o imagen para que MediaPipe lo procese
+                    const img = new Image();
+                    img.src = userImageBase64;
+                    await new Promise(r => img.onload = r);
+
+                    const cropResult = await detectAndCrop(img as any, category);
+                    if (cropResult) {
+                        userImageBase64 = cropResult.image;
+                        isCropped = true;
+                        if (cropResult.orientation) {
+                            orientationDesc = cropResult.orientation.description;
+                        }
+                        console.log(`[TryOn] Smart Crop + Orientation successful for ${category}`);
+                    } else {
+                        // FALLBACK: Si no detecta nada, forzamos un recorte central "Best Effort"
+                        // Esto evita que la IA reciba fotos de toda la habitación y pierda la escala.
+                        const { getFallbackCrop } = await import('../services/visionService');
+                        const fallback = getFallbackCrop(img as any);
+                        userImageBase64 = fallback.image;
+                        isCropped = true; // Lo tratamos como macro para la IA
+                        console.log(`[TryOn] Detection failed, using Center-Weighted Fallback`);
+                    }
+                } catch (e) {
+                    console.warn('[TryOn] Vision service error:', e);
                 }
             }
 
             if (!userImageBase64) throw new Error('No se pudo obtener una imagen.');
 
-            setPreviewImage(userImageBase64);
-            if (cameraStatus === 'granted') stopCamera();
-
             const overlayUrl = getImageUrl(selectedItem.overlayAssetUrl);
             const category = selectedItem.category || 'ring';
+            const aiModel = selectedItem.aiModel;
 
-            const composed = await generateTryOnImage(userImageBase64, overlayUrl, category, config);
+            const requestConfig = { ...config, isMacro: isCropped, orientationDesc };
+
+            const composed = await generateTryOnImage(userImageBase64, overlayUrl, category, requestConfig, aiModel);
 
             setResultImage(composed);
-            // Brief pause to show the change while blurred (managed by UI usually)
+            // Breve pausa para mostrar el resultado
             await new Promise(r => setTimeout(r, 800));
 
             if (onSuccess) onSuccess(composed);

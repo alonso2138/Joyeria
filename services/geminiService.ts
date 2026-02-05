@@ -36,7 +36,8 @@ export const generateTryOnImage = async (
   userImageBase64: string,
   jewelryOverlayUrl: string,
   itemType: string = 'ring',
-  config?: any
+  config?: any,
+  forcedModel?: string
 ): Promise<string> => {
   try {
     const { client, Modality } = await getGenAI();
@@ -49,8 +50,27 @@ export const generateTryOnImage = async (
 
     console.log("itemKey", itemKey);
 
-    const finalPrompt = categoryPrompts[itemKey] || `Photorealistic virtual try-on: Place this ${itemKey} on the person accurately. Match lighting and shadows.`;
-    const model = 'gemini-3-pro-image-preview';
+    let basePrompt = categoryPrompts[itemKey] || `Photorealistic virtual try-on: Place this ${itemKey} on the person accurately. Match lighting and shadows.`;
+
+    // Inject Macro Context if applicable
+    // Inject Orientation and Proportional Scaling
+    if (config?.isMacro) {
+      basePrompt = `
+        CRITICAL INSTRUCTIONS FOR MACRO SHOT:
+        1. POSE GUIDANCE: ${config.orientationDesc || 'Hand is in a standard pose.'}
+        2. ANATOMICAL SCALE: The ring/jewelry must be SMALL relative to the zoomed body part. A ring diameter must match the finger thickness EXACTLY (sub-millimeter precision).
+        3. LIGHTING & SPECULAR MATCHING: Detect the strongest light source in the user's photo (look at skin highlights). Replicate this exact light source on the metal's specular highlights.
+        4. SKIN INTERACTION: The jewelry must displace the skin. Create subtle bulges where the metal meets the flesh. Cast a SHARP CONTACT SHADOW.
+        5. SILHOUETTE ENFORCEMENT: Use the provided jewelry image ONLY for shape and texture. DO NOT let its background or fringes bleed into the skin.
+        ${basePrompt}
+      `;
+    } else {
+      // This case is now rare due to center-fallback, but kept for absolute safety
+      basePrompt = `PROPORTIONAL SCALE: The jewelry must be tiny and match the person's distance. ${basePrompt}`;
+    }
+
+    const finalPrompt = basePrompt;
+    const model = forcedModel || 'gemini-2.5-flash-image';
     console.log(`[Gemini Try-On] Model: ${model}`);
     console.log(`[Gemini Try-On] Prompt: ${finalPrompt}`);
 
@@ -88,7 +108,7 @@ export const generateCustomJewelWithTryOn = async (
     .replace(/{details}/g, options.stonesOrColors);
   try {
     const { client, Modality } = await getGenAI();
-    const model = 'gemini-3-pro-image-preview';
+    const model = 'gemini-2.5-flash-image';
     console.log(`[Gemini Custom Try-On] Model: ${model}`);
     console.log(`[Gemini Custom Try-On] Prompt: ${prompt}`);
     const response = await client.models.generateContent({
@@ -113,7 +133,7 @@ export const generateCustomJewelRender = async (options: CustomJewelOptions, con
     .replace(/{details}/g, options.stonesOrColors);
   try {
     const { client, Modality } = await getGenAI();
-    const model = 'gemini-3-pro-image-preview';
+    const model = 'gemini-2.5-flash-image';
     console.log(`[Gemini Custom Render] Model: ${model}`);
     console.log(`[Gemini Custom Render] Prompt: ${prompt}`);
     const response = await client.models.generateContent({

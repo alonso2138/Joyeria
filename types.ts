@@ -13,6 +13,8 @@ export interface JewelryItem {
   hashtags: string[];
   sku: string;
   isFeatured: boolean;
+  catalogId?: string;
+  aiModel?: 'gemini-2.5-flash-image';
   createdAt: string;
   updatedAt: string;
 }

@@ -64,13 +64,12 @@ const TryOnPage: React.FC = () => {
     }, [slug, navigate]);
 
     useEffect(() => {
-        if (step === 'camera') {
+        if (step === 'camera' && !isProcessing && !resultImage) {
             startCamera();
         } else {
             stopCamera();
         }
-        return () => { stopCamera(); };
-    }, [step, startCamera, stopCamera]);
+    }, [step, isProcessing, resultImage, startCamera, stopCamera]);
 
     useEffect(() => {
         if (isProcessing && step !== 'processing') {
@@ -193,32 +192,75 @@ const TryOnPage: React.FC = () => {
                 );
             case 'result':
                 return (
-                    <div className="relative w-full h-full bg-black">
+                    <div className="relative w-full h-full bg-[#050505] overflow-hidden flex flex-col items-center justify-center">
+                        {/* Immersive blurred backdrop */}
+                        {resultImage && (
+                            <div className="absolute inset-0 z-0">
+                                <img
+                                    src={resultImage}
+                                    className="w-full h-full object-cover blur-3xl opacity-30 scale-110"
+                                    alt=""
+                                />
+                                <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-black/40" />
+                            </div>
+                        )}
+
                         {resultImage && (
                             <motion.img
-                                initial={{ filter: 'blur(20px)', scale: 1.1 }}
-                                animate={{ filter: 'blur(0px)', scale: 1 }}
-                                transition={{ duration: 0.8 }}
+                                initial={{ opacity: 0, scale: 0.9, filter: 'blur(10px)' }}
+                                animate={{ opacity: 1, scale: 1, filter: 'blur(0px)' }}
+                                transition={{ duration: 1, ease: "easeOut" }}
                                 src={resultImage}
                                 alt="Virtual try-on result"
-                                className="w-full h-full object-contain"
+                                className="relative z-10 max-w-full max-h-[75vh] object-contain shadow-[0_0_50px_rgba(0,0,0,0.5)] rounded-lg"
                             />
                         )}
+
                         <AnimatePresence>
                             {showDetails && (
                                 <motion.div
-                                    initial={{ y: '100%' }}
-                                    animate={{ y: 0 }}
-                                    exit={{ y: '100%' }}
-                                    className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-80 backdrop-blur-lg p-6 rounded-t-2xl"
+                                    initial={{ y: 100, opacity: 0 }}
+                                    animate={{ y: 0, opacity: 1 }}
+                                    exit={{ y: 100, opacity: 0 }}
+                                    transition={{ type: "spring", damping: 25, stiffness: 200 }}
+                                    className="absolute bottom-6 left-4 right-4 md:left-auto md:right-8 md:w-96 z-20"
                                 >
-                                    <div className="w-12 h-1.5 bg-gray-600 rounded-full mx-auto mb-4 cursor-pointer" onClick={() => setShowDetails(false)}></div>
-                                    <h2 className="text-3xl font-serif text-white">{item?.name}</h2>
-                                    <p className="text-xl text-[var(--primary-color)] my-2">{new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(item?.price || 0)}</p>
-                                    <p className="text-gray-300 text-sm mb-6">{item?.description?.substring(0, 150)}...</p>
-                                    <div className="flex gap-4">
-                                        <Button variant="secondary" className="flex-1" onClick={() => { reset(); setStep('camera'); }}>Repetir</Button>
-                                        <Button variant="primary" className="flex-2" onClick={() => logEvent(EventType.CLICK_BUY, item?.id || '')}>{config?.uiLabels?.buyButton || 'Quiero esto'}</Button>
+                                    <div className="bg-black/60 backdrop-blur-2xl border border-white/10 p-6 rounded-[2rem] shadow-2xl flex flex-col gap-4">
+                                        <div className="flex justify-between items-start">
+                                            <div>
+                                                <h2 className="text-2xl font-serif font-bold text-white tracking-tight">{item?.name}</h2>
+                                                <p className="text-lg font-medium text-[var(--primary-color)] mt-1">
+                                                    {new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(item?.price || 0)}
+                                                </p>
+                                            </div>
+                                            <button
+                                                onClick={() => {
+                                                    const link = document.createElement('a');
+                                                    link.href = resultImage!;
+                                                    link.download = `try-on-${item?.slug}.jpg`;
+                                                    link.click();
+                                                }}
+                                                className="p-3 bg-white/5 hover:bg-white/10 rounded-full transition-colors border border-white/5 group"
+                                                title="Descargar imagen"
+                                            >
+                                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-300 group-hover:text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                                                </svg>
+                                            </button>
+                                        </div>
+
+                                        <p className="text-gray-400 text-sm leading-relaxed line-clamp-2">
+                                            {item?.description}
+                                        </p>
+
+                                        <div className="mt-2">
+                                            <button
+                                                onClick={() => { reset(); setStep('camera'); }}
+                                                className="w-full py-4 px-6 rounded-2xl bg-white/5 hover:bg-white/10 text-white font-medium transition-all border border-white/10 active:scale-95"
+                                            >
+                                                Repetir
+                                            </button>
+                                        </div>
                                     </div>
                                 </motion.div>
                             )}
@@ -229,8 +271,8 @@ const TryOnPage: React.FC = () => {
     };
 
     return (
-        <div className="fixed inset-0 bg-gray-900 z-50">
-            <button onClick={() => navigate(-1)} className="absolute top-4 left-4 z-20 text-white bg-black bg-opacity-50 rounded-full p-2">
+        <div className="fixed inset-0 bg-[#050505] z-50">
+            <button onClick={() => navigate(-1)} className="absolute top-6 left-6 z-30 w-12 h-12 flex items-center justify-center text-white bg-black/40 hover:bg-black/60 backdrop-blur-md rounded-full border border-white/10 transition-all">
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
             </button>
             {renderContent()}

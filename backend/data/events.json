@@ -5623,5 +5623,380 @@
     "email": "alonso.valls@icloud.com",
     "timestamp": "2026-02-03T13:29:18.138Z",
     "action_type": "step-1-completed"
+  },
+  {
+    "email": "alonso.valls@icloud.com",
+    "timestamp": "2026-02-05T11:56:34.906Z",
+    "action_type": "link-click"
+  },
+  {
+    "email": "alonso.valls@icloud.com",
+    "timestamp": "2026-02-05T11:56:37.713Z",
+    "action_type": "try-on-started"
+  },
+  {
+    "email": "alonso.valls@icloud.com",
+    "timestamp": "2026-02-05T11:56:37.718Z",
+    "action_type": "step-1-completed"
+  },
+  {
+    "email": "alonso.valls@icloud.com",
+    "timestamp": "2026-02-05T11:56:40.504Z",
+    "action_type": "step-2-completed"
+  },
+  {
+    "email": "alonso.valls@icloud.com",
+    "timestamp": "2026-02-05T11:56:41.614Z",
+    "action_type": "step-3-completed"
+  },
+  {
+    "email": "alonso.valls@icloud.com",
+    "timestamp": "2026-02-05T11:57:09.935Z",
+    "action_type": "try-on-started"
+  },
+  {
+    "email": "alonso.valls@icloud.com",
+    "timestamp": "2026-02-05T11:57:09.940Z",
+    "action_type": "step-1-completed"
+  },
+  {
+    "email": "alonso.valls@icloud.com",
+    "timestamp": "2026-02-05T11:57:11.951Z",
+    "action_type": "step-2-completed"
+  },
+  {
+    "email": "alonso.valls@icloud.com",
+    "timestamp": "2026-02-05T11:57:12.924Z",
+    "action_type": "step-3-completed"
+  },
+  {
+    "email": "alonso.valls@icloud.com",
+    "timestamp": "2026-02-05T11:57:47.523Z",
+    "action_type": "try-on"
+  },
+  {
+    "email": "alonso.valls@icloud.com",
+    "timestamp": "2026-02-05T11:57:49.539Z",
+    "action_type": "step-4-completed"
+  },
+  {
+    "email": "alonso.valls@icloud.com",
+    "timestamp": "2026-02-05T11:58:38.022Z",
+    "action_type": "try-on-started"
+  },
+  {
+    "email": "alonso.valls@icloud.com",
+    "timestamp": "2026-02-05T11:58:38.029Z",
+    "action_type": "step-1-completed"
+  },
+  {
+    "email": "alonso.valls@icloud.com",
+    "timestamp": "2026-02-05T11:58:39.764Z",
+    "action_type": "step-2-completed"
+  },
+  {
+    "email": "alonso.valls@icloud.com",
+    "timestamp": "2026-02-05T11:58:41.120Z",
+    "action_type": "step-3-completed"
+  },
+  {
+    "email": "alonso.valls@icloud.com",
+    "timestamp": "2026-02-05T11:59:10.917Z",
+    "action_type": "try-on"
+  },
+  {
+    "email": "alonso.valls@icloud.com",
+    "timestamp": "2026-02-05T11:59:12.475Z",
+    "action_type": "step-4-completed"
+  },
+  {
+    "email": "alonso.valls@icloud.com",
+    "timestamp": "2026-02-05T12:01:51.754Z",
+    "action_type": "try-on-started"
+  },
+  {
+    "email": "alonso.valls@icloud.com",
+    "timestamp": "2026-02-05T12:01:51.765Z",
+    "action_type": "step-1-completed"
+  },
+  {
+    "email": "alonso.valls@icloud.com",
+    "timestamp": "2026-02-05T12:01:53.087Z",
+    "action_type": "step-2-completed"
+  },
+  {
+    "email": "alonso.valls@icloud.com",
+    "timestamp": "2026-02-05T12:01:53.943Z",
+    "action_type": "step-3-completed"
+  },
+  {
+    "email": "alonso.valls@icloud.com",
+    "timestamp": "2026-02-05T12:02:03.612Z",
+    "action_type": "try-on-started"
+  },
+  {
+    "email": "alonso.valls@icloud.com",
+    "timestamp": "2026-02-05T12:02:03.617Z",
+    "action_type": "step-1-completed"
+  },
+  {
+    "email": "alonso.valls@icloud.com",
+    "timestamp": "2026-02-05T12:02:05.627Z",
+    "action_type": "step-2-completed"
+  },
+  {
+    "email": "alonso.valls@icloud.com",
+    "timestamp": "2026-02-05T12:02:06.909Z",
+    "action_type": "step-3-completed"
+  },
+  {
+    "email": "alonso.valls@icloud.com",
+    "timestamp": "2026-02-05T12:03:09.112Z",
+    "action_type": "try-on"
+  },
+  {
+    "email": "alonso.valls@icloud.com",
+    "timestamp": "2026-02-05T12:04:08.033Z",
+    "action_type": "try-on"
+  },
+  {
+    "email": "alonso.valls@icloud.com",
+    "timestamp": "2026-02-05T12:04:32.584Z",
+    "action_type": "try-on"
+  },
+  {
+    "email": "alonso.valls@icloud.com",
+    "timestamp": "2026-02-05T12:05:22.386Z",
+    "action_type": "try-on-started"
+  },
+  {
+    "email": "alonso.valls@icloud.com",
+    "timestamp": "2026-02-05T12:05:22.394Z",
+    "action_type": "step-1-completed"
+  },
+  {
+    "email": "alonso.valls@icloud.com",
+    "timestamp": "2026-02-05T12:05:24.331Z",
+    "action_type": "step-2-completed"
+  },
+  {
+    "email": "alonso.valls@icloud.com",
+    "timestamp": "2026-02-05T12:05:25.182Z",
+    "action_type": "step-3-completed"
+  },
+  {
+    "email": "alonso.valls@icloud.com",
+    "timestamp": "2026-02-05T12:07:10.347Z",
+    "action_type": "try-on-started"
+  },
+  {
+    "email": "alonso.valls@icloud.com",
+    "timestamp": "2026-02-05T12:07:10.354Z",
+    "action_type": "step-1-completed"
+  },
+  {
+    "email": "alonso.valls@icloud.com",
+    "timestamp": "2026-02-05T12:07:12.354Z",
+    "action_type": "step-2-completed"
+  },
+  {
+    "email": "alonso.valls@icloud.com",
+    "timestamp": "2026-02-05T12:07:13.483Z",
+    "action_type": "step-3-completed"
+  },
+  {
+    "email": "alonso.valls@icloud.com",
+    "timestamp": "2026-02-05T12:08:07.863Z",
+    "action_type": "try-on-started"
+  },
+  {
+    "email": "alonso.valls@icloud.com",
+    "timestamp": "2026-02-05T12:08:07.871Z",
+    "action_type": "step-1-completed"
+  },
+  {
+    "email": "alonso.valls@icloud.com",
+    "timestamp": "2026-02-05T12:08:09.425Z",
+    "action_type": "step-2-completed"
+  },
+  {
+    "email": "alonso.valls@icloud.com",
+    "timestamp": "2026-02-05T12:08:10.454Z",
+    "action_type": "step-3-completed"
+  },
+  {
+    "email": "alonso.valls@icloud.com",
+    "timestamp": "2026-02-05T12:08:34.497Z",
+    "action_type": "try-on"
+  },
+  {
+    "email": "alonso.valls@icloud.com",
+    "timestamp": "2026-02-05T12:08:36.511Z",
+    "action_type": "step-4-completed"
+  },
+  {
+    "email": "alonso.valls@icloud.com",
+    "timestamp": "2026-02-05T12:09:10.583Z",
+    "action_type": "try-on-started"
+  },
+  {
+    "email": "alonso.valls@icloud.com",
+    "timestamp": "2026-02-05T12:09:10.594Z",
+    "action_type": "step-1-completed"
+  },
+  {
+    "email": "alonso.valls@icloud.com",
+    "timestamp": "2026-02-05T12:09:12.313Z",
+    "action_type": "step-2-completed"
+  },
+  {
+    "email": "alonso.valls@icloud.com",
+    "timestamp": "2026-02-05T12:09:13.247Z",
+    "action_type": "step-3-completed"
+  },
+  {
+    "email": "alonso.valls@icloud.com",
+    "timestamp": "2026-02-05T12:09:40.495Z",
+    "action_type": "try-on"
+  },
+  {
+    "email": "alonso.valls@icloud.com",
+    "timestamp": "2026-02-05T12:09:42.084Z",
+    "action_type": "step-4-completed"
+  },
+  {
+    "email": "alonso.valls@icloud.com",
+    "timestamp": "2026-02-05T12:11:21.038Z",
+    "action_type": "try-on"
+  },
+  {
+    "email": "alonso.valls@icloud.com",
+    "timestamp": "2026-02-05T12:12:59.169Z",
+    "action_type": "try-on"
+  },
+  {
+    "email": "alonso.valls@icloud.com",
+    "timestamp": "2026-02-05T12:19:39.482Z",
+    "action_type": "try-on"
+  },
+  {
+    "email": "alonso.valls@icloud.com",
+    "timestamp": "2026-02-05T12:20:13.459Z",
+    "action_type": "try-on"
+  },
+  {
+    "email": "alonso.valls@icloud.com",
+    "timestamp": "2026-02-05T12:21:18.435Z",
+    "action_type": "try-on"
+  },
+  {
+    "email": "alonso.valls@icloud.com",
+    "timestamp": "2026-02-05T12:22:21.330Z",
+    "action_type": "try-on"
+  },
+  {
+    "email": "alonso.valls@icloud.com",
+    "timestamp": "2026-02-05T12:23:05.513Z",
+    "action_type": "try-on"
+  },
+  {
+    "email": "alonso.valls@icloud.com",
+    "timestamp": "2026-02-05T12:23:41.055Z",
+    "action_type": "try-on"
+  },
+  {
+    "email": "alonso.valls@icloud.com",
+    "timestamp": "2026-02-05T12:26:14.528Z",
+    "action_type": "try-on"
+  },
+  {
+    "email": "alonso.valls@icloud.com",
+    "timestamp": "2026-02-05T12:27:29.495Z",
+    "action_type": "try-on"
+  },
+  {
+    "email": "alonso.valls@icloud.com",
+    "timestamp": "2026-02-05T12:29:09.379Z",
+    "action_type": "try-on"
+  },
+  {
+    "email": "alonso.valls@icloud.com",
+    "timestamp": "2026-02-05T12:44:35.209Z",
+    "action_type": "try-on"
+  },
+  {
+    "email": "alonso.valls@icloud.com",
+    "timestamp": "2026-02-05T12:45:02.246Z",
+    "action_type": "try-on"
+  },
+  {
+    "email": "alonso.valls@icloud.com",
+    "timestamp": "2026-02-05T12:53:25.159Z",
+    "action_type": "try-on"
+  },
+  {
+    "email": "alonso.valls@icloud.com",
+    "timestamp": "2026-02-05T12:54:04.045Z",
+    "action_type": "try-on"
+  },
+  {
+    "email": "alonso.valls@icloud.com",
+    "timestamp": "2026-02-05T12:54:35.507Z",
+    "action_type": "try-on"
+  },
+  {
+    "email": "alonso.valls@icloud.com",
+    "timestamp": "2026-02-05T12:55:47.730Z",
+    "action_type": "try-on"
+  },
+  {
+    "email": "alonso.valls@icloud.com",
+    "timestamp": "2026-02-05T12:56:14.771Z",
+    "action_type": "try-on"
+  },
+  {
+    "email": "alonso.valls@icloud.com",
+    "timestamp": "2026-02-05T12:56:43.492Z",
+    "action_type": "try-on"
+  },
+  {
+    "email": "alonso.valls@icloud.com",
+    "timestamp": "2026-02-05T12:57:17.152Z",
+    "action_type": "try-on"
+  },
+  {
+    "email": "alonso.valls@icloud.com",
+    "timestamp": "2026-02-05T13:04:31.449Z",
+    "action_type": "try-on"
+  },
+  {
+    "email": "alonso.valls@icloud.com",
+    "timestamp": "2026-02-05T13:05:22.753Z",
+    "action_type": "try-on-started"
+  },
+  {
+    "email": "alonso.valls@icloud.com",
+    "timestamp": "2026-02-05T13:05:22.760Z",
+    "action_type": "step-1-completed"
+  },
+  {
+    "email": "alonso.valls@icloud.com",
+    "timestamp": "2026-02-05T13:05:25.829Z",
+    "action_type": "step-2-completed"
+  },
+  {
+    "email": "alonso.valls@icloud.com",
+    "timestamp": "2026-02-05T13:05:26.552Z",
+    "action_type": "step-3-completed"
+  },
+  {
+    "email": "alonso.valls@icloud.com",
+    "timestamp": "2026-02-05T13:05:41.593Z",
+    "action_type": "try-on"
+  },
+  {
+    "email": "alonso.valls@icloud.com",
+    "timestamp": "2026-02-05T13:05:43.178Z",
+    "action_type": "step-4-completed"
   }
 ]
