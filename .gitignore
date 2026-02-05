@@ -36,3 +36,7 @@ backend/uploads/
 *.njsproj
 *.sln
 *.sw?
+
+# Data files
+backend/data/events.json
+

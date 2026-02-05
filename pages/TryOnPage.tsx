@@ -27,6 +27,7 @@ const TryOnPage: React.FC = () => {
         previewImage,
         resultImage,
         tryOnError,
+        facingMode,
         videoRef,
         canvasRef,
         itemMetadata,
@@ -44,7 +45,7 @@ const TryOnPage: React.FC = () => {
             setStep('result');
             setTimeout(() => setShowDetails(true), 500);
         },
-        isMirrorMode: false // Demo traditionally doesn't mirror, but we could enable it if requested
+        isMirrorMode: true // Enabled mirror mode as requested
     });
 
     useEffect(() => {
@@ -113,7 +114,7 @@ const TryOnPage: React.FC = () => {
                             autoPlay
                             playsInline
                             muted
-                            className="absolute inset-0 w-full h-full object-cover"
+                            className={`absolute inset-0 w-full h-full object-cover ${facingMode === 'user' ? '-scale-x-100' : ''}`}
                         ></video>
 
                         <canvas ref={canvasRef} className="hidden"></canvas>
