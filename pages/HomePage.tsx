@@ -47,6 +47,8 @@ const HomePage: React.FC = () => {
     videoRef,
     canvasRef,
     itemMetadata,
+    facingMode,
+    toggleCamera,
     startCamera,
     stopCamera,
     triggerCapture,
@@ -381,9 +383,18 @@ const HomePage: React.FC = () => {
                     autoPlay
                     playsInline
                     muted
-                    className="absolute inset-0 w-full h-full object-cover"
-                    style={{ transform: 'scaleX(-1)' }}
+                    className={`absolute inset-0 w-full h-full object-cover ${facingMode === 'user' ? '-scale-x-100' : ''}`}
                   />
+                  {/* Toggle Camera Button */}
+                  <button
+                    onClick={toggleCamera}
+                    className="absolute top-4 right-4 z-20 bg-black/50 text-white p-2 md:p-3 rounded-full hover:bg-black/70 transition-all border border-white/10"
+                    title="Cambiar Cámara"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 md:h-6 md:w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                  </button>
                 </div>
               ) : (previewImage || resultImage) ? (
                 <div className={`relative ${cameraFrameClass} overflow-hidden`}>

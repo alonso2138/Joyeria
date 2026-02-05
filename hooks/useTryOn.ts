@@ -53,8 +53,10 @@ export const useTryOn = ({
     }, []);
 
     const startCamera = useCallback(async () => {
-        // Idempotent: don't restart if already running with same facingMode
-        if (streamRef.current && cameraStatus === 'granted') return;
+        // Stop any existing stream first to ensure we can switch sensors
+        if (streamRef.current) {
+            streamRef.current.getTracks().forEach(track => track.stop());
+        }
 
         if (!navigator.mediaDevices?.getUserMedia) {
             setCameraStatus('denied');
@@ -109,6 +111,13 @@ export const useTryOn = ({
     const toggleCamera = useCallback(() => {
         setFacingMode(prev => prev === 'user' ? 'environment' : 'user');
     }, []);
+
+    // Watch for facingMode changes to restart camera if it was already on
+    useEffect(() => {
+        if (cameraStatus === 'granted') {
+            startCamera();
+        }
+    }, [facingMode]);
 
     const captureToBase64 = useCallback(() => {
         const video = videoRef.current;
