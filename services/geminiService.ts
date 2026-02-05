@@ -50,7 +50,7 @@ export const generateTryOnImage = async (
     console.log("itemKey", itemKey);
 
     const finalPrompt = categoryPrompts[itemKey] || `Photorealistic virtual try-on: Place this ${itemKey} on the person accurately. Match lighting and shadows.`;
-    const model = 'gemini-2.5-flash-image';
+    const model = 'gemini-3-pro-image-preview';
     console.log(`[Gemini Try-On] Model: ${model}`);
     console.log(`[Gemini Try-On] Prompt: ${finalPrompt}`);
 
@@ -88,7 +88,7 @@ export const generateCustomJewelWithTryOn = async (
     .replace(/{details}/g, options.stonesOrColors);
   try {
     const { client, Modality } = await getGenAI();
-    const model = 'gemini-2.5-flash-image';
+    const model = 'gemini-3-pro-image-preview';
     console.log(`[Gemini Custom Try-On] Model: ${model}`);
     console.log(`[Gemini Custom Try-On] Prompt: ${prompt}`);
     const response = await client.models.generateContent({
@@ -113,7 +113,7 @@ export const generateCustomJewelRender = async (options: CustomJewelOptions, con
     .replace(/{details}/g, options.stonesOrColors);
   try {
     const { client, Modality } = await getGenAI();
-    const model = 'gemini-2.0-flash';
+    const model = 'gemini-3-pro-image-preview';
     console.log(`[Gemini Custom Render] Model: ${model}`);
     console.log(`[Gemini Custom Render] Prompt: ${prompt}`);
     const response = await client.models.generateContent({
