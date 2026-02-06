@@ -354,7 +354,7 @@ export const launchColdApproach = async (req: Request, res: Response) => {
                         .normalize('NFD')
                         .replace(/[\u0300-\u036f]/g, '');
 
-                    if (!(diaSimple === 'viernes' || diaSimple === 'sabado' || diaSimple === 'domingo')) diaValidado = true;
+                    if (!(diaSimple === 'sabado' || diaSimple === 'domingo')) diaValidado = true;
 
                     if (diaValidado == false || horarioValidado == false) {
                         console.log("Horario/Día " + diaValidado + "/" + horarioValidado + "+ no validado, intentando en 30min");
