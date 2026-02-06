@@ -308,72 +308,85 @@ export const launchFollowUp = async (req: Request, res: Response) => {
         console.log("Respuesta enviada correctamente")
 
         for (let i = 0; i < leads.length; i++) {
-            const lead = leads[i];
-            const horarios = ['09:15-13:00', '15:00-18:00'];
-            let diaValidado = false;
-            let horarioValidado = false;
+            try {
+                const lead = leads[i];
+                console.log("Empezando el lead numero ", i + 1)
 
-            do {
-                const d = new Date();
-                const now = d.getMinutes() + d.getHours() * 60;
-
-                horarios.forEach((horario) => {
-                    const hStart = parseInt(horario.substring(0, 2));
-                    const mStart = parseInt(horario.substring(3, 5));
-                    const MIN_START = hStart * 60 + mStart;
-
-                    const hEnd = parseInt(horario.substring(6, 8));
-                    const mEnd = parseInt(horario.substring(9, 11));
-                    const MIN_END = hEnd * 60 + mEnd;
-
-                    if (MIN_START < now && now < MIN_END) horarioValidado = true;
-                });
-
-                const diaSimple = d
-                    .toLocaleDateString('es-ES', { weekday: 'long' })
-                    .toLowerCase()
-                    .normalize('NFD')
-                    .replace(/[\u0300-\u036f]/g, '');
-
-                if (!(diaSimple === 'viernes' || diaSimple === 'sabado' || diaSimple === 'domingo')) diaValidado = true;
-
-                if (diaValidado == false || horarioValidado == false) {
-                    console.log("Horario/Día " + diaValidado + "/" + horarioValidado + "+ no validado, intentando en 30min");
-                    await new Promise(resolve => setTimeout(resolve, 30 * 60 * 1000));
+                // Solo refrescamos el CSV cada 10 leads para evitar bloqueos de Google Sheets
+                if (i > 0 && i % 10 === 0) {
+                    console.log("Refrescando CSV para comprobar estado de ADMIN...");
+                    const [rows] = await Promise.all([fetchCsv()]);
+                    const { adminAction: csvAdminAction } = extractAdminControl(rows);
+                    adminAction = csvAdminAction;
                 }
-            } while (diaValidado == false || horarioValidado == false);
 
-            console.log("Horario y Día validado")
+                const horarios = ['09:15-13:00', '15:00-18:00'];
+                let diaValidado = false;
+                let horarioValidado = false;
 
-            const encodedEmail = Buffer.from(lead.email).toString('base64');
+                do {
+                    const d = new Date();
+                    const now = d.getMinutes() + d.getHours() * 60;
 
-            console.log("Codificando email de lead... (" + lead.email + ")   => " + encodedEmail);
+                    horarios.forEach((horario) => {
+                        const hStart = parseInt(horario.substring(0, 2));
+                        const mStart = parseInt(horario.substring(3, 5));
+                        const MIN_START = hStart * 60 + mStart;
 
-            const [rows] = await Promise.all([fetchCsv()]);
-            const { adminAction: csvAdminAction } = extractAdminControl(rows);
-            adminAction = csvAdminAction;
+                        const hEnd = parseInt(horario.substring(6, 8));
+                        const mEnd = parseInt(horario.substring(9, 11));
+                        const MIN_END = hEnd * 60 + mEnd;
 
-            if (adminAction && adminAction.toLowerCase() === 'stop') {
-                console.log("Ending process, admin action: ", adminAction)
-                return;
-            }
+                        if (MIN_START < now && now < MIN_END) horarioValidado = true;
+                    });
 
-            console.log("Enviando mail...")
-            const subject = resolveSpintax(`{¿Lo probamos con vuestras joyas?|¿Hacemos la prueba con vuestras piezas?|Prueba gratuita con vuestras joyas|Sobre vuestro probador virtual (prueba gratuita)}`);
-            const body = resolveSpintax(`{Hola!|Buenas,|Qué tal?|Hola de nuevo,}<br><br>{Te escribo porque el otro día te envié|Hace unos días te mandé} el probador virtual de joyas y no sé si pudiste llegar a probarlo.<br><br>Te dejo el enlace de nuevo por aquí por si acaso:<br><a href="https://visualizalo.es?id=${encodedEmail}">https://visualizalo.es</a><br><br>{A varias joyerías|A otros compañeros} les está funcionando bien para ayudar al cliente a decidirse cuando duda entre piezas, tanto en tienda como online.<br><br>Si te parece, puedo prepararos una prueba gratuita con {alguna de vuestras joyas|alguna pieza vuestra} para que veáis si realmente os sirve o no.<br>En 5 minutos te lo enseño y listo, sin compromiso ni coste.<br><br>¿Te viene mejor esta semana o la siguiente?<br><br>Muchas gracias por su tiempo,<br>Alonso Valls<br><br><img src="https://api.visualizalo.es/api/trigger/follow-abierto?id=${encodedEmail}" alt="" width="1" height="1" style="display:none!important;min-height:0;height:0;max-height:0;width:0;max-width:0;opacity:0;overflow:hidden;mso-hide:all;" />`);
+                    const diaSimple = d
+                        .toLocaleDateString('es-ES', { weekday: 'long' })
+                        .toLowerCase()
+                        .normalize('NFD')
+                        .replace(/[\u0300-\u036f]/g, '');
 
-            await sendMail(`${lead.email}`, subject, body);
-            console.log("Mail enviado, enviando notificacion de telegram")
+                    if (!(diaSimple === 'viernes' || diaSimple === 'sabado' || diaSimple === 'domingo')) diaValidado = true;
 
-            await StorageHelper.updateEvents(lead.email, "follow-up-sent");
+                    if (diaValidado == false || horarioValidado == false) {
+                        console.log("Horario/Día " + diaValidado + "/" + horarioValidado + "+ no validado, intentando en 30min");
+                        await new Promise(resolve => setTimeout(resolve, 30 * 60 * 1000));
+                    }
+                } while (diaValidado == false || horarioValidado == false);
 
-            await sendTelegramNotification(`Mail follow-up enviado a ${lead.email}`);
+                console.log("Horario y Día validado")
 
-            await updateLeadEstadoInSheet(lead.email, "Follow-up enviado");
+                const encodedEmail = Buffer.from(lead.email).toString('base64');
 
-            // Delay arbitrario para siguiente mail => Entre 15s y 25s
-            if (!(i === leads.length - 1)) {
-                await new Promise(resolve => setTimeout(resolve, (Math.floor(Math.random() * (25 - 15 + 1)) + 15) * 1000));
+                console.log("Codificando email de lead... (" + lead.email + ")   => " + encodedEmail);
+
+                if (adminAction && adminAction.toLowerCase() === 'stop') {
+                    console.log("Ending process, admin action: ", adminAction)
+                    return;
+                }
+
+                console.log("Enviando mail...")
+                const subject = resolveSpintax(`{¿Lo probamos con vuestras joyas?|¿Hacemos la prueba con vuestras piezas?|Prueba gratuita con vuestras joyas|Sobre vuestro probador virtual (prueba gratuita)}`);
+                const body = resolveSpintax(`{Hola!|Buenas,|Qué tal?|Hola de nuevo,}<br><br>{Te escribo porque el otro día te envié|Hace unos días te mandé} el probador virtual de joyas y no sé si pudiste llegar a probarlo.<br><br>Te dejo el enlace de nuevo por aquí por si acaso:<br><a href="https://visualizalo.es?id=${encodedEmail}">https://visualizalo.es</a><br><br>{A varias joyerías|A otros compañeros} les está funcionando bien para ayudar al cliente a decidirse cuando duda entre piezas, tanto en tienda como online.<br><br>Si te parece, puedo prepararos una prueba gratuita con {alguna de vuestras joyas|alguna pieza vuestra} para que veáis si realmente os sirve o no.<br>En 5 minutes te lo enseño y listo, sin compromiso ni coste.<br><br>¿Te viene mejor esta semana o la siguiente?<br><br>Muchas gracias por su tiempo,<br>Alonso Valls<br><br><img src="https://api.visualizalo.es/api/trigger/follow-abierto?id=${encodedEmail}" alt="" width="1" height="1" style="display:none!important;min-height:0;height:0;max-height:0;width:0;max-width:0;opacity:0;overflow:hidden;mso-hide:all;" />`);
+
+                await sendMail(`${lead.email}`, subject, body);
+                console.log("Mail enviado, enviando notificacion de telegram")
+
+                await StorageHelper.updateEvents(lead.email, "follow-up-sent");
+
+                await sendTelegramNotification(`Mail follow-up enviado a ${lead.email}`);
+
+                await updateLeadEstadoInSheet(lead.email, "Follow-up enviado");
+
+                // Delay arbitrario para siguiente mail => Entre 15s y 25s
+                if (!(i === leads.length - 1)) {
+                    await new Promise(resolve => setTimeout(resolve, (Math.floor(Math.random() * (25 - 15 + 1)) + 15) * 1000));
+                }
+            } catch (leadError) {
+                console.error(`Error procesando follow-up lead ${leads[i]?.email}:`, leadError);
+                // Si falla un lead, esperamos un poco y seguimos con el siguiente
+                await new Promise(resolve => setTimeout(resolve, 5000));
+                continue;
             }
         }
         // Actualizar estado de la campaña en Google Sheets a Acabado

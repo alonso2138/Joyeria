@@ -315,87 +315,97 @@ export const launchColdApproach = async (req: Request, res: Response) => {
         console.log("Respuesta enviada correctamente")
 
         for (let i = 0; i < leads.length; i++) {
-            console.log("Empezando el lead numero ", i + 1)
-
-            const [rows] = await Promise.all([fetchCsv()]);
-            const { adminAction: csvAdminAction } = extractAdminControl(rows);
-            adminAction = csvAdminAction;
-
-            console.log(JSON.stringify(leads[i]))
-
-            const horarios = ['09:15-13:00', '15:00-18:00'];
-            let diaValidado = false;
-            let horarioValidado = false;
-
-            do {
-                const d = new Date();
-                const now = d.getMinutes() + d.getHours() * 60;
-
-                horarios.forEach((horario) => {
-                    const hStart = parseInt(horario.substring(0, 2));
-                    const mStart = parseInt(horario.substring(3, 5));
-                    const MIN_START = hStart * 60 + mStart;
-
-                    const hEnd = parseInt(horario.substring(6, 8));
-                    const mEnd = parseInt(horario.substring(9, 11));
-
-                    const MIN_END = hEnd * 60 + mEnd;
-                    if (MIN_START < now && now < MIN_END) horarioValidado = true;
-                });
-
-                const diaSimple = d
-                    .toLocaleDateString('es-ES', { weekday: 'long' })
-                    .toLowerCase()
-                    .normalize('NFD')
-                    .replace(/[\u0300-\u036f]/g, '');
-
-                if (!(diaSimple === 'viernes' || diaSimple === 'sabado' || diaSimple === 'domingo')) diaValidado = true;
-
-                if (diaValidado == false || horarioValidado == false) {
-                    console.log("Horario/Día " + diaValidado + "/" + horarioValidado + "+ no validado, intentando en 30min");
-                    await new Promise(resolve => setTimeout(resolve, 30 * 60 * 1000));
-                }
-            } while (diaValidado == false || horarioValidado == false);
-
-            console.log("Horario y Día validado")
-
-            const encodedEmail = Buffer.from(leads[i].email).toString('base64');
-
-            console.log("Codificando email de lead... (" + leads[i].email + ")   => " + encodedEmail);
-
-            console.log("Admin action: ", adminAction)
-
-            if (adminAction && adminAction.toLowerCase() === 'stop') {
-                console.log("Ending process, admin action: ", adminAction)
-                return;
-            }
-
-            console.log("Enviando mail...")
-
-
-            let config;
             try {
-                config = JSON.parse(fs.readFileSync(CONFIG_PATH, 'utf-8'));
-            } catch (err) {
-                console.error('Error reading config in cold approach:', err);
-            }
+                console.log("Empezando el lead numero ", i + 1)
 
-            const subject = resolveSpintax(config?.marketing?.emailSubject || `{Cuando un cliente duda entre dos piezas|Dudas entre dos joyas|Ayudar al cliente a decidir entre piezas|Sobre la duda de los clientes con las joyas}`);
-            const body = resolveSpintax((config?.marketing?.emailBody || `{Hola!|Buenas,|Qué tal?|Buenos días,}<br><br>{Seguro que te pasa a menudo|Te escribo porque seguro que te pasa}: un cliente mira una pulsera o un reloj, le gusta pero no termina de decidirse.<br><br>{Estoy ayudando a algunas joyerias a|Ayudo a joyerías a} que el cliente se decida antes de comprar, usando una pagina donde puede verse la joya que quiera puesta desde el movil en segundos.<br><br>{Puedes probarlo tu mismo aqui|Pruébalo tú mismo aquí} (sin registro) en apenas 10 segundos:<br><a href="https://visualizalo.es?id=${encodedEmail}">Probar el probador virtual</a><br><br>Si {os parece interesante la idea|te interesa}, os invito a hacer una prueba gratuita, con vuestras piezas, para que veais si realmente os sirve en vuestro dia a dia.<br><br>{Si no es algo que encaje con vuestra forma de vender, dimelo sin problema|Cualquier feedback es bienvenido si crees que no encaja con vosotros}, se agradece cualquier feedback.<br><br>Muchas gracias por su tiempo,<br>Alonso Valls<br><br><img src="https://api.visualizalo.es/api/trigger/cold-abierto?id=${encodedEmail}" alt="" width="1" height="1" style="display:none!important;min-height:0;height:0;max-height:0;width:0;max-width:0;opacity:0;overflow:hidden;mso-hide:all;" />`).replace('${encodedEmail}', encodedEmail));
+                // Solo refrescamos el CSV cada 10 leads para evitar bloqueos de Google Sheets
+                if (i > 0 && i % 10 === 0) {
+                    console.log("Refrescando CSV para comprobar estado de ADMIN...");
+                    const [rows] = await Promise.all([fetchCsv()]);
+                    const { adminAction: csvAdminAction } = extractAdminControl(rows);
+                    adminAction = csvAdminAction;
+                }
 
-            await sendMail(`${leads[i].email}`, subject, body);
+                console.log(JSON.stringify(leads[i]))
 
-            console.log("Mail enviado, enviando notificacion de telegram")
+                const horarios = ['09:15-13:00', '15:00-18:00'];
+                let diaValidado = false;
+                let horarioValidado = false;
 
-            await StorageHelper.updateEvents(leads[i].email, "cold-sent");
+                do {
+                    const d = new Date();
+                    const now = d.getMinutes() + d.getHours() * 60;
 
-            await sendTelegramNotification(`Mail frio enviado a ${leads[i].email}`);
+                    horarios.forEach((horario) => {
+                        const hStart = parseInt(horario.substring(0, 2));
+                        const mStart = parseInt(horario.substring(3, 5));
+                        const MIN_START = hStart * 60 + mStart;
 
-            await updateLeadEstadoInSheet(leads[i].email, "Cold-Approach enviado");
+                        const hEnd = parseInt(horario.substring(6, 8));
+                        const mEnd = parseInt(horario.substring(9, 11));
 
-            // Delay arbitrario para siguiente mail => Entre 10 y 20s
-            if (!(i === leads.length - 1)) {
-                await new Promise(resolve => setTimeout(resolve, (Math.floor(Math.random() * (25 - 15 + 1)) + 15) * 1000));
+                        const MIN_END = hEnd * 60 + mEnd;
+                        if (MIN_START < now && now < MIN_END) horarioValidado = true;
+                    });
+
+                    const diaSimple = d
+                        .toLocaleDateString('es-ES', { weekday: 'long' })
+                        .toLowerCase()
+                        .normalize('NFD')
+                        .replace(/[\u0300-\u036f]/g, '');
+
+                    if (!(diaSimple === 'viernes' || diaSimple === 'sabado' || diaSimple === 'domingo')) diaValidado = true;
+
+                    if (diaValidado == false || horarioValidado == false) {
+                        console.log("Horario/Día " + diaValidado + "/" + horarioValidado + "+ no validado, intentando en 30min");
+                        await new Promise(resolve => setTimeout(resolve, 30 * 60 * 1000));
+                    }
+                } while (diaValidado == false || horarioValidado == false);
+
+                console.log("Horario y Día validado")
+
+                const encodedEmail = Buffer.from(leads[i].email).toString('base64');
+
+                console.log("Codificando email de lead... (" + leads[i].email + ")   => " + encodedEmail);
+
+                console.log("Admin action: ", adminAction)
+
+                if (adminAction && adminAction.toLowerCase() === 'stop') {
+                    console.log("Ending process, admin action: ", adminAction)
+                    return;
+                }
+
+                console.log("Enviando mail...")
+
+                let config;
+                try {
+                    config = JSON.parse(fs.readFileSync(CONFIG_PATH, 'utf-8'));
+                } catch (err) {
+                    console.error('Error reading config in cold approach:', err);
+                }
+
+                const subject = resolveSpintax(config?.marketing?.emailSubject || `{Cuando un cliente duda entre dos piezas|Dudas entre dos joyas|Ayudar al cliente a decidir entre piezas|Sobre la duda de los clientes con las joyas}`);
+                const body = resolveSpintax((config?.marketing?.emailBody || `{Hola!|Buenas,|Qué tal?|Buenos días,}<br><br>{Seguro que te pasa a menudo|Te escribo porque seguro que te pasa}: un cliente mira una pulsera o un reloj, le gusta pero no termina de decidirse.<br><br>{Estoy ayudando a algunas joyerias a|Ayudo a joyerías a} que el cliente se decida antes de comprar, usando una pagina donde puede verse la joya que quiera puesta desde el movil en segundos.<br><br>{Puedes probarlo tu mismo aqui|Pruébalo tú mismo aquí} (sin registro) en apenas 10 segundos:<br><a href="https://visualizalo.es?id=${encodedEmail}">Probar el probador virtual</a><br><br>Si {os parece interesante la idea|te interesa}, os invito a hacer una prueba gratuita, con vuestras piezas, para que veais si realmente os sirve en vuestro dia a dia.<br><br>{Si no es algo que encaje con vuestra forma de vender, dimelo sin problema|Cualquier feedback es bienvenido si crees que no encaja con vosotros}, se agradece cualquier feedback.<br><br>Muchas gracias por su tiempo,<br>Alonso Valls<br><br><img src="https://api.visualizalo.es/api/trigger/cold-abierto?id=${encodedEmail}" alt="" width="1" height="1" style="display:none!important;min-height:0;height:0;max-height:0;width:0;max-width:0;opacity:0;overflow:hidden;mso-hide:all;" />`).replace('${encodedEmail}', encodedEmail));
+
+                await sendMail(`${leads[i].email}`, subject, body);
+
+                console.log("Mail enviado, enviando notificacion de telegram")
+
+                await StorageHelper.updateEvents(leads[i].email, "cold-sent");
+
+                await sendTelegramNotification(`Mail frio enviado a ${leads[i].email}`);
+
+                await updateLeadEstadoInSheet(leads[i].email, "Cold-Approach enviado");
+
+                // Delay arbitrario para siguiente mail => Entre 10 y 20s
+                if (!(i === leads.length - 1)) {
+                    await new Promise(resolve => setTimeout(resolve, (Math.floor(Math.random() * (25 - 15 + 1)) + 15) * 1000));
+                }
+            } catch (leadError) {
+                console.error(`Error procesando lead ${leads[i]?.email}:`, leadError);
+                // Si falla un lead, esperamos un poco y seguimos con el siguiente
+                await new Promise(resolve => setTimeout(resolve, 5000));
+                continue;
             }
         }
 
