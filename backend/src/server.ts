@@ -29,6 +29,7 @@ const widgetLimiter = rateLimit({
 });
 
 // Middleware
+app.set('trust proxy', 1); // Trust first proxy (required for Render, Heroku, etc.)
 app.use(cors());
 app.use(express.json());
 
