@@ -16,7 +16,7 @@ const CookiePolicyPage: React.FC = () => {
                         <section>
                             <h2 className="text-lg font-serif text-white mb-3">¿Qué tecnologías utilizamos?</h2>
                             <p>
-                                Este sitio web utiliza tecnologías de almacenamiento local (<code>localStorage</code>) y mecanismos de seguimiento para mejorar la experiencia del usuario y analizar el uso de nuestras herramientas, como el probador virtual.
+                                Este sitio web utiliza tecnologías de almacenamiento local y mecanismos de seguimiento para mejorar la experiencia del usuario y analizar el uso de nuestras herramientas, como el probador virtual.
                             </p>
                         </section>
 
@@ -29,7 +29,7 @@ const CookiePolicyPage: React.FC = () => {
                                 </div>
                                 <div>
                                     <h3 className="text-xl font-medium text-white">2. De Análisis y Seguimiento</h3>
-                                    <p>Utilizamos un identificador único (ID de seguimiento) almacenado en su navegador para saber qué piezas del catálogo ha visitado y cómo interactúa con el probador. Esto nos ayuda a optimizar nuestra colección y el rendimiento del sitio.</p>
+                                    <p>Utilizamos un identificador único con Cookies para saber cómo interactúa con el probador y diagnóstico de posibles errores.</p>
                                 </div>
                             </div>
                         </section>

@@ -19,11 +19,11 @@ const LegalNoticePage: React.FC = () => {
                                 En cumplimiento del artículo 10 de la Ley 34/2002, de 11 de julio, de Servicios de la Sociedad de la Información y Comercio Electrónico, se exponen los siguientes datos identificativos del titular:
                             </p>
                             <ul className="mt-4 space-y-2">
-                                <li><strong>Titular:</strong> [Nombre del Titular o Empresa]</li>
-                                <li><strong>CIF/NIF:</strong> [Añadir CIF/NIF]</li>
-                                <li><strong>Domicilio Social:</strong> [Añadir Dirección Completa]</li>
-                                <li><strong>Email:</strong> [Añadir Email de Contacto]</li>
-                                <li><strong>Teléfono:</strong> [Añadir Teléfono]</li>
+                                <li><strong>Titular:</strong>Visualizalo.es</li>
+                                <li><strong>CIF/NIF:</strong>48786605V</li>
+                                <li><strong>Domicilio Social:</strong>Avd Naranjos Num 16, Valencia</li>
+                                <li><strong>Email:</strong>alonso@visualizalo.es</li>
+                                <li><strong>Teléfono:</strong>+34 639 440 460</li>
                             </ul>
                         </section>
 

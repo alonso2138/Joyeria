@@ -6,18 +6,18 @@ const docsContent = [
     {
         id: 'intro',
         title: 'Introducción',
-        content: 'Nuestra plataforma de Visualizador Virtual como Servicio (SaaS) permite a cualquier e-commerce de joyería integrar pruebas en tiempo real con IA en cuestión de minutos. El proceso es sencillo: un pequeño script cargado en tu web detecta botones específicos y abre un modal seguro con la experiencia de probador.',
+        content: 'Nuestra plataforma de permite a cualquier e-commerce integrar pruebas en tiempo real con IA en cuestión de minutos.',
     },
     {
         id: 'quickstart',
         title: 'Inicio Rápido',
         content: 'Para empezar, añade nuestro script de carga antes del cierre de la etiqueta `</body>` en tu sitio web.',
-        code: `<script src="https://vas-visualizer.com/widget.js"></script>`,
+        code: `<script src="https://www.visualizalo.es/widget.js"></script>`,
     },
     {
         id: 'trigger',
         title: 'Activación del Probador',
-        content: 'Cualquier elemento HTML con el atributo `data-try-on` activará el visualizador. Debes proporcionar la información de la joya mediante atributos de datos.',
+        content: 'Cualquier elemento HTML con el atributo `data-try-on` activará el visualizador. Debes proporcionar la información de la pieza mediante atributos de datos.',
         code: `<button 
   data-try-on 
   data-api-key="TU_API_KEY"
@@ -100,7 +100,7 @@ const DocsPage: React.FC = () => {
                     <header className="space-y-2">
                         <h1 className="text-2xl md:text-3xl font-serif font-bold text-white tracking-tight">Guía de Integración</h1>
                         <p className="text-base text-gray-500 max-w-xl leading-relaxed font-light">
-                            Integra el probador virtual de joyería en tu e-commerce con un snippet ligero de alto rendimiento.
+                            Integra el probador virtual en tu e-commerce con un snippet de código
                         </p>
                     </header>
 

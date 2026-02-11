@@ -16,7 +16,7 @@ const PrivacyPage: React.FC = () => {
                         <section>
                             <h2 className="text-lg font-serif text-white mb-3">1. Introducción</h2>
                             <p>
-                                En esta Joyería (en adelante, "nosotros"), nos tomamos muy en serio la privacidad de sus datos. Esta política explica cómo recopilamos, usamos y protegemos su información personal al utilizar nuestro sitio web y nuestro probador virtual.
+                                En Visualizalo.es (en adelante, "nosotros"), nos tomamos muy en serio la privacidad de sus datos. Esta política explica cómo recopilamos, usamos y protegemos su información personal al utilizar nuestro sitio web y nuestro probador virtual.
                             </p>
                         </section>
 
@@ -43,7 +43,7 @@ const PrivacyPage: React.FC = () => {
                         <section>
                             <h2 className="text-lg font-serif text-white mb-3">4. Procesamiento de IA</h2>
                             <p>
-                                Para la funcionalidad del probador virtual, sus imágenes son procesadas mediante servicios de Inteligencia Artificial (Google Gemini). Estas imágenes se utilizan únicamente para generar el resultado visual solicitado por usted.
+                                Para la funcionalidad del probador virtual, sus imágenes son procesadas mediante servicios de Inteligencia Artificial. Estas imágenes se utilizan únicamente para generar el resultado visual solicitado por usted.
                             </p>
                         </section>
 

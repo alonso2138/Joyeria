@@ -1,16 +1,17 @@
 import express from 'express';
 import { validateApiKey, logWidgetEvent, getAllOrganizations, createOrganization, updateOrganization, deleteOrganization } from '../controllers/widgetController';
+import { protect } from '../middleware/authMiddleware';
 
 const router = express.Router();
 
-// Public/Widget routes
+// Public/Widget routes (no auth required)
 router.post('/validate', validateApiKey);
 router.post('/log-event', logWidgetEvent);
 
-// Admin routes (should be protected by authMiddleware in server.ts if moved there, but for now we'll put them here)
-router.get('/organizations', getAllOrganizations);
-router.post('/organizations', createOrganization);
-router.put('/organizations/:id', updateOrganization);
-router.delete('/organizations/:id', deleteOrganization);
+// Admin routes (protected - require authentication)
+router.get('/organizations', protect, getAllOrganizations);
+router.post('/organizations', protect, createOrganization);
+router.put('/organizations/:id', protect, updateOrganization);
+router.delete('/organizations/:id', protect, deleteOrganization);
 
 export default router;
