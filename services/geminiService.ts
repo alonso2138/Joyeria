@@ -99,10 +99,9 @@ export const generateCustomJewelWithTryOn = async (
   options: CustomJewelOptions,
   config?: any
 ): Promise<GeneratedJewelResult> => {
-  const basePrompt = config?.aiPrompts?.customJewelPrompt || "CAD luxury {sectorName} rendering. Piece: {pieceType}. Material: {material}. Details: {details}.";
-  const sector = config?.branding?.sectorName || "jewelry";
+  const basePrompt = config?.aiPrompts?.customJewelPrompt || "CAD luxury jewelry rendering. Piece: {pieceType}. Material: {material}. Details: {details}.";
   const prompt = basePrompt
-    .replace(/{sectorName}/g, sector)
+    .replace(/{sectorName}/g, 'jewelry')
     .replace(/{pieceType}/g, options.pieceType)
     .replace(/{material}/g, options.material)
     .replace(/{details}/g, options.stonesOrColors);
@@ -124,10 +123,9 @@ export const generateCustomJewelWithTryOn = async (
 };
 
 export const generateCustomJewelRender = async (options: CustomJewelOptions, config?: any): Promise<GeneratedJewelResult> => {
-  const basePrompt = config?.aiPrompts?.customJewelRenderPrompt || "Studio {sectorName} product photo. {pieceType}, {material}, {details}.";
-  const sector = config?.branding?.sectorName || "jewelry";
+  const basePrompt = config?.aiPrompts?.customJewelRenderPrompt || "Studio jewelry product photo. {pieceType}, {material}, {details}.";
   const prompt = basePrompt
-    .replace(/{sectorName}/g, sector)
+    .replace(/{sectorName}/g, 'jewelry')
     .replace(/{pieceType}/g, options.pieceType)
     .replace(/{material}/g, options.material)
     .replace(/{details}/g, options.stonesOrColors);

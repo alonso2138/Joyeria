@@ -13,7 +13,13 @@ const storeTrackingId = (id: string) => {
   localStorage.setItem(STORAGE_KEY, id);
 };
 
+const hasTrackingConsent = (): boolean => {
+  if (typeof localStorage === 'undefined') return false;
+  return localStorage.getItem('user_tracking_consent') === 'accepted';
+};
+
 const fireTracking = async (id: string, estado: string, extra: Record<string, string> = {}) => {
+  if (!hasTrackingConsent()) return;
   // Capturar demoTag de la URL si existe
   const hash = typeof window !== 'undefined' ? window.location.hash : '';
   let demoTag = '';

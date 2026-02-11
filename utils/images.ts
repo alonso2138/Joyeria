@@ -4,7 +4,7 @@ export const getImageUrl = (imagePath: string): string => {
   if (imagePath.startsWith('/')) {
     return imagePath;
   }
-  
+
   // Para imágenes en assets (importadas)
   return new URL(`../assets/images/${imagePath}`, import.meta.url).href;
 };

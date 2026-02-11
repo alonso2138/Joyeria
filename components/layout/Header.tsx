@@ -7,7 +7,7 @@ const Header: React.FC = () => {
   const { config } = useConfig();
   const location = useLocation();
   const brandName = config?.branding?.brandName;
-  const logoUrl = config?.branding?.logoLightUrl || "/logo.png";
+  const logoUrl = config?.branding?.logoMainUrl || "/logo.png";
 
   // Check if we are in a demo route
   const isDemo = location.pathname.startsWith('/demo/');
@@ -18,21 +18,21 @@ const Header: React.FC = () => {
 
   return (
     <motion.header
-      className="sticky top-0 z-50 py-1.5 px-4 md:px-8 bg-black bg-opacity-30 backdrop-blur-lg"
+      className="sticky top-0 z-50 py-2 px-3 md:px-6 bg-black bg-opacity-30 backdrop-blur-lg"
       initial={{ y: -100 }}
       animate={{ y: 0 }}
       transition={{ duration: 0.5 }}
     >
       <div className="container mx-auto flex justify-between items-center">
-        <Link to={logoLink} className="flex items-center space-x-3">
-          <img src={logoUrl} alt={`${brandName} Logo`} className="h-8 md:h-10" />
-          <span className="font-serif text-xl md:text-2xl font-bold tracking-wider" style={{ color: config?.branding?.accentColor || 'white' }}>
+        <Link to={logoLink} className="flex items-center space-x-1.5 md:space-x-2">
+          <img src={logoUrl} alt={`${brandName} Logo`} className="h-12 md:h-12" />
+          <span className="font-serif text-base md:text-lg font-bold tracking-wide md:tracking-wider" style={{ color: config?.branding?.accentColor || 'white' }}>
             {brandName}
           </span>
         </Link>
         <div className="flex items-center">
           {!isDemo && (
-            <nav className="hidden md:flex items-center space-x-8 text-sm font-medium tracking-widest uppercase">
+            <nav className="hidden md:flex items-center space-x-4 lg:space-x-6 text-[10px] md:text-[11px] font-bold tracking-[0.15em] md:tracking-[0.2em] uppercase">
               <Link to="/" className="hover:text-[var(--primary-color)] transition-colors duration-300">Home</Link>
               <Link to="/catalog" className="hover:text-[var(--primary-color)] transition-colors duration-300">Colección</Link>
             </nav>

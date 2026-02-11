@@ -11,7 +11,7 @@ const AdminLoginPage: React.FC = () => {
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
     const [isLoading, setIsLoading] = useState(false);
-    
+
     const navigate = useNavigate();
     const location = useLocation();
     const { login } = useAuth();
@@ -40,9 +40,7 @@ const AdminLoginPage: React.FC = () => {
                 className="w-full max-w-md"
             >
                 <div className="text-center mb-8">
-                    <img src={brandingConfig.logoLightUrl} alt="Logo" className="w-24 mx-auto mb-4"/>
-                    <h1 className="text-3xl font-serif text-white">{brandingConfig.brandName}</h1>
-                    <p className="text-gray-400">Panel de Administración</p>
+                    <img src={brandingConfig.logoLightUrl} alt="Logo" className="w-96 mx-auto mb-4" />
                 </div>
 
                 <form onSubmit={handleSubmit} className="bg-black bg-opacity-30 p-8 rounded-lg shadow-lg">
@@ -70,7 +68,7 @@ const AdminLoginPage: React.FC = () => {
                     </div>
 
                     {error && <p className="text-red-400 text-xs italic mb-4">{error}</p>}
-                    
+
                     <Button type="submit" variant="primary" className="w-full" disabled={isLoading}>
                         {isLoading ? 'Iniciando sesión...' : 'Iniciar Sesión'}
                     </Button>

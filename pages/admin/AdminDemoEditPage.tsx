@@ -11,10 +11,12 @@ const AdminDemoEditPage: React.FC = () => {
     const { token } = useAuth();
     const [isLoading, setIsLoading] = useState(!!tag);
     const [isSaving, setIsSaving] = useState(false);
+    const [organizations, setOrganizations] = useState<any[]>([]);
 
     const [formData, setFormData] = useState({
         tag: '',
         brandName: '',
+        organizationId: '',
         primaryColor: '#D4AF37',
         secondaryColor: '#111111',
         accentColor: '#FFFFFF',
@@ -33,40 +35,53 @@ const AdminDemoEditPage: React.FC = () => {
     });
 
     useEffect(() => {
-        const fetchDemo = async () => {
-            if (!tag || !token) return;
+        const fetchData = async () => {
+            if (!token) return;
             try {
-                const demos = await getDemos(token);
-                const demo = demos[tag];
-                if (demo) {
-                    setFormData({
-                        tag: tag,
-                        brandName: demo.branding?.brandName || '',
-                        primaryColor: demo.branding?.primaryColor || '',
-                        secondaryColor: demo.branding?.secondaryColor || '',
-                        accentColor: demo.branding?.accentColor || '',
-                        textColor: demo.branding?.textColor || '#FFFFFF',
-                        headerBackground: demo.branding?.headerBackground || '',
-                        cardBorderColor: demo.branding?.cardBorderColor || '',
-                        secondaryTextColor: demo.branding?.secondaryTextColor || '',
-                        priceColor: demo.branding?.priceColor || '',
-                        fontFamily: demo.branding?.fontFamily || 'sans',
-                        backgroundGradient: demo.branding?.backgroundGradient || '',
-                        logoUrl: demo.branding?.logoLightUrl || '',
-                        faviconUrl: demo.branding?.faviconUrl || '',
-                        heroTitle: demo.uiLabels?.heroTitle || '',
-                        heroDescription: demo.uiLabels?.heroDescription || '',
-                        ctaText: demo.uiLabels?.ctaText || ''
-                    });
+                // Fetch Organizations for the dropdown
+                const orgsResponse = await fetch(`${window.location.origin.includes('localhost') ? 'http://localhost:5000' : ''}/api/widget/organizations`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const orgs = await orgsResponse.json();
+                setOrganizations(Array.isArray(orgs) ? orgs : []);
+
+                if (tag) {
+                    const demos = await getDemos(token);
+                    const demo = demos[tag];
+                    if (demo) {
+                        // Find if any org is linked to this tag
+                        const linkedOrg = orgs.find((o: any) => o.demoTag === tag);
+
+                        setFormData({
+                            tag: tag,
+                            organizationId: linkedOrg?.id || '',
+                            brandName: demo.branding?.brandName || '',
+                            primaryColor: demo.branding?.primaryColor || '',
+                            secondaryColor: demo.branding?.secondaryColor || '',
+                            accentColor: demo.branding?.accentColor || '',
+                            textColor: demo.branding?.textColor || '#FFFFFF',
+                            headerBackground: demo.branding?.headerBackground || '',
+                            cardBorderColor: demo.branding?.cardBorderColor || '',
+                            secondaryTextColor: demo.branding?.secondaryTextColor || '',
+                            priceColor: demo.branding?.priceColor || '',
+                            fontFamily: demo.branding?.fontFamily || 'sans',
+                            backgroundGradient: demo.branding?.backgroundGradient || '',
+                            logoUrl: demo.branding?.logoLightUrl || '',
+                            faviconUrl: demo.branding?.faviconUrl || '',
+                            heroTitle: demo.uiLabels?.heroTitle || '',
+                            heroDescription: demo.uiLabels?.heroDescription || '',
+                            ctaText: demo.uiLabels?.ctaText || ''
+                        });
+                    }
                 }
             } catch (error) {
-                console.error("Error fetching demo:", error);
-                alert("Error al cargar la demo.");
+                console.error("Error fetching data:", error);
+                alert("Error al cargar los datos.");
             } finally {
                 setIsLoading(false);
             }
         };
-        fetchDemo();
+        fetchData();
     }, [tag, token]);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -81,6 +96,7 @@ const AdminDemoEditPage: React.FC = () => {
         try {
             await upsertDemo({
                 tag: formData.tag,
+                organizationId: formData.organizationId,
                 branding: {
                     brandName: formData.brandName,
                     primaryColor: formData.primaryColor,
@@ -153,6 +169,23 @@ const AdminDemoEditPage: React.FC = () => {
                             placeholder="Joyería Ejemplo"
                             required
                         />
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium text-gray-300 mb-2">Cliente / Organización Vinculada</label>
+                        <select
+                            name="organizationId"
+                            value={formData.organizationId}
+                            onChange={(e) => setFormData({ ...formData, organizationId: e.target.value })}
+                            className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-white focus:ring-2 focus:ring-[var(--primary-color)] focus:outline-none"
+                        >
+                            <option value="">-- Sin vincular --</option>
+                            {organizations.map(org => (
+                                <option key={org.id} value={org.id}>
+                                    {org.name} ({org.plan})
+                                </option>
+                            ))}
+                        </select>
+                        <p className="text-[10px] text-gray-500 mt-2">Los usos de esta demo se sumarán a la cuota de este cliente.</p>
                     </div>
                     <div>
                         <label className="block text-sm font-medium text-gray-300 mb-2">Color Principal (Hex)</label>

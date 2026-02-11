@@ -47,16 +47,40 @@
         "ctaText": ""
       },
       "aiPrompts": {}
+    },
+    "joyeriaprieto": {
+      "branding": {
+        "brandName": "Joyería Prieto",
+        "primaryColor": "#D4AF37",
+        "secondaryColor": "#111111",
+        "accentColor": "#FFFFFF",
+        "textColor": "#111111",
+        "headerBackground": "#FFFFFF",
+        "cardBorderColor": "rgba(255, 255, 255, 0.1)",
+        "secondaryTextColor": "#9CA3AF",
+        "priceColor": "#D4AF37",
+        "fontFamily": "sans",
+        "backgroundGradient": "linear-gradient(135deg, #050509, #1C1C24)",
+        "logoLightUrl": "https://tienda.joyeriaprieto.com/assets/pagebuilder/PageBuilderIMG_1545410448-512.jpeg",
+        "logoDarkUrl": "https://tienda.joyeriaprieto.com/assets/pagebuilder/PageBuilderIMG_1545410448-512.jpeg",
+        "faviconUrl": "https://tienda.joyeriaprieto.com/favicon.ico"
+      },
+      "uiLabels": {
+        "heroTitle": "Probador virtual",
+        "heroDescription": "",
+        "ctaText": ""
+      },
+      "aiPrompts": {}
     }
   },
   "branding": {
     "brandName": "",
-    "primaryColor": "#D4AF37",
+    "primaryColor": "#fca311",
     "secondaryColor": "#111111",
     "accentColor": "#FFFFFF",
     "backgroundGradient": "linear-gradient(135deg, #050509, #1C1C24)",
-    "logoLightUrl": "/logo.png",
-    "logoDarkUrl": "/logo.png",
+    "logoMainUrl": "/logo.png",
+    "logoIconUrl": "/favicon.ico",
     "sectorName": "joya",
     "sectorNamePlural": "joyas"
   },
@@ -67,8 +91,8 @@
     "processingTryOn": "Aplicando la joya elegida...",
     "buyButton": "Quiero esta joya",
     "ctaTryOn": "Probar en mi piel",
-    "catalogTitle": "Nuestra Colección",
-    "catalogSubtitle": "Joyas disponibles para probar",
+    "catalogTitle": "Colección",
+    "catalogSubtitle": "Piezas disponibles para probar",
     "loadingItems": "Cargando catálogo...",
     "noItemsFound": "No se encontraron piezas",
     "tryChangingFilters": "Prueba a cambiar los filtros o el término de búsqueda.",
@@ -173,7 +197,7 @@
     "reloj": {
       "countdown": 3,
       "poseAdvice": "Muestra tu muñeca de lado o de frente, evitando sombras fuertes.",
-      "loadingText": "Sincronizando reloj..."
+      "loadingText": "Aplicando reloj..."
     },
     "bolso": {
       "countdown": 3,
@@ -189,6 +213,20 @@
       "countdown": 5,
       "poseAdvice": "Colócate frente a la cámara mostrando tu torso completo. Intenta que la iluminación sea uniforme.",
       "loadingText": "Ajustando camisa..."
+    }
+  },
+  "saasPlans": {
+    "free": {
+      "limit": 25,
+      "label": "Free (Básico)"
+    },
+    "basic": {
+      "limit": 500,
+      "label": "Basic (Estándar)"
+    },
+    "premium": {
+      "limit": 1000000,
+      "label": "Premium (Ilimitado)"
     }
   }
 }

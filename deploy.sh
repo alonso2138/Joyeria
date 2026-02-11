@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Script de despliegue para Docker
-echo "🚀 Desplegando Joyería Aurora..."
+echo "🚀 Desplegando..."
 
 # Detener contenedores existentes
 echo "⏹️ Deteniendo contenedores existentes..."

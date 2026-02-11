@@ -1,4 +1,4 @@
-import { JewelryItem, AnalyticsEvent, EventType, AdminUserCredentials, CustomRequest, CustomRequestPayload } from '../types';
+import { JewelryItem, AnalyticsEvent, EventType, AdminUserCredentials, CustomRequest, CustomRequestPayload, Organization } from '../types';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
 
@@ -188,4 +188,64 @@ export const deleteDemo = async (tag: string, token: string): Promise<any> => {
       'Authorization': `Bearer ${token}`
     },
   });
+};
+
+// --- WIDGET API ---
+export const validateWidgetApiKey = async (apiKey: string): Promise<{ valid: boolean; orgName?: string; message?: string }> => {
+  try {
+    return await apiRequest('/widget/validate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ apiKey }),
+    });
+  } catch (error: any) {
+    return { valid: false, message: error.message };
+  }
+};
+
+export const getOrganizations = async (token: string): Promise<Organization[]> => {
+  return apiRequest('/widget/organizations', {
+    headers: { 'Authorization': `Bearer ${token}` }
+  });
+};
+
+export const createOrganizationAPI = async (orgData: Partial<Organization>, token: string): Promise<Organization> => {
+  return apiRequest('/widget/organizations', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    },
+    body: JSON.stringify(orgData),
+  });
+};
+
+export const updateOrganizationAPI = async (id: string, orgData: Partial<Organization>, token: string): Promise<Organization> => {
+  return apiRequest(`/widget/organizations/${id}`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    },
+    body: JSON.stringify(orgData),
+  });
+};
+
+export const deleteOrganizationAPI = async (id: string, token: string): Promise<void> => {
+  return apiRequest(`/widget/organizations/${id}`, {
+    method: 'DELETE',
+    headers: { 'Authorization': `Bearer ${token}` }
+  });
+};
+
+export const logWidgetEvent = async (apiKey: string, type: string, metadata?: any) => {
+  try {
+    return await apiRequest('/widget/log-event', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ apiKey, type, metadata }),
+    });
+  } catch (error) {
+    console.error('Failed to log widget event:', error);
+  }
 };

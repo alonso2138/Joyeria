@@ -11,11 +11,22 @@ import executeRoutes from './routes/executeRoutes';
 import triggerRoutes from './routes/triggerRoutes'
 import eventsRoutes from './routes/eventsRoutes'
 import configRoutes from './routes/configRoutes'
+import widgetRoutes from './routes/widgetRoutes';
+import rateLimit from 'express-rate-limit';
 
 // Connect to database
 connectDB();
 
 const app = express();
+
+// Rate limiting for widget API (100 requests per 15 minutes per IP)
+const widgetLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 100,
+    message: { message: 'Too many requests from this IP, please try again after 15 minutes' },
+    standardHeaders: true,
+    legacyHeaders: false,
+});
 
 // Middleware
 app.use(cors());
@@ -28,6 +39,7 @@ app.use('/api/launch', executeRoutes);
 app.use('/api/trigger', triggerRoutes);
 app.use('/api/events', eventsRoutes);
 app.use('/api/config', configRoutes);
+app.use('/api/widget', widgetLimiter, widgetRoutes);
 
 const PORT = process.env.PORT || 5000;
 

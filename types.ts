@@ -69,3 +69,16 @@ export interface CustomRequest extends CustomRequestPayload {
   id: string;
   createdAt: string;
 }
+
+export interface Organization {
+  id: string;
+  name: string;
+  apiKey: string;
+  allowedDomains: string[];
+  isActive: boolean;
+  ownerEmail?: string;
+  plan: 'free' | 'basic' | 'premium';
+  usageCount: number;
+  createdAt: string;
+  updatedAt: string;
+}

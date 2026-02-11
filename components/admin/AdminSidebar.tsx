@@ -44,6 +44,10 @@ const AdminSidebar: React.FC = () => {
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-3" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M10 2a1 1 0 011 1v1.323l3.954 1.582 1.699-3.189A1 1 0 0118 4v10a1 1 0 01-1.396.92l-4.29-2.146a7 7 0 00-4.628 0l-4.29 2.146A1 1 0 012 14V4a1 1 0 011.392-.916l1.7.907L8 2.677V3a1 1 0 011-1zM4 11.594l3.303-1.652a9 9 0 013.394 0L14 11.594V5.004l-3.303 1.651a9 9 0 01-3.394 0L4 5.004v6.59z" clipRule="evenodd" /></svg>
                         Demos
                     </NavLink>
+                    <NavLink to="/admin/organizations" className={navLinkClasses}>
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-3" viewBox="0 0 20 20" fill="currentColor"><path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3zM6 8a2 2 0 11-4 0 2 2 0 014 0zM16 18v-3a5.972 5.972 0 00-.75-2.906A3.005 3.005 0 0119 15v3h-3zM4.75 12.094A5.973 5.973 0 004 15v3H1v-3a3 3 0 013.75-2.906z" /></svg>
+                        Ventas SaaS
+                    </NavLink>
                     <NavLink to="/admin/legacy-panel" className={navLinkClasses}>
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-3" viewBox="0 0 20 20" fill="currentColor"><path d="M4 3a2 2 0 00-2 2v9a2 2 0 002 2h12a2 2 0 002-2V7.414A2 2 0 0017.414 6L14 2.586A2 2 0 0012.586 2H4zm9 0.414L16.586 7H13a1 1 0 01-1-1V3.414z" /></svg>
                         Panel Legacy

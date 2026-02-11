@@ -85,7 +85,8 @@ const AdminCampaignPage: React.FC = () => {
                 {([
                     { id: 'branding', label: 'Branding' },
                     { id: 'ui', label: 'Interfaz (UI)' },
-                    { id: 'ai', label: 'AI Prompts' }
+                    { id: 'ai', label: 'AI Prompts' },
+                    { id: 'saas', label: 'SaaS (Planes)' }
                 ] as const).map(tab => (
                     <button
                         key={tab.id}
@@ -140,19 +141,12 @@ const AdminCampaignPage: React.FC = () => {
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-4">
                             <div>
-                                <label className={labelClasses}>Logo (Modo Claro)</label>
-                                <input type="text" value={config.branding.logoLightUrl} onChange={(e) => updateNestedField('branding', 'logoLightUrl', e.target.value)} className={inputClasses} placeholder="/logo.png" />
+                                <label className={labelClasses}>Logo Principal (Cabecera)</label>
+                                <input type="text" value={config.branding.logoMainUrl} onChange={(e) => updateNestedField('branding', 'logoMainUrl', e.target.value)} className={inputClasses} placeholder="/logo.png" />
                             </div>
                             <div>
-                                <label className={labelClasses}>Logo (Modo Oscuro)</label>
-                                <input type="text" value={config.branding.logoDarkUrl} onChange={(e) => updateNestedField('branding', 'logoDarkUrl', e.target.value)} className={inputClasses} placeholder="/logo.png" />
-                            </div>
-                            <div>
-                                <label className={labelClasses}>Sector (Ej: joya / gafa)</label>
-                                <div className="grid grid-cols-2 gap-4">
-                                    <input type="text" value={config.branding.sectorName} onChange={(e) => updateNestedField('branding', 'sectorName', e.target.value)} className={inputClasses} placeholder="Singular" />
-                                    <input type="text" value={config.branding.sectorNamePlural} onChange={(e) => updateNestedField('branding', 'sectorNamePlural', e.target.value)} className={inputClasses} placeholder="Plural" />
-                                </div>
+                                <label className={labelClasses}>Logo Icono (Favicon)</label>
+                                <input type="text" value={config.branding.logoIconUrl} onChange={(e) => updateNestedField('branding', 'logoIconUrl', e.target.value)} className={inputClasses} placeholder="/favicon.ico" />
                             </div>
                         </div>
                     </div>
@@ -199,7 +193,7 @@ const AdminCampaignPage: React.FC = () => {
                     <div className={sectionClasses}>
                         <div className="bg-blue-900/20 border border-blue-800/50 p-4 rounded-xl mb-6">
                             <p className="text-sm text-blue-200">
-                                <b>Tip:</b> Usa los placeholders <code>{`{productType}`}</code>, <code>{`{sectorName}`}</code>, <code>{`{pieceType}`}</code>, <code>{`{material}`}</code> y <code>{`{details}`}</code> para inyectar datos dinámicos.
+                                <b>Tip:</b> Usa los placeholders <code>{`{productType}`}</code>, <code>{`{pieceType}`}</code>, <code>{`{material}`}</code> y <code>{`{details}`}</code> para inyectar datos dinámicos.
                             </p>
                         </div>
                         <div className="space-y-8">
@@ -250,6 +244,54 @@ const AdminCampaignPage: React.FC = () => {
                                     ))}
                                 </div>
                             </div>
+                        </div>
+                    </div>
+                )}
+
+                {activeTab === 'saas' && (
+                    <div className={sectionClasses}>
+                        <div className="bg-yellow-900/20 border border-yellow-800/50 p-4 rounded-xl mb-6">
+                            <p className="text-sm text-yellow-200">
+                                <b>Control de Cuotas:</b> Define el número máximo de try-ons (eventos exitosos) permitidos por mes para cada plan.
+                            </p>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                            {Object.keys(config.saasPlans || {}).map(planKey => (
+                                <div key={planKey} className="bg-black/20 p-6 rounded-2xl border border-white/5 space-y-4">
+                                    <div className="flex items-center justify-between">
+                                        <h3 className="text-sm font-bold uppercase tracking-wider text-[var(--primary-color)]">
+                                            {config.saasPlans[planKey].label || planKey}
+                                        </h3>
+                                        <div className="px-2 py-0.5 rounded bg-white/5 text-[9px] text-gray-400 font-mono">
+                                            ID: {planKey}
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <label className={labelClasses}>Etiqueta Display</label>
+                                        <input
+                                            type="text"
+                                            value={config.saasPlans[planKey].label}
+                                            onChange={(e) => updateDeepField('saasPlans', planKey, 'label', e.target.value)}
+                                            className={inputClasses}
+                                        />
+                                    </div>
+
+                                    <div>
+                                        <label className={labelClasses}>Límite Mensual (Try-ons)</label>
+                                        <input
+                                            type="number"
+                                            value={config.saasPlans[planKey].limit}
+                                            onChange={(e) => updateDeepField('saasPlans', planKey, 'limit', parseInt(e.target.value) || 0)}
+                                            className={inputClasses}
+                                        />
+                                        <p className="text-[10px] text-gray-600 mt-2 italic">
+                                            * Usa 1000000 o más para simular "Ilimitado".
+                                        </p>
+                                    </div>
+                                </div>
+                            ))}
                         </div>
                     </div>
                 )}

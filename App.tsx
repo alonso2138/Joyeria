@@ -10,10 +10,12 @@ import HomePage from './pages/HomePage';
 import CatalogPage from './pages/CatalogPage';
 import JewelryDetailPage from './pages/JewelryDetailPage';
 import TryOnPage from './pages/TryOnPage';
+import WidgetPage from './pages/WidgetPage';
 import CustomizePage from './pages/CustomizePage';
 import CustomResultPage from './pages/CustomResultPage';
 import DemoCatalog from './pages/DemoCatalog';
 import DemoDetail from './pages/DemoDetail';
+import DocsPage from './pages/DocsPage';
 import AdminDemoListPage from './pages/admin/AdminDemoListPage';
 import AdminDemoEditPage from './pages/admin/AdminDemoEditPage';
 
@@ -24,8 +26,15 @@ import AdminJewelryListPage from './pages/admin/AdminJewelryListPage';
 import AdminJewelryEditPage from './pages/admin/AdminJewelryEditPage';
 import AdminLegacyPanelPage from './pages/admin/AdminLegacyPanelPage';
 import AdminCampaignPage from './pages/admin/AdminCampaignPage';
+import AdminOrganizationPage from './pages/admin/AdminOrganizationPage';
 import { AuthProvider } from './hooks/useAuth';
 import { ConfigProvider } from './hooks/useConfig';
+import PrivacyPage from './pages/PrivacyPage';
+import TermsPage from './pages/TermsPage';
+import LegalNoticePage from './pages/LegalNoticePage';
+import CookiePolicyPage from './pages/CookiePolicyPage';
+import CookieBanner from './components/ui/CookieBanner';
+import Footer from './components/layout/Footer';
 
 const PageLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const location = useLocation();
@@ -43,6 +52,7 @@ const PageLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
             <div key={location.pathname}>{children}</div>
           </AnimatePresence>
         </main>
+        <Footer />
       </div>
     </div>
   );
@@ -59,6 +69,7 @@ const App: React.FC = () => {
         <ConfigProvider>
           <Routes>
             <Route path="/try-on/:slug" element={<TryOnPage />} />
+            <Route path="/widget" element={<WidgetPage />} />
             <Route path="/personalizar" element={<PageLayout><CustomizePage /></PageLayout>} />
             <Route path="/personalizar/resultado" element={<CustomResultPage />} />
             <Route path="/admin/login" element={<AdminLoginPage />} />
@@ -70,6 +81,7 @@ const App: React.FC = () => {
             <Route path="/admin/demos/new" element={<AdminLayout><AdminDemoEditPage /></AdminLayout>} />
             <Route path="/admin/demos/edit/:tag" element={<AdminLayout><AdminDemoEditPage /></AdminLayout>} />
             <Route path="/admin/campaign" element={<AdminLayout><AdminCampaignPage /></AdminLayout>} />
+            <Route path="/admin/organizations" element={<AdminLayout><AdminOrganizationPage /></AdminLayout>} />
             <Route path="/admin/legacy-panel" element={<AdminLayout><AdminLegacyPanelPage /></AdminLayout>} />
 
             {/* Demo Routes - Isolated from Main Layout */}
@@ -85,10 +97,16 @@ const App: React.FC = () => {
                   <Route path="/jewelry/:slug" element={<JewelryDetailPage />} />
                   <Route path="/personalizar" element={<CustomizePage />} />
                   <Route path="/personalizar/resultado" element={<CustomResultPage />} />
+                  <Route path="/privacy" element={<PrivacyPage />} />
+                  <Route path="/terms" element={<TermsPage />} />
+                  <Route path="/legal-notice" element={<LegalNoticePage />} />
+                  <Route path="/cookies" element={<CookiePolicyPage />} />
+                  <Route path="/docs" element={<DocsPage />} />
                 </Routes>
               </PageLayout>
             } />
           </Routes>
+          <CookieBanner />
         </ConfigProvider>
       </HashRouter>
     </AuthProvider>

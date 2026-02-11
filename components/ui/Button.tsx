@@ -12,8 +12,8 @@ interface ButtonProps extends React.ComponentProps<typeof motion.button> {
 }
 
 const Button = ({ children, variant = 'primary', className = '', ...props }: ButtonProps) => {
-  const baseClasses = "px-8 py-3 text-sm font-semibold tracking-widest uppercase rounded-sm transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-900";
-  
+  const baseClasses = "px-4 md:px-6 py-2 md:py-2.5 text-[11px] md:text-[12px] font-bold tracking-wider md:tracking-widest uppercase rounded-sm transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-900";
+
   const variantClasses = {
     primary: 'bg-[var(--primary-color)] text-[var(--secondary-color)] hover:bg-opacity-90 focus:ring-[var(--primary-color)]',
     secondary: 'bg-transparent border border-[var(--primary-color)] text-[var(--primary-color)] hover:bg-[var(--primary-color)] hover:text-[var(--secondary-color)] focus:ring-[var(--primary-color)]',

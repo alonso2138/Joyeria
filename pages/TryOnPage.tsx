@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { JewelryItem, EventType } from '../types';
-import { getJewelryBySlug, logEvent } from '../services/api';
+import { getJewelryBySlug, logEvent, logWidgetEvent } from '../services/api';
 import { trackIfAvailable } from '../services/tracking';
 import Spinner from '../components/ui/Spinner';
 import Button from '../components/ui/Button';
@@ -40,6 +40,15 @@ const TryOnPage: React.FC = () => {
         selectedItem: item,
         config,
         onSuccess: () => {
+            // Log widget event if in demo mode with linkedApiKey
+            if (config?.linkedApiKey) {
+                logWidgetEvent(config.linkedApiKey, 'TRYON_SUCCESS', {
+                    itemId: item?.id || item?._id || 'unknown',
+                    itemName: item?.name,
+                    category: item?.category
+                });
+            }
+
             logEvent(EventType.TRYON_SUCCESS, item?.id || '');
             trackIfAvailable('try-on');
             setStep('result');

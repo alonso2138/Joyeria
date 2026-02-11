@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import Button from '../components/ui/Button';
 import Spinner from '../components/ui/Spinner';
 import { JewelryItem } from '../types';
-import { getFeaturedJewelryItems, getImageUrl } from '../services/api';
+import { getFeaturedJewelryItems, getImageUrl, logWidgetEvent } from '../services/api';
 import { trackIfAvailable, trackMeeting, trackStepCompleted } from '../services/tracking';
 import { useConfig } from '../hooks/useConfig';
 import { useTryOn } from '../hooks/useTryOn';
@@ -59,6 +59,11 @@ const HomePage: React.FC = () => {
     selectedItem,
     config,
     onSuccess: () => {
+      // If we have a linked API key (demo mode), log the usage to the backend
+      if (config?.linkedApiKey) {
+        logWidgetEvent(config.linkedApiKey, 'TRYON_SUCCESS', { itemId: selectedItemId || 'demo' });
+      }
+
       if (!trackedStepsRef.current.finished) {
         trackIfAvailable('try-on');
         trackedStepsRef.current.finished = true;
@@ -219,14 +224,14 @@ const HomePage: React.FC = () => {
         return (
           <div className="grid md:grid-cols-5 gap-8 items-start">
             <div className="md:col-span-3 space-y-4">
-              <p className="text-xs uppercase tracking-[0.3em] text-gray-400">{config?.branding?.sectorNamePlural || 'Bienvenida'}</p>
-              <h1 className="text-[clamp(2.3rem,4.5vh,3.2rem)] font-serif font-bold leading-tight">
+              <p className="text-xs uppercase tracking-[0.3em] text-gray-400">Bienvenida</p>
+              <h1 className="text-[clamp(1.8rem,4vh,2.5rem)] font-serif font-bold leading-tight">
                 {config?.uiLabels?.heroTitle || 'Convierte visitas en clientes mostrando joyas en tiempo real.'}
               </h1>
-              <p className="text-base md:text-lg text-gray-300">
+              <p className="text-sm md:text-base text-gray-300 max-w-xl">
                 {config?.uiLabels?.heroSubtitle || 'Las joyerías que lo usan reducen dudas y cierran más ventas online y en tienda.'}
               </p>
-              <p className="text-sm md:text-base text-gray-400">
+              <p className="text-[10px] md:text-xs text-gray-500 uppercase tracking-widest">
                 Probado con clientes reales
               </p>
               <div className="flex flex-wrap gap-3">
@@ -299,8 +304,8 @@ const HomePage: React.FC = () => {
       case 2:
         return (
           <div className="space-y-3">
-            <p className="text-xs uppercase tracking-[0.3em] text-gray-400">Elección de pieza</p>
-            <h2 className="text-2xl md:text-3xl font-serif font-bold">¿Qué pieza quiere probarse?</h2>
+            <p className="text-[10px] uppercase tracking-[0.3em] text-gray-500 font-bold">Capítulo 01</p>
+            <h2 className="text-xl md:text-2xl font-serif font-bold">¿Qué pieza quiere probarse?</h2>
             {itemsLoading && (
               <div className="p-6 border border-white/10 rounded-xl bg-black/40 flex justify-center">
                 <Spinner text="Cargando joyas..." />
@@ -351,8 +356,8 @@ const HomePage: React.FC = () => {
       case 3:
         return (
           <div className="space-y-6">
-            <p className="text-xs uppercase tracking-[0.3em] text-gray-400">Antes de la cámara</p>
-            <h2 className="text-3xl md:text-4xl font-serif font-bold">
+            <p className="text-[10px] uppercase tracking-[0.3em] text-gray-500 font-bold">Capítulo 02</p>
+            <h2 className="text-2xl md:text-3xl font-serif font-bold">
               Haz una foto rápida para ver la pieza puesta.
             </h2>
             <div className="bg-white/5 border border-white/10 rounded-xl p-5">
@@ -371,8 +376,8 @@ const HomePage: React.FC = () => {
       case 4:
         return (
           <div className="space-y-4">
-            <p className="text-xs uppercase tracking-[0.3em] text-gray-400">Cámara</p>
-            <h2 className="text-2xl md:text-3xl font-serif font-bold">
+            <p className="text-[10px] uppercase tracking-[0.3em] text-gray-500 font-bold">En Vivo</p>
+            <h2 className="text-xl md:text-2xl font-serif font-bold">
               Colóquese dentro del encuadre y haz la foto.
             </h2>
             <div className="relative rounded-2xl overflow-hidden border border-white/10 bg-black/50">
@@ -493,8 +498,8 @@ const HomePage: React.FC = () => {
               </div>
               <div className="lg:col-span-4 space-y-6">
                 <div className="space-y-2">
-                  <h3 className="text-3xl font-serif font-bold text-white tracking-tight">Visto. Probado. Decidido.</h3>
-                  <p className="text-gray-400 leading-relaxed">Así es como tus clientes experimentarán tus piezas en tiempo real, desde cualquier lugar.</p>
+                  <h3 className="text-2xl font-serif font-bold text-white tracking-tight">Visto. Probado. Decidido.</h3>
+                  <p className="text-sm text-gray-400 leading-relaxed">Así es como tus clientes experimentarán tus piezas en tiempo real, desde cualquier lugar.</p>
                 </div>
 
                 {selectedItem && (
@@ -509,9 +514,12 @@ const HomePage: React.FC = () => {
                   </motion.div>
                 )}
 
-                <div className="pt-4 flex gap-2">
-                  <Button variant="secondary" className="flex-1 py-4" onClick={() => { reset(); setStep(4); }}>Nueva foto</Button>
-                  <Button variant="secondary" className="flex-1 py-4" onClick={() => { reset(); setStep(2); }}>Cambiar joya</Button>
+                <div className="pt-4 space-y-3">
+                  <Button variant="primary" className="w-full py-4 text-xs" onClick={() => setStep(6)}>Quiero esto en mi web</Button>
+                  <div className="flex gap-2">
+                    <Button variant="secondary" className="flex-1 py-3 text-[10px]" onClick={() => { reset(); setStep(4); }}>Nueva foto</Button>
+                    <Button variant="secondary" className="flex-1 py-3 text-[10px]" onClick={() => { reset(); setStep(2); }}>Cambiar joya</Button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -520,11 +528,11 @@ const HomePage: React.FC = () => {
       case 6:
         return (
           <div className="space-y-6">
-            <p className="text-xs uppercase tracking-[0.3em] text-gray-400">Contacto</p>
-            <h2 className="text-3xl md:text-4xl font-serif font-bold">
-              ¿Quieres ofrecer esta experiencia a tus clientes?
+            <p className="text-[10px] uppercase tracking-[0.3em] text-gray-500 font-bold">Finalizar</p>
+            <h2 className="text-2xl md:text-3xl font-serif font-bold">
+              ¿Quieres ofrecer esta experiencia?
             </h2>
-            <p className="text-lg text-gray-300 max-w-3xl">
+            <p className="text-base text-gray-300 max-w-2xl">
               Te preparamos una prueba gratuita sin compromiso y la vemos en 5 minutos.
             </p>
             <form className="grid md:grid-cols-3 gap-4 bg-white/5 border border-white/10 rounded-xl p-5" onSubmit={handleSubmit}>

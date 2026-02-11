@@ -3,7 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import Button from '../components/ui/Button';
 import Spinner from '../components/ui/Spinner';
 import { CustomJewelOptions, CustomRequestPayload, GeneratedJewelResult } from '../types';
-import { createCustomRequest } from '../services/api';
+import { createCustomRequest, logWidgetEvent } from '../services/api';
 import { generateCustomJewelWithTryOn, generateCustomJewelRender } from '../services/geminiService';
 import { trackIfAvailable } from '../services/tracking';
 import { useConfig } from '../hooks/useConfig';
@@ -100,6 +100,16 @@ const CustomResultPage: React.FC = () => {
     try {
       const generated = await generateCustomJewelWithTryOn(base64, options, config);
       setTryOnResult(generated);
+
+      // Log widget event if in demo mode with linkedApiKey
+      if (config?.linkedApiKey) {
+        logWidgetEvent(config.linkedApiKey, 'TRYON_SUCCESS', {
+          itemId: 'custom-jewelry',
+          pieceType: options.pieceType,
+          material: options.material
+        });
+      }
+
       trackIfAvailable('try-on');
       setStep('tryon-result');
     } catch (err) {

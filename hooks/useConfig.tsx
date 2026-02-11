@@ -55,7 +55,7 @@ export const ConfigProvider: React.FC<{ children: ReactNode }> = ({ children }) 
                     root.style.setProperty('--font-family', fontFamily);
 
                     // Update favicon dynamically (use dedicated favicon or fallback to logo)
-                    const faviconUrl = data.branding.faviconUrl || data.branding.logoLightUrl;
+                    const faviconUrl = data.branding.logoIconUrl || data.branding.logoMainUrl;
                     if (faviconUrl) {
                         const favicon = document.querySelector("link[rel*='icon']") as HTMLLinkElement;
                         if (favicon) {
