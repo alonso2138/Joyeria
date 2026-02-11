@@ -167,15 +167,14 @@
     </style>
 </head>
 
-<body>
+<div class="container">
+    <header>
+        <span class="badge">SaaS Integration Guide v1.0</span>
+        <h1>Visualizador de Joyería IA</h1>
+        <p>Integra la experiencia de probador virtual en tu e-commerce en menos de 5 minutos.</p>
+    </header>
 
-    <div class="container">
-        <header>
-            <span class="badge">SaaS Integration Guide v1.0</span>
-            <h1>Visualizador de Joyería IA</h1>
-            <p>Integra la experiencia de probador virtual en tu e-commerce en menos de 5 minutos.</p>
-        </header>
-
+    <body>
         <!-- PASO 1: SCRIPT -->
         <div class="section">
             <h2>
@@ -201,7 +200,7 @@
                     <img src="https://images.unsplash.com/photo-1605100804763-247f67b3557e?q=80&w=400&auto=format&fit=crop"
                         class="product-img">
                     <h3>Anillo Eternity</h3>
-                    <button class="btn-try" data-try-on data-api-key="demo-key" data-name="Anillo Eternity"
+                    <button class="btn-try" data-try-on data-api-key="ak_30f2kuiphfuu" data-name="Anillo Eternity"
                         data-category="Anillo"
                         data-image="https://images.unsplash.com/photo-1605100804763-247f67b3557e?q=80&w=1000&auto=format&fit=crop">
                         Probar en mi mano
@@ -213,7 +212,7 @@
                     <img src="https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?q=80&w=400&auto=format&fit=crop"
                         class="product-img">
                     <h3>Collar Diamante</h3>
-                    <button class="btn-try" data-try-on data-api-key="demo-key" data-name="Collar Minimal"
+                    <button class="btn-try" data-try-on data-api-key="ak_30f2kuiphfuu" data-name="Collar Minimal"
                         data-category="Collar"
                         data-image="https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?q=80&w=1000&auto=format&fit=crop">
                         Ver cómo queda
@@ -260,7 +259,8 @@
             <h2>
                 <div class="step-number">3</div> Manejo de Eventos (Opcional)
             </h2>
-            <p>El widget emite eventos mediante <code>window.postMessage</code> para que puedas capturar el resultado y,
+            <p>El widget emite eventos mediante <code>window.postMessage</code> para que puedas capturar el
+                resultado y,
                 por ejemplo, guardarlo en el carrito o enviarlo por email.</p>
             <pre><code>window.addEventListener('message', (event) => {
     if (event.data.type === 'TRYON_SUCCESS') {
@@ -276,25 +276,25 @@
             style="text-align: center; color: #94a3b8; font-size: 0.875rem; border-top: 1px solid #e2e8f0; padding-top: 20px;">
             &copy; 2026 Visualizador SaaS. Soporte técnico: soporte@tu-empresa.com
         </footer>
-    </div>
+</div>
 
-    <!-- Script de ejemplo para mostrar eventos -->
-    <script>
-        window.addEventListener('message', (event) => {
-            const log = document.getElementById('event-log');
-            if (event.data.type === 'TRYON_SUCCESS') {
-                log.innerText = "✅ [Recibido] TRYON_SUCCESS: Imagen generada con éxito.";
-                log.style.color = "#10b981";
-            }
-            if (event.data.type === 'WIDGET_CLOSE') {
-                log.innerText = "ℹ️ [Recibido] WIDGET_CLOSE: El usuario cerró el visualizador.";
-                log.style.color = "#60a5fa";
-            }
-        });
-    </script>
+<!-- Script de ejemplo para mostrar eventos -->
+<script>
+    window.addEventListener('message', (event) => {
+        const log = document.getElementById('event-log');
+        if (event.data.type === 'TRYON_SUCCESS') {
+            log.innerText = "✅ [Recibido] TRYON_SUCCESS: Imagen generada con éxito.";
+            log.style.color = "#10b981";
+        }
+        if (event.data.type === 'WIDGET_CLOSE') {
+            log.innerText = "ℹ️ [Recibido] WIDGET_CLOSE: El usuario cerró el visualizador.";
+            log.style.color = "#60a5fa";
+        }
+    });
+</script>
 
-    <!-- CARGA DEL WIDGET (Ruta relativa para demo local) -->
-    <script src="/widget.js"></script>
+<!-- CARGA DEL WIDGET (Ruta relativa para demo local) -->
+<script src="https://www.visualizalo.es/widget.js"></script>
 
 </body>
 

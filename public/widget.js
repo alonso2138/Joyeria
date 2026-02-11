@@ -114,7 +114,9 @@
 
     function openVisualizer(params) {
         const { imageUrl, name, category, apiKey } = params;
-        const API_URL = window.location.origin.includes('localhost') ? 'http://localhost:5000' : window.location.origin;
+        const IS_LOCAL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+        const API_BASE = IS_LOCAL ? 'http://localhost:5000' : 'https://api.visualizalo.es';
+        const APP_BASE = IS_LOCAL ? window.location.origin : 'https://www.visualizalo.es';
 
         if (!apiKey) {
             console.error('[SaaS] API Key missing');
@@ -122,7 +124,7 @@
             return;
         }
 
-        fetch(`${API_URL}/api/widget/validate`, {
+        fetch(`${API_BASE}/api/widget/validate`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ apiKey })
@@ -140,7 +142,7 @@
                     apiKey: apiKey || ''
                 }).toString();
 
-                iframe.src = `${window.location.origin}/#/widget?${query}`;
+                iframe.src = `${APP_BASE}/#/widget?${query}`;
                 overlay.style.display = 'flex';
                 document.body.style.overflow = 'hidden';
             })
