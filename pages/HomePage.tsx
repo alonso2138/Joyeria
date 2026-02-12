@@ -4,7 +4,7 @@ import { useLocation } from 'react-router-dom';
 import Button from '../components/ui/Button';
 import Spinner from '../components/ui/Spinner';
 import { JewelryItem } from '../types';
-import { getFeaturedJewelryItems, getImageUrl } from '../services/api';
+import { getFeaturedJewelryItems, getImageUrl, createAutoDemoAPI } from '../services/api';
 import { trackB2BEvent, B2B_EVENTS } from '../services/tracking';
 import { useConfig } from '../hooks/useConfig';
 import { useTryOn } from '../hooks/useTryOn';
@@ -146,24 +146,11 @@ const HomePage: React.FC = () => {
   const handleFinalSubmit = async () => {
     // 1. Create Demo signal in backend
     try {
-      const resp = await fetch('/api/trigger/create-demo', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: formData.name })
-      });
-
-      if (resp.ok) {
-        const data = await resp.json();
-        if (data.success) {
-          setTag(data.tag);
-          setCookie('v_demo_tag', data.tag);
-          setCookie('v_demo_name', formData.name);
-        }
-      } else {
-        const errorText = await resp.text();
-        console.error("Backend error creating demo:", errorText);
-        // We still proceed to step 3 so the user isn't stuck, 
-        // they just won't have a valid tag immediately.
+      const data = await createAutoDemoAPI(formData.name);
+      if (data.success) {
+        setTag(data.tag);
+        setCookie('v_demo_tag', data.tag);
+        setCookie('v_demo_name', formData.name);
       }
     } catch (err) {
       console.error("Failed to create demo", err);

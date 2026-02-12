@@ -249,3 +249,10 @@ export const logWidgetEvent = async (apiKey: string, type: string, metadata?: an
     console.error('Failed to log widget event:', error);
   }
 };
+export const createAutoDemoAPI = async (name: string): Promise<{ success: boolean; tag: string }> => {
+  return apiRequest('/trigger/create-demo', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name }),
+  });
+};
