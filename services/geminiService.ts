@@ -11,13 +11,27 @@ const urlToInlineData = async (url: string) => {
   const response = await fetch(url);
   if (!response.ok) throw new Error(`Failed to fetch image: ${response.statusText}`);
   const blob = await response.blob();
-  const base64Data = await new Promise<string>((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onloadend = () => resolve((reader.result as string).split(',')[1]);
-    reader.onerror = reject;
-    reader.readAsDataURL(blob);
+
+  // Convert to Image and then to JPEG via Canvas to ensure compatibility (AVIF, etc)
+  const img = new Image();
+  const objectUrl = URL.createObjectURL(blob);
+
+  await new Promise((resolve, reject) => {
+    img.onload = resolve;
+    img.onerror = reject;
+    img.src = objectUrl;
   });
-  return { inlineData: { data: base64Data, mimeType: blob.type } };
+
+  const canvas = document.createElement('canvas');
+  canvas.width = img.width;
+  canvas.height = img.height;
+  const ctx = canvas.getContext('2d');
+  ctx?.drawImage(img, 0, 0);
+
+  const base64Data = canvas.toDataURL('image/jpeg', 0.85).split(',')[1];
+  URL.revokeObjectURL(objectUrl);
+
+  return { inlineData: { data: base64Data, mimeType: 'image/jpeg' } };
 };
 
 const userImageToInlineData = (base64String: string) => {

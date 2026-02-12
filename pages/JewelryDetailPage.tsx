@@ -84,8 +84,7 @@ const JewelryDetailPage: React.FC = () => {
           </div>
 
           <div className="flex flex-col sm:flex-row gap-4">
-            <Button variant="primary" onClick={handleTryOn}>{config?.branding?.ctaTryOn || 'Probar en mi piel'}</Button>
-            <Button variant="secondary" onClick={() => logEvent(EventType.CLICK_BOOK_APPOINTMENT, item.id)}>Pedir Cita</Button>
+            <Button variant="primary" className="w-full sm:w-auto" onClick={handleTryOn}>{config?.branding?.ctaTryOn || 'Probar en mi piel'}</Button>
           </div>
         </motion.div>
       </div>

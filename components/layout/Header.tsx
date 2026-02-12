@@ -32,9 +32,11 @@ const Header: React.FC = () => {
         </Link>
         <div className="flex items-center">
           {!isDemo && (
-            <nav className="hidden md:flex items-center space-x-4 lg:space-x-6 text-[10px] md:text-[11px] font-bold tracking-[0.15em] md:tracking-[0.2em] uppercase">
-              <Link to="/" className="hover:text-[var(--primary-color)] transition-colors duration-300">Home</Link>
-              <Link to="/catalog" className="hover:text-[var(--primary-color)] transition-colors duration-300">Colección</Link>
+            <nav className="hidden md:flex items-center space-x-4 lg:space-x-8 text-[10px] md:text-[11px] font-extrabold tracking-[0.2em] uppercase">
+              <a href="#/#beneficios" className="text-white/60 hover:text-[var(--primary-color)] transition-colors duration-300">Beneficios</a>
+              <a href="#/#roi" className="text-white/60 hover:text-[var(--primary-color)] transition-colors duration-300">Calculadora</a>
+              <a href="#/#pricing" className="text-white/60 hover:text-[var(--primary-color)] transition-colors duration-300">Precios</a>
+              <a href="#/#solicitar-demo" className="px-4 py-2 bg-white/5 border border-white/10 rounded-full hover:bg-[var(--primary-color)] hover:text-black transition-all">Solicitar Demo</a>
             </nav>
           )}
           {!isDemo && (

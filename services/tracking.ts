@@ -18,8 +18,8 @@ const hasTrackingConsent = (): boolean => {
   return localStorage.getItem('user_tracking_consent') === 'accepted';
 };
 
-const fireTracking = async (id: string, estado: string, extra: Record<string, string> = {}) => {
-  if (!hasTrackingConsent()) return;
+const fireTracking = async (id: string, estado: string, extra: Record<string, string> = {}, force = false) => {
+  if (!force && !hasTrackingConsent()) return;
   // Capturar demoTag de la URL si existe
   const hash = typeof window !== 'undefined' ? window.location.hash : '';
   let demoTag = '';
@@ -82,4 +82,21 @@ export const trackStepCompleted = (step: number) => {
 export const trackMeeting = (nombre: string, email: string) => {
   const id = getStoredTrackingId() || '';
   fireTracking(id, 'meeting', { nombre, email });
+};
+
+// --- New B2B Events ---
+export const trackB2BEvent = (event: string, extra: Record<string, string> = {}, force = false) => {
+  const id = getStoredTrackingId() || extra.email || extra.id || 'anonymous-b2b';
+  fireTracking(id, event, extra, force || !!extra.email);
+};
+
+export const B2B_EVENTS = {
+  LANDING_VIEW: 'landing-view',
+  CTA_PRIMARY_CLICK: 'cta-primary-click',
+  INTELLIGENT_DEMO_START: 'intelligent-demo-start',
+  INTELLIGENT_DEMO_SUCCESS: 'intelligent-demo-success',
+  ROI_CALC_INTERACT: 'roi-calc-interact',
+  WHATSAPP_KIT_COPY: 'whatsapp-kit-copy',
+  B2B_LINKS_SUBMIT: 'b2b-links-submit',
+  PRICING_VIEW: 'pricing-view',
 };

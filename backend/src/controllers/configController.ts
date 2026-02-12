@@ -122,3 +122,45 @@ export const deleteDemo = (req: Request, res: Response) => {
         res.status(500).json({ message: 'Error deleting demo' });
     }
 };
+export const createAutoDemo = async (req: Request, res: Response) => {
+    try {
+        const { name } = req.body;
+        if (!name) return res.status(400).json({ message: 'Name is required' });
+
+        const baseTag = name.toLowerCase()
+            .normalize("NFD").replace(/[\u0300-\u036f]/g, "") // Remove accents
+            .replace(/[^a-z0-9]/g, '-') // Replace non-alphanumeric with -
+            .replace(/-+/g, '-') // Replace multiple - with single
+            .replace(/^-|-$/g, ''); // Trim -
+
+        if (!fs.existsSync(CONFIG_PATH)) {
+            return res.status(404).json({ message: 'Configuration file not found' });
+        }
+
+        const config = JSON.parse(fs.readFileSync(CONFIG_PATH, 'utf-8'));
+        if (!config.demoConfigs) config.demoConfigs = {};
+
+        let tag = baseTag;
+        let counter = 1;
+        while (config.demoConfigs[tag]) {
+            tag = `${baseTag}-${counter}`;
+            counter++;
+        }
+
+        // Initialize with minimal clear branding/labels
+        config.demoConfigs[tag] = {
+            branding: {
+                name: name,
+                ctaTryOn: "Probar ahora"
+            },
+            uiLabels: {},
+            aiPrompts: {}
+        };
+
+        fs.writeFileSync(CONFIG_PATH, JSON.stringify(config, null, 2));
+        res.json({ success: true, tag });
+    } catch (error) {
+        console.error('Error creating auto demo:', error);
+        res.status(500).json({ message: 'Error creating demo' });
+    }
+};

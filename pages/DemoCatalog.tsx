@@ -61,7 +61,7 @@ const DemoCatalog: React.FC = () => {
                         </div>
                     )}
                     <h1 className="text-3xl md:text-4xl lg:text-5xl font-serif font-bold tracking-tight">
-                        {config?.uiLabels?.heroTitle || config?.branding?.brandName || 'Catálogo Demo'}
+                        {config?.branding?.brandName || 'Demo de probador virtual'}
                     </h1>
                     <p className="opacity-70 mt-3 max-w-lg mx-auto text-xs md:text-sm leading-relaxed italic" style={{ color: 'var(--text-color)' }}>
                         {config?.uiLabels?.heroDescription}
@@ -75,8 +75,17 @@ const DemoCatalog: React.FC = () => {
                         <Spinner text="Cargando piezas..." />
                     </div>
                 ) : items.length === 0 ? (
-                    <div className="text-center py-20">
-                        <p className="text-gray-500">No hay piezas disponibles</p>
+                    <div className="text-center py-32 flex flex-col items-center">
+                        <div className="w-20 h-20 mb-10 rounded-full bg-[var(--primary-color)]/10 flex items-center justify-center border border-[var(--primary-color)]/20">
+                            <svg className="w-10 h-10 text-[var(--primary-color)] opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                        </div>
+                        <h2 className="text-3xl font-serif font-bold mb-6">Demo en preparación</h2>
+                        <p className="text-gray-400 max-w-md mx-auto leading-relaxed italic">
+                            Estamos configurando tus piezas y ajustando la IA para tu marca. <br />
+                            Recibirás un correo cuando esté lista tu demo.
+                        </p>
                     </div>
                 ) : (
                     <div className="flex flex-wrap justify-center gap-x-8 gap-y-12 items-start">

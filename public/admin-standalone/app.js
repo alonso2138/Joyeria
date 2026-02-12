@@ -9,7 +9,12 @@ const scoreWeights = {
   "cold-approach": 1,
   "open-cold": 1,
   "open-followup": 1,
-  "link-click": 3,
+  "link-click": 2,
+  "cta-primary-click": 3,
+  "intelligent-demo-success": 6,
+  "b2b-links-submit": 10,
+  "roi-calc-interact": 2,
+  "whatsapp-kit-copy": 4,
   "reply": 6,
   "meeting": 10,
 };
@@ -33,6 +38,14 @@ const actionLabels = {
   "step-5-completed": "Paso 5 completado",
   "step-6-completed": "Paso 6 completado",
   "custom-jewel": "Joya personalizada",
+  "landing-view": "Visto Landing B2B",
+  "cta-primary-click": "Click CTA Principal",
+  "intelligent-demo-start": "Inició Demo IA",
+  "intelligent-demo-success": "Vio Demo IA (Modelo)",
+  "roi-calc-interact": "Usó Calculadora ROI",
+  "whatsapp-kit-copy": "Copió Kit WhatsApp",
+  "b2b-links-submit": "Envió Links Joyas",
+  "pricing-view": "Visto Precios",
 };
 
 const FUNNEL_STEPS = [1, 2, 3, 4, 5, 6];

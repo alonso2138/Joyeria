@@ -25,6 +25,7 @@ export const useTryOn = ({
     const [previewImage, setPreviewImage] = useState<string | null>(null);
     const [resultImage, setResultImage] = useState<string | null>(null);
     const [tryOnError, setTryOnError] = useState<string | null>(null);
+    const [processingPhase, setProcessingPhase] = useState<'idle' | 'capturing' | 'detecting' | 'rendering' | 'finalizing'>('idle');
     const [facingMode, setFacingMode] = useState<'user' | 'environment'>('user');
 
     const videoRef = useRef<HTMLVideoElement>(null);
@@ -157,6 +158,7 @@ export const useTryOn = ({
 
         isProcessingRef.current = true;
         setIsProcessing(true);
+        setProcessingPhase('capturing');
         setTryOnError(null);
 
         try {
@@ -177,6 +179,7 @@ export const useTryOn = ({
             }
 
             // 2. PROCESAMIENTO DE VISIÓN (Smart Crop + 3D Pose)
+            setProcessingPhase('detecting');
             // Intentamos buscar la mano/cara sobre la imagen ya capturada
             let orientationDesc = '';
             if (userImageBase64 && !providedBase64) {
@@ -219,20 +222,24 @@ export const useTryOn = ({
 
             const requestConfig = { ...config, isMacro: isCropped, orientationDesc };
 
+            setProcessingPhase('rendering');
             const composed = await generateTryOnImage(userImageBase64, overlayUrl, category, requestConfig, aiModel);
 
+            setProcessingPhase('finalizing');
             setResultImage(composed);
             // Breve pausa para mostrar el resultado
             await new Promise(r => setTimeout(r, 800));
 
             if (onSuccess) onSuccess(composed);
             setIsProcessing(false);
+            setProcessingPhase('idle');
         } catch (err: any) {
             console.error('[useTryOn] Processing error:', err);
             const msg = err.message || 'Error al procesar la imagen.';
             setTryOnError(msg);
             if (onError) onError(msg);
             setIsProcessing(false);
+            setProcessingPhase('idle');
             setPreviewImage(null);
             if (cameraStatus === 'granted') startCamera();
         } finally {
@@ -267,6 +274,7 @@ export const useTryOn = ({
         setResultImage(null);
         setTryOnError(null);
         setIsProcessing(false);
+        setProcessingPhase('idle');
         setCountdown(null);
         if (cameraStatus === 'granted') startCamera();
     }, [cameraStatus, startCamera]);
@@ -280,6 +288,7 @@ export const useTryOn = ({
         previewImage,
         resultImage,
         tryOnError,
+        processingPhase,
         facingMode,
         videoRef,
         canvasRef,
