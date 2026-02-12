@@ -14,7 +14,7 @@ const HomePage: React.FC = () => {
   const location = useLocation();
   const [items, setItems] = useState<JewelryItem[]>([]);
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
-  const [formData, setFormData] = useState({ name: '', email: '', web: '' });
+  const [formData, setFormData] = useState({ name: '', email: '', web: '', jewelryInfo: '' });
   const [formStep, setFormStep] = useState(1); // 1: Info, 2: Links, 3: Success
   const [isSubmittingLead, setIsSubmittingLead] = useState(false);
 
@@ -157,7 +157,11 @@ const HomePage: React.FC = () => {
     }
 
     // 2. Step 2 Notification
-    await trackB2BEvent(B2B_EVENTS.B2B_LINKS_SUBMIT, { email: formData.email, name: formData.name }, true);
+    await trackB2BEvent(B2B_EVENTS.B2B_LINKS_SUBMIT, {
+      email: formData.email,
+      name: formData.name,
+      jewelryInfo: formData.jewelryInfo
+    }, true);
     setFormStep(3);
   };
 
@@ -510,6 +514,8 @@ const HomePage: React.FC = () => {
                 <div className="max-w-2xl mx-auto space-y-6 text-left">
                   <textarea
                     placeholder="Pega links o nombres de tus joyas aquí..."
+                    value={formData.jewelryInfo}
+                    onChange={e => setFormData({ ...formData, jewelryInfo: e.target.value })}
                     className="w-full h-48 px-8 py-6 rounded-[2rem] bg-black/5 border-none placeholder:text-black/30 focus:outline-none focus:bg-white transition-all shadow-xl text-black font-bold font-sans resize-none"
                     required
                   />
@@ -566,12 +572,6 @@ const HomePage: React.FC = () => {
         </div>
       </section>
 
-      {/* --- STICKY FOOTER CTA (Mobile) --- */}
-      <div className="md:hidden fixed bottom-8 left-10 right-10 z-[50]">
-        <a href="#/#solicitar-demo">
-          <Button variant="primary" className="w-full py-5 rounded-full shadow-2xl bg-black text-white border-none font-black text-[10px] uppercase tracking-widest">Pide tu demo hoy</Button>
-        </a>
-      </div>
 
     </div>
   );

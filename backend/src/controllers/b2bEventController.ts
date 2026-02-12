@@ -51,7 +51,12 @@ export const b2bEvent = async (req: Request, res: Response) => {
                     message += `Acción: ${estadoLabel}`;
 
                     if (eventType === 'b2b-links-submit') {
-                        message += `\n📍 <i>(Este lead ha enviado sus piezas)</i>`;
+                        const jewelryInfo = req.query.jewelryInfo as string;
+                        if (jewelryInfo) {
+                            message += `\n📍 <b>Piezas:</b>\n<i>${jewelryInfo}</i>`;
+                        } else {
+                            message += `\n📍 <i>(Este lead ha enviado sus piezas)</i>`;
+                        }
                     }
 
                     await sendTelegramNotification(message);
