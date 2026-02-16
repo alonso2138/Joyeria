@@ -17,7 +17,7 @@ export const generateTryOnImage = async (
         userImageBase64,
         jewelryOverlayUrl,
         itemType,
-        tag: config?.tag || window.location.hash.split('/demo/')[1]?.split('/')[0], // Extract tag from URL if not in config
+        tag: config?.tag || window.location.hash.split('/demo/')[1]?.split('/')[0] || 'main',
         isMacro: config?.isMacro,
         orientationDesc: config?.orientationDesc
       }),

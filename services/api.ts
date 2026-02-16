@@ -238,6 +238,13 @@ export const deleteOrganizationAPI = async (id: string, token: string): Promise<
   });
 };
 
+export const resetOrganizationUsageAPI = async (id: string, token: string): Promise<Organization> => {
+  return apiRequest(`/widget/organizations/${id}/reset-usage`, {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${token}` }
+  });
+};
+
 export const logWidgetEvent = async (apiKey: string, type: string, metadata?: any) => {
   try {
     return await apiRequest('/widget/log-event', {

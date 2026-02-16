@@ -21,7 +21,13 @@ export const generateTryOn = async (req: Request, res: Response) => {
         }
 
         // 1. SECURITY: Verify that the demo has an active organization
-        const org = await Organization.findOne({ demoTag: tag });
+        let org = await Organization.findOne({ demoTag: tag });
+
+        // Fallback for landing page or if 'main' tag is used
+        if (!org && tag === 'main') {
+            org = await Organization.findOne({ isActive: true });
+        }
+
         if (!org || !org.isActive) {
             return res.status(403).json({ message: 'This demo is not authorized for AI generation (Missing Org)' });
         }

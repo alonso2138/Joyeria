@@ -29178,5 +29178,40 @@
     "email": "anonymous-b2b",
     "timestamp": "2026-02-16T14:42:05.730Z",
     "action_type": "landing-view"
+  },
+  {
+    "email": "anonymous-b2b",
+    "timestamp": "2026-02-16T14:56:31.319Z",
+    "action_type": "landing-view"
+  },
+  {
+    "email": "anonymous-b2b",
+    "timestamp": "2026-02-16T14:56:31.361Z",
+    "action_type": "landing-view"
+  },
+  {
+    "email": "anonymous-b2b",
+    "timestamp": "2026-02-16T14:57:06.729Z",
+    "action_type": "landing-view"
+  },
+  {
+    "email": "anonymous-b2b",
+    "timestamp": "2026-02-16T14:57:06.754Z",
+    "action_type": "landing-view"
+  },
+  {
+    "email": "anonymous-b2b",
+    "timestamp": "2026-02-16T14:57:11.057Z",
+    "action_type": "intelligent-demo-start"
+  },
+  {
+    "email": "anonymous-b2b",
+    "timestamp": "2026-02-16T14:57:11.074Z",
+    "action_type": "intelligent-demo-start"
+  },
+  {
+    "email": "anonymous-b2b",
+    "timestamp": "2026-02-16T14:57:22.651Z",
+    "action_type": "intelligent-demo-success"
   }
 ]

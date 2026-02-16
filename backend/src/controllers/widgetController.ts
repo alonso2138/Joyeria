@@ -192,3 +192,18 @@ export const deleteOrganization = async (req: Request, res: Response) => {
         res.status(500).json({ message: 'Error deleting organization' });
     }
 };
+
+export const resetOrganizationUsage = async (req: Request, res: Response) => {
+    try {
+        const { id } = req.params;
+        const org = await Organization.findById(id);
+        if (!org) {
+            return res.status(404).json({ message: 'Organization not found' });
+        }
+        org.usageCount = 0;
+        await org.save();
+        res.status(200).json(org);
+    } catch (error) {
+        res.status(500).json({ message: 'Error resetting usage count' });
+    }
+};

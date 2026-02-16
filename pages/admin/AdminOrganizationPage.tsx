@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { Organization } from '../../types';
-import { getOrganizations, deleteOrganizationAPI, createOrganizationAPI, updateOrganizationAPI, getCampaignConfig } from '../../services/api';
+import { getOrganizations, deleteOrganizationAPI, createOrganizationAPI, updateOrganizationAPI, getCampaignConfig, resetOrganizationUsageAPI } from '../../services/api';
 import { useAuth } from '../../hooks/useAuth';
 import Button from '../../components/ui/Button';
 import Spinner from '../../components/ui/Spinner';
@@ -75,6 +75,19 @@ const AdminOrganizationPage: React.FC = () => {
             } catch (error) {
                 console.error("Failed to delete organization:", error);
                 alert("Error al eliminar.");
+            }
+        }
+    };
+
+    const handleResetUsage = async (id: string) => {
+        if (window.confirm('¿Resetear el contador de uso de esta organización?')) {
+            try {
+                if (!token) throw new Error("No auth token");
+                await resetOrganizationUsageAPI(id, token);
+                fetchData();
+            } catch (error) {
+                console.error("Failed to reset usage:", error);
+                alert("Error al resetear el uso.");
             }
         }
     };
@@ -181,6 +194,7 @@ const AdminOrganizationPage: React.FC = () => {
                                     <td className="px-4 py-3 text-right">
                                         <div className="flex justify-end gap-3">
                                             <button onClick={() => { handleEditClick(org); setShowCreateModal(true); }} className="text-blue-400 hover:text-blue-300 transition-colors text-[11px] font-bold uppercase tracking-wider">Editar</button>
+                                            <button onClick={() => handleResetUsage(org.id)} className="text-amber-500 hover:text-amber-400 transition-colors text-[11px] font-bold uppercase tracking-wider">Reset</button>
                                             <button onClick={() => handleDelete(org.id)} className="text-red-500 hover:text-red-400 transition-colors text-[11px] font-bold uppercase tracking-wider">Eliminar</button>
                                         </div>
                                     </td>
