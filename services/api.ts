@@ -1,6 +1,6 @@
 import { JewelryItem, AnalyticsEvent, EventType, AdminUserCredentials, CustomRequest, CustomRequestPayload, Organization } from '../types';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || (import.meta.env.PROD ? '/api' : 'http://localhost:5000/api');
 
 // Helper para construir URLs de imágenes correctamente
 export const getImageUrl = (imageUrl: string | undefined): string => {

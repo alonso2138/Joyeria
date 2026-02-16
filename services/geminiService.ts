@@ -1,4 +1,4 @@
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || (import.meta.env.PROD ? '/api' : 'http://localhost:5000/api');
 
 export const generateTryOnImage = async (
   userImageBase64: string,
@@ -23,9 +23,24 @@ export const generateTryOnImage = async (
       }),
     });
 
+    const contentType = response.headers.get('content-type');
     if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.message || 'Error en la conexión con el servidor de IA.');
+      let errorMessage = 'Error en la conexión con el servidor de IA.';
+      if (contentType && contentType.includes('application/json')) {
+        const errorData = await response.json();
+        errorMessage = errorData.message || errorMessage;
+      } else {
+        const text = await response.text();
+        console.warn('[Gemini Service] Received non-JSON error:', text.substring(0, 100));
+        if (response.status === 404) errorMessage = 'El servicio de IA no se encuentra disponible (404).';
+      }
+      throw new Error(errorMessage);
+    }
+
+    if (!contentType || !contentType.includes('application/json')) {
+      const text = await response.text();
+      console.error('[Gemini Service] Expected JSON but received:', text.substring(0, 100));
+      throw new Error('Respuesta inesperada del servidor (No JSON).');
     }
 
     const data = await response.json();
