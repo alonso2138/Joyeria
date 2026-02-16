@@ -1,50 +1,4 @@
-import { CustomJewelOptions, GeneratedJewelResult } from '../types';
-
-const getGenAI = async () => {
-  const { GoogleGenAI, Modality } = await import('@google/genai');
-  const apiKey = import.meta.env.VITE_API_KEY;
-  if (!apiKey) throw new Error('Gemini API key is missing');
-  return { client: new GoogleGenAI({ apiKey }), Modality };
-};
-
-const urlToInlineData = async (url: string) => {
-  const response = await fetch(url);
-  if (!response.ok) throw new Error(`Failed to fetch image: ${response.statusText}`);
-  const blob = await response.blob();
-
-  // Convert to Image and then to JPEG via Canvas to ensure compatibility (AVIF, etc)
-  const img = new Image();
-  const objectUrl = URL.createObjectURL(blob);
-
-  await new Promise((resolve, reject) => {
-    img.onload = resolve;
-    img.onerror = reject;
-    img.src = objectUrl;
-  });
-
-  const canvas = document.createElement('canvas');
-  canvas.width = img.width;
-  canvas.height = img.height;
-  const ctx = canvas.getContext('2d');
-  ctx?.drawImage(img, 0, 0);
-
-  const base64Data = canvas.toDataURL('image/jpeg', 0.85).split(',')[1];
-  URL.revokeObjectURL(objectUrl);
-
-  return { inlineData: { data: base64Data, mimeType: 'image/jpeg' } };
-};
-
-const userImageToInlineData = (base64String: string) => {
-  const [header, data] = base64String.split(',');
-  const mimeType = header.match(/:(.*?);/)?.[1] || 'image/jpeg';
-  return { inlineData: { data, mimeType } };
-};
-
-const extractImageDataUrl = (response: any) => {
-  const part = response?.candidates?.[0]?.content?.parts?.find((p: any) => p.inlineData);
-  if (!part) return null;
-  return `data:${part.inlineData.mimeType || 'image/jpeg'};base64,${part.inlineData.data}`;
-};
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
 
 export const generateTryOnImage = async (
   userImageBase64: string,
@@ -54,108 +8,39 @@ export const generateTryOnImage = async (
   forcedModel?: string
 ): Promise<string> => {
   try {
-    const { client, Modality } = await getGenAI();
-    const userImagePart = userImageToInlineData(userImageBase64);
-    const jewelryImagePart = await urlToInlineData(jewelryOverlayUrl);
-
-    // Obtener prompt específico por categoría desde la config
-    const categoryPrompts = config?.aiPrompts?.categoryPrompts || {};
-    const itemKey = itemType.toLowerCase();
-
-    console.log("itemKey", itemKey);
-
-    let basePrompt = categoryPrompts[itemKey] || `Photorealistic virtual try-on: Place this ${itemKey} on the person accurately. Match lighting and shadows.`;
-
-    // Inject Macro Context if applicable
-    // Inject Orientation and Proportional Scaling
-    if (config?.isMacro) {
-      basePrompt = `
-        CRITICAL INSTRUCTIONS FOR MACRO SHOT:
-        1. POSE GUIDANCE: ${config.orientationDesc || 'Hand is in a standard pose.'}
-        2. ANATOMICAL SCALE: The ring/jewelry must be SMALL relative to the zoomed body part. A ring diameter must match the finger thickness EXACTLY (sub-millimeter precision).
-        3. LIGHTING & SPECULAR MATCHING: Detect the strongest light source in the user's photo (look at skin highlights). Replicate this exact light source on the metal's specular highlights.
-        4. SKIN INTERACTION: The jewelry must displace the skin. Create subtle bulges where the metal meets the flesh. Cast a SHARP CONTACT SHADOW.
-        5. SILHOUETTE ENFORCEMENT: Use the provided jewelry image ONLY for shape and texture. DO NOT let its background or fringes bleed into the skin.
-        ${basePrompt}
-      `;
-    } else {
-      // This case is now rare due to center-fallback, but kept for absolute safety
-      basePrompt = `PROPORTIONAL SCALE: The jewelry must be tiny and match the person's distance. ${basePrompt}`;
-    }
-
-    const finalPrompt = basePrompt;
-    const model = forcedModel || 'gemini-2.5-flash-image';
-    console.log(`[Gemini Try-On] Model: ${model}`);
-    console.log(`[Gemini Try-On] Prompt: ${finalPrompt}`);
-
-    console.log("userImagePart", userImagePart);
-    console.log("jewelryImagePart", jewelryImagePart);
-
-    const response = await client.models.generateContent({
-      model: model,
-      contents: [{ role: 'user', parts: [userImagePart, jewelryImagePart, { text: finalPrompt }] }],
-      config: { responseModalities: [Modality.IMAGE] },
+    // SECURITY: We no longer call Google GenAI directly from the frontend.
+    // We proxy through our backend to protect the API Key and enforce business rules.
+    const response = await fetch(`${API_BASE_URL}/ai/generate-tryon`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        userImageBase64,
+        jewelryOverlayUrl,
+        itemType,
+        tag: config?.tag || window.location.hash.split('/demo/')[1]?.split('/')[0], // Extract tag from URL if not in config
+        isMacro: config?.isMacro,
+        orientationDesc: config?.orientationDesc
+      }),
     });
 
-    const result = extractImageDataUrl(response);
-    if (!result) {
-      throw new Error('La IA no pudo procesar esta imagen. Inténtalo de nuevo con mejor iluminación o una pose diferente.');
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || 'Error en la conexión con el servidor de IA.');
     }
-    return result;
+
+    const data = await response.json();
+    return data.imageBase64;
   } catch (error: any) {
     console.error('[Gemini Service Error]:', error);
     throw new Error(error.message || 'Error en la conexión con la IA. Prueba de nuevo en unos momentos.');
   }
 };
 
-export const generateCustomJewelWithTryOn = async (
-  userPhotoBase64: string,
-  options: CustomJewelOptions,
-  config?: any
-): Promise<GeneratedJewelResult> => {
-  const basePrompt = config?.aiPrompts?.customJewelPrompt || "CAD luxury jewelry rendering. Piece: {pieceType}. Material: {material}. Details: {details}.";
-  const prompt = basePrompt
-    .replace(/{sectorName}/g, 'jewelry')
-    .replace(/{pieceType}/g, options.pieceType)
-    .replace(/{material}/g, options.material)
-    .replace(/{details}/g, options.stonesOrColors);
-  try {
-    const { client, Modality } = await getGenAI();
-    const model = 'gemini-2.5-flash-image';
-    console.log(`[Gemini Custom Try-On] Model: ${model}`);
-    console.log(`[Gemini Custom Try-On] Prompt: ${prompt}`);
-    const response = await client.models.generateContent({
-      model: model,
-      contents: [{ role: 'user', parts: [userImageToInlineData(userPhotoBase64), { text: prompt }] }],
-      config: { responseModalities: [Modality.IMAGE] },
-    });
-    return { imageBase64: extractImageDataUrl(response) || '', promptUsed: prompt, options };
-  } catch (error) {
-    console.error('[Gemini Custom Try-On Error]:', error);
-    return { imageBase64: '', promptUsed: prompt, options };
-  }
+// --- LEGACY STUBS (To be moved to backend if needed later) ---
+export const generateCustomJewelWithTryOn = async (): Promise<any> => {
+  throw new Error("This feature is temporarily disabled for security migration.");
 };
 
-export const generateCustomJewelRender = async (options: CustomJewelOptions, config?: any): Promise<GeneratedJewelResult> => {
-  const basePrompt = config?.aiPrompts?.customJewelRenderPrompt || "Studio jewelry product photo. {pieceType}, {material}, {details}.";
-  const prompt = basePrompt
-    .replace(/{sectorName}/g, 'jewelry')
-    .replace(/{pieceType}/g, options.pieceType)
-    .replace(/{material}/g, options.material)
-    .replace(/{details}/g, options.stonesOrColors);
-  try {
-    const { client, Modality } = await getGenAI();
-    const model = 'gemini-2.5-flash-image';
-    console.log(`[Gemini Custom Render] Model: ${model}`);
-    console.log(`[Gemini Custom Render] Prompt: ${prompt}`);
-    const response = await client.models.generateContent({
-      model: model,
-      contents: [{ role: 'user', parts: [{ text: prompt }] }],
-      config: { responseModalities: [Modality.IMAGE] },
-    });
-    return { imageBase64: extractImageDataUrl(response) || '', promptUsed: prompt, options };
-  } catch (error) {
-    console.error('[Gemini Custom Render Error]:', error);
-    return { imageBase64: '', promptUsed: prompt, options };
-  }
+export const generateCustomJewelRender = async (): Promise<any> => {
+  throw new Error("This feature is temporarily disabled for security migration.");
 };

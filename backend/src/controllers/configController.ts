@@ -14,6 +14,7 @@ export const getConfig = async (req: Request, res: Response) => {
 
         const { tag } = req.query;
         let linkedApiKey = null;
+        let demoConfig = null;
 
         if (tag && typeof tag === 'string') {
             // Find organization linked to this demoTag
@@ -23,20 +24,26 @@ export const getConfig = async (req: Request, res: Response) => {
             }
 
             if (config.demoConfigs && config.demoConfigs[tag]) {
-                // Mergear configuración global con la específica de la demo
-                const demoConfig = config.demoConfigs[tag];
-                const mergedConfig = {
-                    ...config,
-                    linkedApiKey,
-                    branding: { ...config.branding, ...demoConfig.branding },
-                    uiLabels: { ...config.uiLabels, ...demoConfig.uiLabels },
-                    aiPrompts: { ...config.aiPrompts, ...demoConfig.aiPrompts }
-                };
-                return res.json(mergedConfig);
+                demoConfig = config.demoConfigs[tag];
             }
         }
 
-        res.json({ ...config, linkedApiKey });
+        // --- SANITIZATION: Only return specific public fields ---
+        const sanitizedConfig = {
+            branding: {
+                ...config.branding,
+                ...(demoConfig?.branding || {})
+            },
+            uiLabels: {
+                ...config.uiLabels,
+                ...(demoConfig?.uiLabels || {})
+            },
+            customizationOptions: config.customizationOptions,
+            tryOnMetadata: config.tryOnMetadata,
+            linkedApiKey // Controlled: only for the requested tag
+        };
+
+        res.json(sanitizedConfig);
     } catch (error) {
         console.error('Error reading config:', error);
         res.status(500).json({ message: 'Error reading configuration' });

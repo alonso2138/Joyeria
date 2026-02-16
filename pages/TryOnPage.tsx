@@ -9,7 +9,7 @@ import Button from '../components/ui/Button';
 import { useConfig } from '../hooks/useConfig';
 import { useTryOn } from '../hooks/useTryOn';
 
-type TryOnStep = 'loading_item' | 'instructions' | 'camera' | 'processing' | 'result';
+type TryOnStep = 'loading_item' | 'instructions' | 'camera' | 'processing' | 'result' | 'error';
 
 const TryOnPage: React.FC = () => {
     const { config } = useConfig();
@@ -53,6 +53,10 @@ const TryOnPage: React.FC = () => {
             trackIfAvailable('try-on');
             setStep('result');
             setTimeout(() => setShowDetails(true), 500);
+        },
+        onError: (error) => {
+            console.error('[TryOnPage] AI Error:', error);
+            setStep('error');
         },
         isMirrorMode: true // Enabled mirror mode as requested
     });
@@ -108,9 +112,19 @@ const TryOnPage: React.FC = () => {
                             <p className="text-gray-300 text-lg mb-8 leading-relaxed">
                                 {itemMetadata.poseAdvice}
                             </p>
-                            <Button variant="primary" className="w-full py-4 text-lg" onClick={() => setStep('camera')}>
-                                Entendido, abrir cámara
-                            </Button>
+
+                            {!config?.linkedApiKey ? (
+                                <div className="bg-yellow-500/20 border border-yellow-500/50 p-6 rounded-xl mb-6">
+                                    <p className="text-yellow-200 text-sm italic">
+                                        Esta demo está actualmente en <b>Modo Preparación</b>. <br />
+                                        El probador virtual se activará una vez se vincule una organización.
+                                    </p>
+                                </div>
+                            ) : (
+                                <Button variant="primary" className="w-full py-4 text-lg" onClick={() => setStep('camera')}>
+                                    Entendido, abrir cámara
+                                </Button>
+                            )}
                         </motion.div>
                     </div>
                 );
@@ -129,7 +143,7 @@ const TryOnPage: React.FC = () => {
                         <div className="absolute inset-0 bg-black bg-opacity-30"></div>
                         <div className="z-10 text-center text-white p-4">
                             <h2 className="text-3xl font-serif">Pruébate: {item?.name}</h2>
-                            <p className="mt-2">{config?.uiLabels?.tryOnInstruction || 'Coloca la pieza en el encuadre y captura.'}</p>
+                            <p className="mt-2">{config?.uiLabels?.tryOnInstruction}</p>
                             {tryOnError && (
                                 <motion.div
                                     initial={{ opacity: 0, y: -10 }}
@@ -197,6 +211,56 @@ const TryOnPage: React.FC = () => {
                             <Spinner text={itemMetadata.loadingText || 'Aplicando IA...'} />
                             <p className="mt-4 text-gray-300">Nuestra IA esta creando tu imagen personalizada.</p>
                         </div>
+                    </div>
+                );
+            case 'error':
+                return (
+                    <div className="h-full flex flex-col items-center justify-center p-8 bg-[#0a0a0a] text-center">
+                        <motion.div
+                            initial={{ scale: 0.9, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            className="max-w-md w-full bg-[#141414] border border-white/10 p-10 rounded-[2.5rem] shadow-2xl"
+                        >
+                            <div className="w-24 h-24 rounded-full bg-red-500/10 flex items-center justify-center mx-auto mb-8 border border-red-500/20">
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                                </svg>
+                            </div>
+
+                            <h2 className="text-2xl font-serif text-white mb-4">No pudimos procesar la imagen</h2>
+                            <p className="text-gray-400 mb-8 leading-relaxed">
+                                {tryOnError || "La IA no pudo detectar correctamente la pieza. Inténtalo de nuevo con mejor iluminación o una postura más clara."}
+                            </p>
+
+                            <div className="grid grid-cols-2 gap-4 mb-8 text-left">
+                                <div className="bg-white/5 p-4 rounded-2xl border border-white/5">
+                                    <div className="flex items-center gap-2 mb-1 text-[var(--primary-color)]">
+                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                                        </svg>
+                                        <span className="text-xs font-bold uppercase tracking-wider">Iluminación</span>
+                                    </div>
+                                    <p className="text-sm text-gray-300">Evita sombras fuertes o mucha oscuridad.</p>
+                                </div>
+                                <div className="bg-white/5 p-4 rounded-2xl border border-white/5">
+                                    <div className="flex items-center gap-2 mb-1 text-[var(--primary-color)]">
+                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                        </svg>
+                                        <span className="text-xs font-bold uppercase tracking-wider">Postura</span>
+                                    </div>
+                                    <p className="text-sm text-gray-300">Sigue el consejo de posado inicial.</p>
+                                </div>
+                            </div>
+
+                            <Button
+                                variant="primary"
+                                className="w-full py-4 text-lg rounded-2xl shadow-lg shadow-[var(--primary-color)]/20 active:scale-95 transition-all"
+                                onClick={() => { reset(); setStep('camera'); }}
+                            >
+                                Continuar
+                            </Button>
+                        </motion.div>
                     </div>
                 );
             case 'result':

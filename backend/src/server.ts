@@ -8,10 +8,11 @@ import connectDB from './config/db';
 import jewelryRoutes from './routes/jewelryRoutes';
 import authRoutes from './routes/authRoutes';
 import executeRoutes from './routes/executeRoutes';
-import triggerRoutes from './routes/triggerRoutes'
-import eventsRoutes from './routes/eventsRoutes'
-import configRoutes from './routes/configRoutes'
+import triggerRoutes from './routes/triggerRoutes';
+import eventsRoutes from './routes/eventsRoutes';
+import configRoutes from './routes/configRoutes';
 import widgetRoutes from './routes/widgetRoutes';
+import aiRoutes from './routes/aiRoutes';
 import rateLimit from 'express-rate-limit';
 
 // Connect to database
@@ -29,11 +30,42 @@ const widgetLimiter = rateLimit({
 });
 
 // Middleware
-app.set('trust proxy', 1); // Trust first proxy (required for Render, Heroku, etc.)
-app.use(cors());
-app.use(express.json());
+app.set('trust proxy', 1);
+
+// CORS Configuration - STRICT Whitelist
+const CACHE_ALLOWED_ORIGINS = [
+    'http://localhost:5173',
+    'http://localhost:3000',
+    'https://visualizalo.es',
+    'https://www.visualizalo.es',
+    'https://api.visualizalo.es'
+];
+
+app.use(cors({
+    origin: function (origin, callback) {
+        // allow requests with no origin (like mobile apps or curl requests)
+        if (!origin) return callback(null, true);
+        if (CACHE_ALLOWED_ORIGINS.indexOf(origin) === -1) {
+            const msg = 'The CORS policy for this site does not allow access from the specified Origin.';
+            return callback(new Error(msg), false);
+        }
+        return callback(null, true);
+    }
+}));
+
+app.use(express.json({ limit: '10mb' })); // Increased limit for base64 images
+
+// Global Public API Limiter
+const publicApiLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 50, // 50 requests per 15 min per IP
+    message: { message: 'Too many requests, please try again later' },
+    standardHeaders: true,
+    legacyHeaders: false,
+});
 
 // API Routes
+app.use('/api/ai', publicApiLimiter, aiRoutes); // Protected by rate limit
 app.use('/api/jewelry', jewelryRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/launch', executeRoutes);

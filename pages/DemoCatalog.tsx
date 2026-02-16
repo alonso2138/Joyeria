@@ -61,7 +61,7 @@ const DemoCatalog: React.FC = () => {
                         </div>
                     )}
                     <h1 className="text-3xl md:text-4xl lg:text-5xl font-serif font-bold tracking-tight">
-                        {config?.branding?.brandName || 'Demo de probador virtual'}
+                        {config?.uiLabels?.heroTitle || 'Demo de probador virtual'}
                     </h1>
                     <p className="opacity-70 mt-3 max-w-lg mx-auto text-xs md:text-sm leading-relaxed italic" style={{ color: 'var(--text-color)' }}>
                         {config?.uiLabels?.heroDescription}

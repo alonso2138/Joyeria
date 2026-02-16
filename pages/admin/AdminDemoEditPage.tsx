@@ -39,13 +39,8 @@ const AdminDemoEditPage: React.FC = () => {
             if (!token) return;
             try {
                 // Fetch Organizations for the dropdown
-                const API_URL = window.location.origin.includes('localhost')
-                    ? 'http://localhost:5000'
-                    : 'https://api.visualizalo.es';
-                const orgsResponse = await fetch(`${API_URL}/api/widget/organizations`, {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
-                const orgs = await orgsResponse.json();
+                const { getOrganizations } = await import('../../services/api');
+                const orgs = await getOrganizations(token);
                 setOrganizations(Array.isArray(orgs) ? orgs : []);
 
                 if (tag) {

@@ -32,6 +32,7 @@ services:
       - "5000:5000"
     volumes:
       - ./backend/uploads:/app/uploads
+      - ./backend/data:/app/data
     depends_on:
       - mongodb
     networks:
