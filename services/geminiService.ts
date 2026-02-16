@@ -3,7 +3,7 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || (import.meta.env.PROD 
 export const generateTryOnImage = async (
   userImageBase64: string,
   jewelryOverlayUrl: string,
-  itemType: string = 'ring',
+  itemType: string = 'anillo',
   config?: any,
   forcedModel?: string
 ): Promise<string> => {

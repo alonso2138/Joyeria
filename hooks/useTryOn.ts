@@ -185,7 +185,7 @@ export const useTryOn = ({
             if (userImageBase64 && !providedBase64) {
                 try {
                     const { detectAndCrop } = await import('../services/visionService');
-                    const category = selectedItem.category || 'ring';
+                    const category = (selectedItem.category || 'anillo').toLowerCase();
 
                     // Creamos un canvas temporal o imagen para que MediaPipe lo procese
                     const img = new Image();
@@ -217,7 +217,7 @@ export const useTryOn = ({
             if (!userImageBase64) throw new Error('No se pudo obtener una imagen.');
 
             const overlayUrl = getImageUrl(selectedItem.overlayAssetUrl);
-            const category = selectedItem.category || 'ring';
+            const category = (selectedItem.category || 'anillo').toLowerCase();
             const aiModel = selectedItem.aiModel;
 
             const requestConfig = { ...config, isMacro: isCropped, orientationDesc };

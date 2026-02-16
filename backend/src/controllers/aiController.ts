@@ -54,10 +54,21 @@ export const generateTryOn = async (req: Request, res: Response) => {
 
         // Add Macro logic if passed from frontend
         if (req.body.isMacro) {
+            let scaleGuidance = "";
+            if (itemKey === 'anillo') {
+                scaleGuidance = "ANATOMICAL SCALE: The ring diameter must match the finger thickness perfectly.";
+            } else if (itemKey === 'pendiente') {
+                scaleGuidance = "ANATOMICAL SCALE: The earring size must be proportional to the earlobe, typically 10-30mm in relative scale.";
+            } else if (itemKey === 'collar') {
+                scaleGuidance = "ANATOMICAL SCALE: The chain thickness and pendant must be proportional to the neck and chest.";
+            } else if (itemKey === 'pulsera') {
+                scaleGuidance = "ANATOMICAL SCALE: The bracelet must fit snugly around the wrist; its diameter should match the wrist width.";
+            }
+
             basePrompt = `
                 CRITICAL INSTRUCTIONS FOR MACRO SHOT:
-                1. POSE GUIDANCE: ${req.body.orientationDesc || 'Hand is in a standard pose.'}
-                2. ANATOMICAL SCALE: Match finger thickness exactly.
+                1. POSE GUIDANCE: ${req.body.orientationDesc || 'Subject is in a standard pose for this category.'}
+                2. ${scaleGuidance}
                 ${basePrompt}
             `;
         }
