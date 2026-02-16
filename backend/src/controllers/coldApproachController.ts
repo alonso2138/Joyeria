@@ -393,7 +393,7 @@ export const launchColdApproach = async (req: Request, res: Response) => {
 
                 await StorageHelper.updateEvents(leads[i].email, "cold-sent");
 
-                await sendTelegramNotification(`Mail frio enviado a ${leads[i].email}`);
+                // await sendTelegramNotification(`Mail frio enviado a ${leads[i].email}`);
 
                 await updateLeadEstadoInSheet(leads[i].email, "Cold-Approach enviado");
 

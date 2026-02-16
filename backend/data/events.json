@@ -29098,5 +29098,85 @@
     "email": "alonso.valls@icloud.com",
     "timestamp": "2026-02-16T14:01:35.020Z",
     "action_type": "try-on"
+  },
+  {
+    "email": "alonso.valls@icloud.com",
+    "timestamp": "2026-02-16T14:31:01.930Z",
+    "action_type": "landing-view"
+  },
+  {
+    "email": "alonso.valls@icloud.com",
+    "timestamp": "2026-02-16T14:31:02.123Z",
+    "action_type": "landing-view"
+  },
+  {
+    "email": "alonso.valls@icloud.com",
+    "timestamp": "2026-02-16T14:39:42.174Z",
+    "action_type": "landing-view"
+  },
+  {
+    "email": "alonso.valls@icloud.com",
+    "timestamp": "2026-02-16T14:39:42.221Z",
+    "action_type": "landing-view"
+  },
+  {
+    "email": "alonso.valls@icloud.com",
+    "timestamp": "2026-02-16T14:39:45.904Z",
+    "action_type": "landing-view"
+  },
+  {
+    "email": "alonso.valls@icloud.com",
+    "timestamp": "2026-02-16T14:39:45.926Z",
+    "action_type": "landing-view"
+  },
+  {
+    "email": "anonymous-b2b",
+    "timestamp": "2026-02-16T14:39:59.061Z",
+    "action_type": "landing-view"
+  },
+  {
+    "email": "anonymous-b2b",
+    "timestamp": "2026-02-16T14:39:59.264Z",
+    "action_type": "landing-view"
+  },
+  {
+    "email": "anonymous-b2b",
+    "timestamp": "2026-02-16T14:40:02.719Z",
+    "action_type": "landing-view"
+  },
+  {
+    "email": "anonymous-b2b",
+    "timestamp": "2026-02-16T14:40:02.764Z",
+    "action_type": "landing-view"
+  },
+  {
+    "email": "anonymous-b2b",
+    "timestamp": "2026-02-16T14:40:28.455Z",
+    "action_type": "landing-view"
+  },
+  {
+    "email": "anonymous-b2b",
+    "timestamp": "2026-02-16T14:40:28.493Z",
+    "action_type": "landing-view"
+  },
+  {
+    "email": "test@gmial.com",
+    "timestamp": "2026-02-16T14:40:37.207Z",
+    "action_type": "cta-primary-click"
+  },
+  {
+    "email": "test@gmial.com",
+    "timestamp": "2026-02-16T14:40:41.034Z",
+    "action_type": "b2b-links-submit"
+  },
+  {
+    "email": "anonymous-b2b",
+    "timestamp": "2026-02-16T14:42:05.709Z",
+    "action_type": "landing-view"
+  },
+  {
+    "email": "anonymous-b2b",
+    "timestamp": "2026-02-16T14:42:05.730Z",
+    "action_type": "landing-view"
   }
 ]

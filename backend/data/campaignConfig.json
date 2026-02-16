@@ -60,10 +60,34 @@
         "secondaryTextColor": "#9CA3AF",
         "priceColor": "#D4AF37",
         "fontFamily": "sans",
-        "backgroundGradient": "linear-gradient(135deg, #050509, #1C1C24)",
+        "backgroundGradient": "#ffffff",
         "logoLightUrl": "https://tienda.joyeriaprieto.com/assets/pagebuilder/PageBuilderIMG_1545410448-512.jpeg",
         "logoDarkUrl": "https://tienda.joyeriaprieto.com/assets/pagebuilder/PageBuilderIMG_1545410448-512.jpeg",
         "faviconUrl": "https://tienda.joyeriaprieto.com/favicon.ico"
+      },
+      "uiLabels": {
+        "heroTitle": "Probador virtual",
+        "heroDescription": "",
+        "ctaText": ""
+      },
+      "aiPrompts": {}
+    },
+    "joyeriahoracio": {
+      "branding": {
+        "brandName": "Joyería Horacio",
+        "primaryColor": "#D7CB8C",
+        "secondaryColor": "#7A7A7A",
+        "accentColor": "#FFFFFF",
+        "textColor": "#393529",
+        "headerBackground": "#ffffff",
+        "cardBorderColor": "rgba(255, 255, 255, 0.1)",
+        "secondaryTextColor": "#7A7A7A",
+        "priceColor": "#D7CB8C",
+        "fontFamily": "serif",
+        "backgroundGradient": "#ffffff",
+        "logoLightUrl": "https://www.joyeriahoracio.es/wp-content/uploads/2021/07/LOGO-HORACIO.png",
+        "logoDarkUrl": "https://www.joyeriahoracio.es/wp-content/uploads/2021/07/LOGO-HORACIO.png",
+        "faviconUrl": "https://www.joyeriahoracio.es/wp-content/uploads/2021/07/icono-min-4.png"
       },
       "uiLabels": {
         "heroTitle": "Probador virtual",

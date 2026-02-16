@@ -13,6 +13,7 @@ import eventsRoutes from './routes/eventsRoutes';
 import configRoutes from './routes/configRoutes';
 import widgetRoutes from './routes/widgetRoutes';
 import aiRoutes from './routes/aiRoutes';
+import customRequestRoutes from './routes/customRequestRoutes';
 import rateLimit from 'express-rate-limit';
 
 // Connect to database
@@ -74,6 +75,7 @@ app.use('/api/trigger', triggerRoutes);
 app.use('/api/events', eventsRoutes);
 app.use('/api/config', configRoutes);
 app.use('/api/widget', widgetLimiter, widgetRoutes);
+app.use('/api/custom-requests', customRequestRoutes);
 
 const PORT = process.env.PORT || 5000;
 

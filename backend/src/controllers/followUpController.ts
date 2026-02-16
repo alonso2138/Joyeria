@@ -374,7 +374,7 @@ export const launchFollowUp = async (req: Request, res: Response) => {
 
                 await StorageHelper.updateEvents(lead.email, "follow-up-sent");
 
-                await sendTelegramNotification(`Mail follow-up enviado a ${lead.email}`);
+                // await sendTelegramNotification(`Mail follow-up enviado a ${lead.email}`);
 
                 await updateLeadEstadoInSheet(lead.email, "Follow-up enviado");
 
