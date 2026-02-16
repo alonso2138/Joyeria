@@ -116,9 +116,7 @@ const DemoDetail: React.FC = () => {
                                 {config?.uiLabels?.ctaText || config?.uiLabels?.ctaTryOn || 'Abrir Probador Virtual'}
                             </button>
 
-                            <button className="w-full py-4 rounded-2xl bg-white/5 border border-white/10 text-white font-bold uppercase tracking-[0.2em] hover:bg-white/10 transition-all">
-                                Añadir al Carrito
-                            </button>
+
                         </div>
 
                         <p className="mt-8 text-center text-xs text-gray-500 italic">

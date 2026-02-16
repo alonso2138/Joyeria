@@ -29073,5 +29073,30 @@
     "email": "patxiherce@hotmail.com",
     "timestamp": "2026-02-12T00:10:39.679Z",
     "action_type": "follow-up"
+  },
+  {
+    "email": "alonso.valls@icloud.com",
+    "timestamp": "2026-02-16T13:54:10.821Z",
+    "action_type": "landing-view"
+  },
+  {
+    "email": "alonso.valls@icloud.com",
+    "timestamp": "2026-02-16T13:54:11.246Z",
+    "action_type": "landing-view"
+  },
+  {
+    "email": "alonso.valls@icloud.com",
+    "timestamp": "2026-02-16T13:57:35.071Z",
+    "action_type": "try-on"
+  },
+  {
+    "email": "alonso.valls@icloud.com",
+    "timestamp": "2026-02-16T14:01:09.979Z",
+    "action_type": "try-on"
+  },
+  {
+    "email": "alonso.valls@icloud.com",
+    "timestamp": "2026-02-16T14:01:35.020Z",
+    "action_type": "try-on"
   }
 ]
