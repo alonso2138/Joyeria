@@ -181,6 +181,7 @@ const AdminJewelryEditPage: React.FC = () => {
                         <select name="category" value={item.category} onChange={handleChange} className={formInputClasses}>
                             <option>Anillo</option>
                             <option>Collar</option>
+                            <option>Gargantilla</option>
                             <option>Pulsera</option>
                             <option>Pendiente</option>
                             <option>Reloj</option>

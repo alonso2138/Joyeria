@@ -95,6 +95,30 @@
         "ctaText": ""
       },
       "aiPrompts": {}
+    },
+    "codeone": {
+      "branding": {
+        "brandName": "Codeone",
+        "primaryColor": "#2E4F7C",
+        "secondaryColor": "#111111",
+        "accentColor": "#FFFFFF",
+        "textColor": "#FFFFFF",
+        "headerBackground": "#000000",
+        "cardBorderColor": "rgba(255, 255, 255, 0.1)",
+        "secondaryTextColor": "#9CA3AF",
+        "priceColor": "#2E4F7C",
+        "fontFamily": "sans",
+        "backgroundGradient": "#ffffff",
+        "logoLightUrl": "https://codeone.es/cdn/shop/files/Logonuevoblanco_160x@2x.png?v=1613564760",
+        "logoDarkUrl": "https://codeone.es/cdn/shop/files/Logonuevoblanco_160x@2x.png?v=1613564760",
+        "faviconUrl": ""
+      },
+      "uiLabels": {
+        "heroTitle": "Probador virtual",
+        "heroDescription": "",
+        "ctaText": ""
+      },
+      "aiPrompts": {}
     }
   },
   "branding": {
@@ -142,6 +166,13 @@
         "gradient": "linear-gradient(135deg, #8dd5ff, #0a1018)"
       },
       {
+        "id": "Gargantilla",
+        "label": "Gargantilla",
+        "accent": "#8dd5ff",
+        "image": "/personalizar/tipo-gargantilla.jpg",
+        "gradient": "linear-gradient(135deg, #8dd5ff, #0a1018)"
+      },
+      {
         "id": "Pulsera",
         "label": "Pulsera",
         "accent": "#e2b0ff",
@@ -182,6 +213,7 @@
     "categoryPrompts": {
       "anillo": "High-end virtual jewelry try-on: Place this ring precisely on the base of the appropriate finger. THE PIECE IS A RING; it must wrap around the finger realistically, with its back portion hidden. PRESERVE EVERY DETAIL: stones, colors, metallic textures. Match skin lighting, tone, and perspective perfectly.",
       "collar": "High-end virtual jewelry try-on: Place this necklace naturally around the person's neck. The chain should follow the curve of the neck and collarbones realistically, with the pendant resting on the chest. PRESERVE EVERY DETAIL. Match lighting and skin tone. Create soft contact shadows on the skin and simulate gravity on the pendant.",
+      "gargantilla": "High-end virtual jewelry try-on: Place this choker tightly and elegantly around the person's neck, positioned higher than a standard necklace. The piece should sit closely against the skin, following the neck's contour perfectly. PRESERVE EVERY DETAIL: stones, metallic textures, and clasp. Match skin lighting, tone, and create realistic soft contact shadows.",
       "pendiente": "High-end virtual jewelry try-on: Attach this earring to the earlobe. It MUST APPEAR TO PIERCE the earlobe, with any hook or clasp partially hidden behind the ear for a realistic 3D effect. PRESERVE EVERY DETAIL: stones, metallic textures. NO HALLUCINATIONS. Match lighting and create a soft contact shadow on the skin.",
       "pulsera": "High-end virtual jewelry try-on: Fit this bracelet tightly around the wrist contour. It must wrap around the arm realistically, with the back portion hidden. STRICT DETAIL PRESERVATION: output ONLY the provided jewelry asset. DO NOT add extra stones, charms, or patterns not present in the asset. Match skin lighting and tone perfectly.",
       "reloj": "High-end virtual watch try-on: Place this watch precisely on the wrist. STRICT SCALE: The watch face diameter must be roughly 30-45% of the wrist width. Adjust the strap curvature to wrap around the arm perfectly. PRESERVE EVERY DETAIL: maintain the exact materials, colors, textures, and face details of the provided watch asset. Match the luxury lighting, metallic reflections, and cast a realistic shadow on the skin. The watch should look firmly attached to the wrist.",
@@ -207,6 +239,11 @@
       "countdown": 3,
       "poseAdvice": "Encuadra tu cuello y parte superior del pecho de forma frontal.",
       "loadingText": "Colocando collar..."
+    },
+    "gargantilla": {
+      "countdown": 3,
+      "poseAdvice": "Muestra tu cuello erguido frente a la cámara, con el pelo retirado si es posible.",
+      "loadingText": "Ajustando gargantilla..."
     },
     "pendiente": {
       "countdown": 3,

@@ -6,7 +6,7 @@ const jewelrySchema = new mongoose.Schema({
     description: { type: String, required: true },
     price: { type: Number, required: true },
     currency: { type: String, required: true },
-    category: { type: String, required: true, enum: ['Anillo', 'Collar', 'Pulsera', 'Pendiente', 'Reloj', 'Bolso', 'Camiseta', 'Camisa'] },
+    category: { type: String, required: true, enum: ['Anillo', 'Collar', 'Gargantilla', 'Pulsera', 'Pendiente', 'Reloj', 'Bolso', 'Camiseta', 'Camisa'] },
     imageUrl: { type: String, required: false },
     overlayAssetUrl: { type: String, required: false },
     imageFileId: { type: String, required: false }, // ID del archivo en GridFS

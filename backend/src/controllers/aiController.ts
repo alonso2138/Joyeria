@@ -67,6 +67,8 @@ export const generateTryOn = async (req: Request, res: Response) => {
                 scaleGuidance = "ANATOMICAL SCALE: The earring size must be proportional to the earlobe, typically 10-30mm in relative scale.";
             } else if (itemKey === 'collar') {
                 scaleGuidance = "ANATOMICAL SCALE: The chain thickness and pendant must be proportional to the neck and chest.";
+            } else if (itemKey === 'gargantilla') {
+                scaleGuidance = "ANATOMICAL SCALE: The choker must fit tightly around the neck, higher than a standard necklace, typically 30-35cm in relative length.";
             } else if (itemKey === 'pulsera') {
                 scaleGuidance = "ANATOMICAL SCALE: The bracelet must fit snugly around the wrist; its diameter should match the wrist width.";
             }

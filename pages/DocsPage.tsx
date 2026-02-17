@@ -34,7 +34,7 @@ const docsContent = [
         table: [
             { param: 'data-api-key', desc: 'Identificador único de tu organización (obtenido en el panel admin).', req: 'Sí' },
             { param: 'data-image', desc: 'URL absoluta de la imagen del producto. Se recomienda fondo transparente o blanco limpio.', req: 'Sí' },
-            { param: 'data-category', desc: 'Categoría de la joya (Anillo, Collar, Reloj, Pulsera). Esto optimiza el modelo de IA.', req: 'Sí' },
+            { param: 'data-category', desc: 'Categoría de la joya (Anillo, Collar, Gargantilla, Reloj, Pulsera). Esto optimiza el modelo de IA.', req: 'Sí' },
             { param: 'data-name', desc: 'Nombre que se mostrará en la cabecera del visualizador.', req: 'No' },
         ]
     },
