@@ -30,7 +30,7 @@ async function createDemoOrg() {
             const newOrg = new Organization({
                 name: 'Joyería Demo',
                 apiKey: demoApiKey,
-                allowedDomains: ['localhost', 'static.cubicup.com'],
+                allowedDomains: ['localhost'],
                 isActive: true,
                 plan: 'premium'
             });

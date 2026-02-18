@@ -141,19 +141,46 @@ const TryOnPage: React.FC = () => {
 
                         <canvas ref={canvasRef} className="hidden"></canvas>
                         <div className="absolute inset-0 bg-black bg-opacity-30"></div>
-                        <div className="z-10 text-center text-white p-4">
-                            <h2 className="text-3xl font-serif">Pruébate: {item?.name}</h2>
-                            <p className="mt-2">{config?.uiLabels?.tryOnInstruction}</p>
-                            {tryOnError && (
-                                <motion.div
-                                    initial={{ opacity: 0, y: -10 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    className="mt-4 bg-red-500/80 backdrop-blur-md px-4 py-2 rounded-lg text-sm border border-red-400"
-                                >
-                                    {tryOnError}
-                                </motion.div>
-                            )}
-                        </div>
+
+                        {config?.branding?.shutterDesign === 'special' ? (
+                            <>
+                                {/* Top Text */}
+                                <div className="absolute top-10 left-0 right-0 z-20 text-center text-white px-6">
+                                    <h2 className="text-2xl font-serif font-light tracking-widest uppercase">Pruébate: {item?.name}</h2>
+                                </div>
+
+                                {/* Central Frame with Corners */}
+                                <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
+                                    <div className="relative w-64 h-64 md:w-80 md:h-80">
+                                        <div className="absolute top-0 left-0 w-8 h-8 border-t-2 border-l-2 border-white"></div>
+                                        <div className="absolute top-0 right-0 w-8 h-8 border-t-2 border-r-2 border-white"></div>
+                                        <div className="absolute bottom-0 left-0 w-8 h-8 border-b-2 border-l-2 border-white"></div>
+                                        <div className="absolute bottom-0 right-0 w-8 h-8 border-b-2 border-r-2 border-white"></div>
+                                    </div>
+                                </div>
+
+                                {/* Instruction below frame */}
+                                <div className="absolute bottom-32 left-0 right-0 z-20 text-center text-white px-8">
+                                    <p className="text-sm tracking-wide font-medium">
+                                        {config?.uiLabels?.tryOnInstruction || 'Centra el accesorio en el marcador'}
+                                    </p>
+                                </div>
+                            </>
+                        ) : (
+                            <div className="z-10 text-center text-white p-4">
+                                <h2 className="text-3xl font-serif">Pruébate: {item?.name}</h2>
+                                <p className="mt-2">{config?.uiLabels?.tryOnInstruction}</p>
+                                {tryOnError && (
+                                    <motion.div
+                                        initial={{ opacity: 0, y: -10 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        className="mt-4 bg-red-500/80 backdrop-blur-md px-4 py-2 rounded-lg text-sm border border-red-400"
+                                    >
+                                        {tryOnError}
+                                    </motion.div>
+                                )}
+                            </div>
+                        )}
 
                         {/* Flip Camera Button */}
                         <button
