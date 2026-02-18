@@ -80,6 +80,8 @@ export interface Organization {
   ownerEmail?: string;
   plan: 'free' | 'basic' | 'premium';
   usageCount: number;
+  shutterDesign?: 'default' | 'special';
+  tryOnInstruction?: string;
   createdAt: string;
   updatedAt: string;
 }

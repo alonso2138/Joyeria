@@ -19,7 +19,9 @@ const AdminOrganizationPage: React.FC = () => {
         allowedDomains: '',
         isActive: true,
         plan: 'basic',
-        ownerEmail: ''
+        ownerEmail: '',
+        shutterDesign: 'default',
+        tryOnInstruction: ''
     });
 
     const { token } = useAuth();
@@ -50,7 +52,9 @@ const AdminOrganizationPage: React.FC = () => {
             allowedDomains: '',
             isActive: true,
             plan: 'basic',
-            ownerEmail: ''
+            ownerEmail: '',
+            shutterDesign: 'default',
+            tryOnInstruction: ''
         });
         setEditingOrg(null);
     };
@@ -62,7 +66,9 @@ const AdminOrganizationPage: React.FC = () => {
             allowedDomains: (org.allowedDomains || []).join(', '),
             isActive: org.isActive,
             plan: org.plan || 'basic',
-            ownerEmail: org.ownerEmail || ''
+            ownerEmail: org.ownerEmail || '',
+            shutterDesign: org.shutterDesign || 'default',
+            tryOnInstruction: org.tryOnInstruction || ''
         });
     };
 
@@ -300,6 +306,29 @@ const AdminOrganizationPage: React.FC = () => {
                                     placeholder="joyeriamartinez.com, shop.es"
                                 />
                                 <p className="text-[8px] text-gray-600 mt-1.5 italic">Separa por comas. Vacío = Global.</p>
+                            </div>
+
+                            <div>
+                                <label className="block text-gray-500 text-[9px] font-bold uppercase tracking-[0.2em] mb-1.5">Diseño del Obturador</label>
+                                <select
+                                    value={formData.shutterDesign}
+                                    onChange={(e) => setFormData({ ...formData, shutterDesign: e.target.value })}
+                                    className="w-full bg-black/40 border border-white/10 rounded-lg px-2 py-2 text-sm text-white focus:outline-none focus:border-[var(--primary-color)] appearance-none"
+                                >
+                                    <option value="default">Estándar (Centro)</option>
+                                    <option value="special">Especial (Top + Frame)</option>
+                                </select>
+                            </div>
+
+                            <div>
+                                <label className="block text-gray-500 text-[9px] font-bold uppercase tracking-[0.2em] mb-1.5">Instrucciones Try-On (Opcional)</label>
+                                <textarea
+                                    value={formData.tryOnInstruction}
+                                    onChange={(e) => setFormData({ ...formData, tryOnInstruction: e.target.value })}
+                                    className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-[12px] text-white focus:outline-none focus:border-[var(--primary-color)] transition-all placeholder:text-gray-700 h-16 resize-none"
+                                    placeholder="Ej: Centra el accesorio en el marcador..."
+                                />
+                                <p className="text-[8px] text-gray-600 mt-1.5 italic">Si se deja vacío, se usarán las globales.</p>
                             </div>
 
                             <div className="pt-4 flex gap-3">

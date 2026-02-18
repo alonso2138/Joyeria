@@ -10,6 +10,8 @@ const organizationSchema = new mongoose.Schema({
     usageCount: { type: Number, default: 0 },
     lastUsageMonth: { type: String, default: () => new Date().toISOString().substring(0, 7) }, // YYYY-MM
     demoTag: { type: String, unique: true, sparse: true }, // Link to a demo configuration
+    shutterDesign: { type: String, enum: ['default', 'special'], default: 'default' },
+    tryOnInstruction: { type: String, default: '' },
 }, {
     timestamps: true,
 });

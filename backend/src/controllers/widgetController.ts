@@ -137,7 +137,7 @@ export const getAllOrganizations = async (req: Request, res: Response) => {
 
 export const createOrganization = async (req: Request, res: Response) => {
     try {
-        const { name, allowedDomains, isActive, plan, ownerEmail } = req.body;
+        const { name, allowedDomains, isActive, plan, ownerEmail, shutterDesign, tryOnInstruction } = req.body;
 
         // Generate a random API key
         const apiKey = `ak_${Math.random().toString(36).substring(2, 10)}${Date.now().toString(36).substring(2, 6)}`;
@@ -148,7 +148,9 @@ export const createOrganization = async (req: Request, res: Response) => {
             allowedDomains: allowedDomains || [],
             isActive: isActive !== undefined ? isActive : true,
             plan: plan || 'basic',
-            ownerEmail
+            ownerEmail,
+            shutterDesign: shutterDesign || 'default',
+            tryOnInstruction: tryOnInstruction || ''
         });
 
         await newOrg.save();
@@ -161,11 +163,11 @@ export const createOrganization = async (req: Request, res: Response) => {
 export const updateOrganization = async (req: Request, res: Response) => {
     try {
         const { id } = req.params;
-        const { name, allowedDomains, isActive, plan, ownerEmail } = req.body;
+        const { name, allowedDomains, isActive, plan, ownerEmail, shutterDesign, tryOnInstruction } = req.body;
 
         const updatedOrg = await Organization.findByIdAndUpdate(
             id,
-            { name, allowedDomains, isActive, plan, ownerEmail },
+            { name, allowedDomains, isActive, plan, ownerEmail, shutterDesign, tryOnInstruction },
             { new: true }
         );
 

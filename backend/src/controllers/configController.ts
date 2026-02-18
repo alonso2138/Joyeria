@@ -18,31 +18,44 @@ const getGlobalConfigDoc = async () => {
 export const getConfig = async (req: Request, res: Response) => {
     try {
         const globalConfig = await getGlobalConfigDoc();
-        const { tag } = req.query;
+        const { tag, apiKey } = req.query;
 
-        let linkedApiKey = null;
+        let linkedApiKey = apiKey as string || null;
         let demoConfig = null;
+        let orgShutterDesign = 'default';
+        let orgTryOnInstruction = '';
 
+        // 1. If we have a tag, find the demo and the linked org
         if (tag && typeof tag === 'string') {
-            // Find organization linked to this demoTag
-            const org = await Organization.findOne({ demoTag: tag });
-            if (org) {
-                linkedApiKey = org.apiKey;
+            const orgByTag = await Organization.findOne({ demoTag: tag });
+            if (orgByTag) {
+                linkedApiKey = orgByTag.apiKey;
+                orgShutterDesign = orgByTag.shutterDesign || 'default';
+                orgTryOnInstruction = orgByTag.tryOnInstruction || '';
             }
-
-            // Find specific demo config in MongoDB
             demoConfig = await DemoConfig.findOne({ tag });
+        }
+
+        // 2. If we have an apiKey (either from tag search or direct param), get org-level settings
+        if (linkedApiKey) {
+            const orgByKey = await Organization.findOne({ apiKey: linkedApiKey });
+            if (orgByKey) {
+                orgShutterDesign = orgByKey.shutterDesign || 'default';
+                orgTryOnInstruction = orgByKey.tryOnInstruction || '';
+            }
         }
 
         // --- SANITIZATION: Only return specific public fields ---
         const sanitizedConfig = {
             branding: {
                 ...globalConfig.branding,
-                ...(demoConfig?.branding || {})
+                ...(demoConfig?.branding || {}),
+                shutterDesign: orgShutterDesign // Org selection takes precedence if present
             },
             uiLabels: {
                 ...globalConfig.uiLabels,
-                ...(demoConfig?.uiLabels || {})
+                ...(demoConfig?.uiLabels || {}),
+                ...(orgTryOnInstruction ? { tryOnInstruction: orgTryOnInstruction } : {}) // Org selection takes precedence if present
             },
             customizationOptions: globalConfig.customizationOptions,
             tryOnMetadata: globalConfig.tryOnMetadata,

@@ -110,7 +110,10 @@ const TryOnPage: React.FC = () => {
                             </div>
                             <h2 className="text-3xl font-serif text-white mb-4">Consejo de Posado</h2>
                             <p className="text-gray-300 text-lg mb-8 leading-relaxed">
-                                {itemMetadata.poseAdvice}
+                                {config?.branding?.shutterDesign === 'special'
+                                    ? 'Enfoca la zona para comenzar'
+                                    : itemMetadata.poseAdvice
+                                }
                             </p>
 
                             {!config?.linkedApiKey ? (
@@ -162,7 +165,7 @@ const TryOnPage: React.FC = () => {
                                 {/* Instruction below frame */}
                                 <div className="absolute bottom-32 left-0 right-0 z-20 text-center text-white px-8">
                                     <p className="text-sm tracking-wide font-medium">
-                                        {config?.uiLabels?.tryOnInstruction || 'Centra el accesorio en el marcador'}
+                                        {config?.uiLabels?.tryOnInstruction || ''}
                                     </p>
                                 </div>
                             </>

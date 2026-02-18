@@ -29,7 +29,6 @@ const AdminDemoEditPage: React.FC = () => {
         backgroundGradient: 'linear-gradient(135deg, #050509, #1C1C24)',
         logoUrl: '/logo.png', // Default
         faviconUrl: '',
-        shutterDesign: 'default', // New field
         heroTitle: '',
         heroDescription: '',
         ctaText: ''
@@ -67,7 +66,6 @@ const AdminDemoEditPage: React.FC = () => {
                             backgroundGradient: demo.branding?.backgroundGradient || '',
                             logoUrl: demo.branding?.logoLightUrl || '',
                             faviconUrl: demo.branding?.faviconUrl || '',
-                            shutterDesign: demo.branding?.shutterDesign || 'default',
                             heroTitle: demo.uiLabels?.heroTitle || '',
                             heroDescription: demo.uiLabels?.heroDescription || '',
                             ctaText: demo.uiLabels?.ctaText || ''
@@ -111,8 +109,7 @@ const AdminDemoEditPage: React.FC = () => {
                     backgroundGradient: formData.backgroundGradient,
                     logoLightUrl: formData.logoUrl,
                     logoDarkUrl: formData.logoUrl,
-                    faviconUrl: formData.faviconUrl,
-                    shutterDesign: formData.shutterDesign
+                    faviconUrl: formData.faviconUrl
                 },
                 uiLabels: {
                     heroTitle: formData.heroTitle,
@@ -294,26 +291,6 @@ const AdminDemoEditPage: React.FC = () => {
                                 className="flex-1 bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-white focus:ring-2 focus:ring-[var(--primary-color)] focus:outline-none text-sm font-mono"
                                 placeholder="rgba(0,0,0,0.5) o #Color"
                             />
-                        </div>
-                    </div>
-                </div>
-
-                {/* Shutter Design Selection */}
-                <div className="mt-8">
-                    <h4 className="text-md font-bold text-gray-300 mb-4 border-b border-white/10 pb-2">Configuración del Probador</h4>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div>
-                            <label className="block text-sm font-medium text-gray-300 mb-2">Diseño del Obturador (Shutter)</label>
-                            <select
-                                name="shutterDesign"
-                                value={formData.shutterDesign}
-                                onChange={(e) => setFormData({ ...formData, shutterDesign: e.target.value })}
-                                className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-white focus:ring-2 focus:ring-[var(--primary-color)] focus:outline-none"
-                            >
-                                <option value="default">Estándar (Texto en el centro)</option>
-                                <option value="special">Especial (Texto arriba + Encuadre central)</option>
-                            </select>
-                            <p className="text-xs text-gray-500 mt-2">El diseño "Especial" es ideal para joyería, con un look más minimalista y premium.</p>
                         </div>
                     </div>
                 </div>
