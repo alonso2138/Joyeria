@@ -198,10 +198,7 @@ const WidgetPage: React.FC = () => {
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
                             </svg>
                         </div>
-                        <h2 className="text-2xl font-serif text-white mb-2 leading-tight">Pruébatelo ahora</h2>
-                        <p className="text-gray-400 text-base mb-6 leading-relaxed max-w-xs mx-auto">
-                            {itemMetadata.poseAdvice || ''}
-                        </p>
+                        <h2 className="text-2xl font-serif text-white mb-6 leading-tight">Pruébatelo ahora</h2>
                         <Button variant="primary" className="w-full max-w-[200px] py-3 text-base font-bold rounded-xl shadow-xl transition-all hover:scale-105 active:scale-95" onClick={() => setStep('camera')}>
                             ABRIR CÁMARA
                         </Button>
@@ -257,8 +254,8 @@ const WidgetPage: React.FC = () => {
                             </>
                         ) : (
                             /* Original context labels */
-                            <div className="z-10 text-center text-white p-6 mt-12">
-                                {/* Only show if NOT special design */}
+                            <div className="absolute top-10 left-0 right-0 z-20 text-center text-white px-6">
+                                <h2 className="text-2xl font-serif font-light tracking-widest uppercase">Pruébate: {item?.name}</h2>
                             </div>
                         )}
 

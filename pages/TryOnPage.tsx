@@ -108,10 +108,7 @@ const TryOnPage: React.FC = () => {
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
                                 </svg>
                             </div>
-                            <h2 className="text-3xl font-serif text-white mb-4">Consejo de Posado</h2>
-                            <p className="text-gray-300 text-lg mb-8 leading-relaxed">
-                                {itemMetadata.poseAdvice || ''}
-                            </p>
+                            <h2 className="text-3xl font-serif text-white mb-8">Pruébatelo ahora</h2>
 
                             {!config?.linkedApiKey ? (
                                 <div className="bg-yellow-500/20 border border-yellow-500/50 p-6 rounded-xl mb-6">
@@ -122,7 +119,7 @@ const TryOnPage: React.FC = () => {
                                 </div>
                             ) : (
                                 <Button variant="primary" className="w-full py-4 text-lg" onClick={() => setStep('camera')}>
-                                    Entendido, abrir cámara
+                                    ABRIR CÁMARA
                                 </Button>
                             )}
                         </motion.div>

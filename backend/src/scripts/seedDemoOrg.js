@@ -12,6 +12,7 @@ const organizationSchema = new mongoose.Schema({
     ownerEmail: { type: String, required: false },
     plan: { type: String, enum: ['free', 'basic', 'premium'], default: 'basic' },
     usageCount: { type: Number, default: 0 },
+    shutterDesign: { type: String, enum: ['default', 'special'], default: 'default' },
 }, { timestamps: true });
 
 const Organization = mongoose.model('Organization', organizationSchema);
@@ -32,7 +33,8 @@ async function createDemoOrg() {
                 apiKey: demoApiKey,
                 allowedDomains: ['localhost'],
                 isActive: true,
-                plan: 'premium'
+                plan: 'premium',
+                shutterDesign: 'special'
             });
             await newOrg.save();
             console.log('Demo organization created successfully');
