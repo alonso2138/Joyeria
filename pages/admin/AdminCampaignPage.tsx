@@ -148,6 +148,17 @@ const AdminCampaignPage: React.FC = () => {
                                 <label className={labelClasses}>Logo Icono (Favicon)</label>
                                 <input type="text" value={config.branding.logoIconUrl} onChange={(e) => updateNestedField('branding', 'logoIconUrl', e.target.value)} className={inputClasses} placeholder="/favicon.ico" />
                             </div>
+                            <div>
+                                <label className={labelClasses}>Diseño del Obturador (Try-On)</label>
+                                <select
+                                    value={config.branding.shutterDesign || 'default'}
+                                    onChange={(e) => updateNestedField('branding', 'shutterDesign', e.target.value)}
+                                    className={inputClasses}
+                                >
+                                    <option value="default">Estándar (Texto en el centro)</option>
+                                    <option value="special">Especial (Texto arriba + Encuadre)</option>
+                                </select>
+                            </div>
                         </div>
                     </div>
                 )}
