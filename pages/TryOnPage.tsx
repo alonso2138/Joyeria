@@ -141,9 +141,9 @@ const TryOnPage: React.FC = () => {
 
                         {config?.branding?.shutterDesign === 'special' ? (
                             <>
-                                {/* Top Text */}
-                                <div className="absolute top-10 left-0 right-0 z-20 text-center text-white px-6">
-                                    <h2 className="text-2xl font-serif font-light tracking-widest uppercase">Pruébate: {item?.name}</h2>
+                                {/* Top Text - pushed down to avoid overlap with close button */}
+                                <div className="absolute top-28 left-0 right-0 z-20 text-center text-white px-6">
+                                    <h2 className="text-xl font-serif font-light tracking-widest uppercase drop-shadow-lg">{item?.name}</h2>
                                 </div>
 
                                 {/* Central Frame with Corners */}
@@ -158,7 +158,7 @@ const TryOnPage: React.FC = () => {
 
                                 {/* Instruction below frame */}
                                 <div className="absolute bottom-32 left-0 right-0 z-20 text-center text-white px-8">
-                                    <p className="text-sm tracking-wide font-medium">
+                                    <p className="text-2xl font-light tracking-wide drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">
                                         {config?.uiLabels?.tryOnInstruction || ''}
                                     </p>
                                 </div>
