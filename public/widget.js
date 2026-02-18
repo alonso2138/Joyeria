@@ -110,16 +110,15 @@
     overlay.appendChild(container);
     document.body.appendChild(overlay);
 
-    const BASE_URL = window.location.origin; // In production this would be our domain
+    const BASE_URL = "https://api.visualizalo.es"; // In production this would be our domain
 
     function openVisualizer(params) {
         const { imageUrl, name, category, apiKey } = params;
-        const IS_LOCAL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-        const API_BASE = IS_LOCAL ? 'http://localhost:5000' : 'https://api.visualizalo.es';
-        const APP_BASE = IS_LOCAL ? window.location.origin : 'https://www.visualizalo.es';
+        const API_BASE = 'https://api.visualizalo.es';
+        const APP_BASE = 'https://www.visualizalo.es';
 
         if (!apiKey) {
-            console.error('[SaaS] API Key missing');
+            console.error('API Key missing');
             alert('Error: API Key missing.');
             return;
         }

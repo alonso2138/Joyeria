@@ -45,7 +45,8 @@ const CACHE_ALLOWED_ORIGINS = [
 app.use(cors({
     origin: function (origin, callback) {
         // allow requests with no origin (like mobile apps or curl requests)
-        if (!origin) return callback(null, true);
+        // also allow 'null' origin for files opened directly from disk in browsers
+        if (!origin || origin === 'null') return callback(null, true);
         if (CACHE_ALLOWED_ORIGINS.indexOf(origin) === -1) {
             const msg = 'The CORS policy for this site does not allow access from the specified Origin.';
             return callback(new Error(msg), false);
