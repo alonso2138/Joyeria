@@ -20,6 +20,7 @@ export const ConfigProvider: React.FC<{ children: ReactNode }> = ({ children }) 
                 // Leer tag de la URL (soporta ?id=... o ?tag=... o path /demo/:tag)
                 const searchParams = new URLSearchParams(location.search);
                 let tag = searchParams.get('tag') || searchParams.get('id');
+                const apiKey = searchParams.get('apiKey');
 
                 // Si la ruta es /demo/algo, extraer 'algo' como tag
                 // Support both HashRouter (#/demo/...) and potentially normal paths if switched later
@@ -31,7 +32,7 @@ export const ConfigProvider: React.FC<{ children: ReactNode }> = ({ children }) 
                     }
                 }
 
-                const data = await getCampaignConfig(tag || undefined);
+                const data = await getCampaignConfig(tag || undefined, apiKey || undefined);
                 setConfig(data);
 
                 if (data && data.branding) {

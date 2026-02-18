@@ -144,9 +144,10 @@ export const fetchCustomRequests = async (token: string): Promise<CustomRequest[
 
 // --- CAMPAIGN CONFIG API ---
 
-export const getCampaignConfig = async (tag?: string): Promise<any> => {
+export const getCampaignConfig = async (tag?: string, apiKey?: string): Promise<any> => {
   const query = new URLSearchParams();
   if (tag) query.append('tag', tag);
+  if (apiKey) query.append('apiKey', apiKey);
   return apiRequest(`/config?${query.toString()}`);
 };
 

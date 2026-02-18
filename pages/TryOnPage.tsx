@@ -110,10 +110,7 @@ const TryOnPage: React.FC = () => {
                             </div>
                             <h2 className="text-3xl font-serif text-white mb-4">Consejo de Posado</h2>
                             <p className="text-gray-300 text-lg mb-8 leading-relaxed">
-                                {config?.branding?.shutterDesign === 'special'
-                                    ? 'Enfoca la zona para comenzar'
-                                    : itemMetadata.poseAdvice
-                                }
+                                {itemMetadata.poseAdvice || ''}
                             </p>
 
                             {!config?.linkedApiKey ? (

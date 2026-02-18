@@ -200,10 +200,7 @@ const WidgetPage: React.FC = () => {
                         </div>
                         <h2 className="text-2xl font-serif text-white mb-2 leading-tight">Pruébatelo ahora</h2>
                         <p className="text-gray-400 text-base mb-6 leading-relaxed max-w-xs mx-auto">
-                            {config?.branding?.shutterDesign === 'special'
-                                ? 'Enfoca la zona para comenzar'
-                                : (itemMetadata.poseAdvice || 'Enfoca la zona donde quieras probar el accesorio.')
-                            }
+                            {itemMetadata.poseAdvice || ''}
                         </p>
                         <Button variant="primary" className="w-full max-w-[200px] py-3 text-base font-bold rounded-xl shadow-xl transition-all hover:scale-105 active:scale-95" onClick={() => setStep('camera')}>
                             ABRIR CÁMARA
