@@ -53,6 +53,41 @@ const docsContent = [
   }
 });`,
     },
+    {
+        id: 'shopify',
+        title: 'Integración Shopify',
+        content: 'Integra el visualizador de forma dinámica en tu tienda Shopify para que se actualice según la variante seleccionada (largo de cadena, material, etc).',
+        code: `<!-- 1. Script base en theme.liquid -->
+<script src="https://www.visualizalo.es/widget.js"></script>
+
+<!-- 2. Botón dinámico en main-product.liquid -->
+{% assign current_variant = product.selected_or_first_available_variant %}
+
+<button 
+  data-try-on 
+  data-api-key="TU_API_KEY"
+  data-image="{{ current_variant.featured_image | img_url: '1024x1024' }}"
+  data-category="Collar"
+  {% for option in product.options_with_values %}
+    data-opt-{{ option.name | handle }}="{{ current_variant.options[forloop.index0] }}"
+  {% endfor %}
+>
+  Probar ahora
+</button>`,
+    },
+    {
+        id: 'metadata',
+        title: 'Metadatos Avanzados',
+        content: 'Puedes pasar cualquier información extra a nuestra IA usando el prefijo "data-opt-". Esto permite ajustar la escala y posición de la pieza (ej: collar de 50cm vs 60cm).',
+        code: `<button 
+  data-try-on
+  data-opt-largo="60cm"
+  data-opt-material="Plata"
+  ...
+>
+  Probar
+</button>`,
+    },
 ];
 
 const DocsPage: React.FC = () => {

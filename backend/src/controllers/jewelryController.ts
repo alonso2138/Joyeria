@@ -135,6 +135,16 @@ export const createJewelryItem = async (req: Request, res: Response) => {
             }
         }
 
+        // Parsear options si vienen como JSON string
+        if (jewelryData.options && typeof jewelryData.options === 'string') {
+            try {
+                jewelryData.options = JSON.parse(jewelryData.options);
+            } catch (e) {
+                console.warn('Error parsing options JSON:', e);
+                jewelryData.options = {};
+            }
+        }
+
         // Si se subió una imagen, guardarla en GridFS
         if (req.file) {
             const bucket = getGridFSBucket();
@@ -185,6 +195,16 @@ export const updateJewelryItem = async (req: Request, res: Response) => {
             } catch (e) {
                 // Si no es JSON válido, dividir por comas
                 updateData.hashtags = updateData.hashtags.split(',').map((tag: string) => tag.trim());
+            }
+        }
+
+        // Parsear options si vienen como JSON string
+        if (updateData.options && typeof updateData.options === 'string') {
+            try {
+                updateData.options = JSON.parse(updateData.options);
+            } catch (e) {
+                console.warn('Error parsing options JSON:', e);
+                updateData.options = {};
             }
         }
 

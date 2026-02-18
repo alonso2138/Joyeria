@@ -1,18 +1,25 @@
 import { Request, Response } from 'express';
-import fs from 'fs';
-import path from 'path';
 import Organization from '../models/Organization';
+import GlobalConfig from '../models/GlobalConfig';
+import DemoConfig from '../models/DemoConfig';
 
-const CONFIG_PATH = path.join(__dirname, '../../data/campaignConfig.json');
+/**
+ * Helper to get the single global configuration document.
+ * Creates one with defaults if none exists.
+ */
+const getGlobalConfigDoc = async () => {
+    let config = await GlobalConfig.findOne();
+    if (!config) {
+        config = await GlobalConfig.create({});
+    }
+    return config;
+};
 
 export const getConfig = async (req: Request, res: Response) => {
     try {
-        if (!fs.existsSync(CONFIG_PATH)) {
-            return res.status(404).json({ message: 'Configuration file not found' });
-        }
-        const config = JSON.parse(fs.readFileSync(CONFIG_PATH, 'utf-8'));
-
+        const globalConfig = await getGlobalConfigDoc();
         const { tag } = req.query;
+
         let linkedApiKey = null;
         let demoConfig = null;
 
@@ -23,23 +30,22 @@ export const getConfig = async (req: Request, res: Response) => {
                 linkedApiKey = org.apiKey;
             }
 
-            if (config.demoConfigs && config.demoConfigs[tag]) {
-                demoConfig = config.demoConfigs[tag];
-            }
+            // Find specific demo config in MongoDB
+            demoConfig = await DemoConfig.findOne({ tag });
         }
 
         // --- SANITIZATION: Only return specific public fields ---
         const sanitizedConfig = {
             branding: {
-                ...config.branding,
+                ...globalConfig.branding,
                 ...(demoConfig?.branding || {})
             },
             uiLabels: {
-                ...config.uiLabels,
+                ...globalConfig.uiLabels,
                 ...(demoConfig?.uiLabels || {})
             },
-            customizationOptions: config.customizationOptions,
-            tryOnMetadata: config.tryOnMetadata,
+            customizationOptions: globalConfig.customizationOptions,
+            tryOnMetadata: globalConfig.tryOnMetadata,
             linkedApiKey // Controlled: only for the requested tag
         };
 
@@ -50,25 +56,36 @@ export const getConfig = async (req: Request, res: Response) => {
     }
 };
 
-export const updateConfig = (req: Request, res: Response) => {
+export const updateConfig = async (req: Request, res: Response) => {
     try {
         const newConfig = req.body;
-        fs.writeFileSync(CONFIG_PATH, JSON.stringify(newConfig, null, 2));
-        res.json({ message: 'Configuration updated successfully', config: newConfig });
+        let config = await GlobalConfig.findOne();
+
+        if (config) {
+            // Update existing
+            Object.assign(config, newConfig);
+            await config.save();
+        } else {
+            // Create new
+            config = await GlobalConfig.create(newConfig);
+        }
+
+        res.json({ message: 'Configuration updated successfully', config });
     } catch (error) {
         console.error('Error updating config:', error);
         res.status(500).json({ message: 'Error updating configuration' });
     }
 };
 
-export const getDemos = (req: Request, res: Response) => {
+export const getDemos = async (req: Request, res: Response) => {
     try {
-        if (!fs.existsSync(CONFIG_PATH)) {
-            return res.status(404).json({ message: 'Configuration file not found' });
-        }
-        const config = JSON.parse(fs.readFileSync(CONFIG_PATH, 'utf-8'));
-        const demoConfigs = config.demoConfigs || {};
-        res.json(demoConfigs);
+        const demos = await DemoConfig.find();
+        // Return as a map to maintain compatibility with the previous JSON structure
+        const demoMap: Record<string, any> = {};
+        demos.forEach(d => {
+            demoMap[d.tag] = d;
+        });
+        res.json(demoMap);
     } catch (error) {
         console.error('Error reading demos:', error);
         res.status(500).json({ message: 'Error reading demos' });
@@ -82,16 +99,12 @@ export const upsertDemo = async (req: Request, res: Response) => {
             return res.status(400).json({ message: 'Tag is required' });
         }
 
-        const config = JSON.parse(fs.readFileSync(CONFIG_PATH, 'utf-8'));
-        if (!config.demoConfigs) config.demoConfigs = {};
-
-        config.demoConfigs[tag] = {
-            branding: branding || {},
-            uiLabels: uiLabels || {},
-            aiPrompts: aiPrompts || {}
-        };
-
-        fs.writeFileSync(CONFIG_PATH, JSON.stringify(config, null, 2));
+        // Update or create DemoConfig
+        const demo = await DemoConfig.findOneAndUpdate(
+            { tag },
+            { branding: branding || {}, uiLabels: uiLabels || {}, aiPrompts: aiPrompts || {} },
+            { upsert: true, new: true }
+        );
 
         // Handle Organization Linking
         // 1. Remove this tag from any organization that currently has it
@@ -102,24 +115,22 @@ export const upsertDemo = async (req: Request, res: Response) => {
             await Organization.findByIdAndUpdate(organizationId, { demoTag: tag });
         }
 
-        res.json({ message: 'Demo configuration updated successfully', demo: config.demoConfigs[tag] });
+        res.json({ message: 'Demo configuration updated successfully', demo });
     } catch (error) {
         console.error('Error upserting demo:', error);
         res.status(500).json({ message: 'Error updating demo configuration' });
     }
 };
 
-export const deleteDemo = (req: Request, res: Response) => {
+export const deleteDemo = async (req: Request, res: Response) => {
     try {
         const { tag } = req.params;
         if (!tag) {
             return res.status(400).json({ message: 'Tag is required' });
         }
 
-        const config = JSON.parse(fs.readFileSync(CONFIG_PATH, 'utf-8'));
-        if (config.demoConfigs && config.demoConfigs[tag]) {
-            delete config.demoConfigs[tag];
-            fs.writeFileSync(CONFIG_PATH, JSON.stringify(config, null, 2));
+        const result = await DemoConfig.findOneAndDelete({ tag });
+        if (result) {
             return res.json({ message: 'Demo deleted successfully' });
         }
 
@@ -129,6 +140,7 @@ export const deleteDemo = (req: Request, res: Response) => {
         res.status(500).json({ message: 'Error deleting demo' });
     }
 };
+
 export const createAutoDemo = async (req: Request, res: Response) => {
     try {
         const { name } = req.body;
@@ -140,31 +152,25 @@ export const createAutoDemo = async (req: Request, res: Response) => {
             .replace(/-+/g, '-') // Replace multiple - with single
             .replace(/^-|-$/g, ''); // Trim -
 
-        if (!fs.existsSync(CONFIG_PATH)) {
-            return res.status(404).json({ message: 'Configuration file not found' });
-        }
-
-        const config = JSON.parse(fs.readFileSync(CONFIG_PATH, 'utf-8'));
-        if (!config.demoConfigs) config.demoConfigs = {};
-
         let tag = baseTag;
         let counter = 1;
-        while (config.demoConfigs[tag]) {
+
+        while (await DemoConfig.findOne({ tag })) {
             tag = `${baseTag}-${counter}`;
             counter++;
         }
 
         // Initialize with minimal clear branding/labels
-        config.demoConfigs[tag] = {
+        const newDemo = await DemoConfig.create({
+            tag,
             branding: {
                 name: name,
                 ctaTryOn: "Probar ahora"
             },
             uiLabels: {},
             aiPrompts: {}
-        };
+        });
 
-        fs.writeFileSync(CONFIG_PATH, JSON.stringify(config, null, 2));
         res.json({ success: true, tag });
     } catch (error) {
         console.error('Error creating auto demo:', error);

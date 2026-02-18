@@ -15,6 +15,7 @@ export interface JewelryItem {
   isFeatured: boolean;
   catalogId?: string;
   aiModel?: 'gemini-2.5-flash-image';
+  options?: Record<string, string>;
   createdAt: string;
   updatedAt: string;
 }

@@ -1,9 +1,6 @@
 import { Request, Response } from 'express';
 import Organization from '../models/Organization';
-import fs from 'fs';
-import path from 'path';
-
-const CONFIG_PATH = path.join(__dirname, '../../data/campaignConfig.json');
+import GlobalConfig from '../models/GlobalConfig';
 
 export const validateApiKey = async (req: Request, res: Response) => {
     try {
@@ -40,19 +37,18 @@ export const validateApiKey = async (req: Request, res: Response) => {
         };
 
         try {
-            if (fs.existsSync(CONFIG_PATH)) {
-                const config = JSON.parse(fs.readFileSync(CONFIG_PATH, 'utf-8'));
-                if (config.saasPlans) {
-                    quotas = Object.keys(config.saasPlans).reduce((acc, planKey) => {
-                        acc[planKey] = config.saasPlans[planKey].limit;
-                        // Map very large numbers or specific keywords back to Infinity for safety
-                        if (planKey === 'premium' && acc[planKey] >= 100000) acc[planKey] = Infinity;
-                        return acc;
-                    }, {} as Record<string, number>);
-                }
+            const config = await GlobalConfig.findOne();
+            if (config && config.saasPlans) {
+                quotas = Object.keys(config.saasPlans).reduce((acc, planKey) => {
+                    const limit = config.saasPlans[planKey].limit;
+                    acc[planKey] = limit;
+                    // Map very large numbers or specific keywords back to Infinity for safety
+                    if (planKey === 'premium' && limit >= 100000) acc[planKey] = Infinity;
+                    return acc;
+                }, {} as Record<string, number>);
             }
         } catch (err) {
-            console.error('[Security] Error reading plan quotas from config:', err);
+            console.error('[Security] Error reading plan quotas from DB:', err);
         }
 
         const currentQuota = quotas[org.plan as keyof typeof quotas] || quotas.basic;
@@ -106,7 +102,7 @@ export const logWidgetEvent = async (req: Request, res: Response) => {
             return res.status(400).json({ message: 'API Key is required' });
         }
 
-        // Only increment for successful try-ons (or as defined by business logic)
+        // Only increment for successful try-ons
         if (type === 'TRYON_SUCCESS') {
             const currentMonth = new Date().toISOString().substring(0, 7);
 

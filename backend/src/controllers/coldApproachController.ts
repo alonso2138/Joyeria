@@ -3,10 +3,7 @@ import https from 'https';
 import Papa from 'papaparse';
 import { Resend } from 'resend';
 import { StorageHelper } from '../utils/storageHelper';
-import fs from 'fs';
-import path from 'path';
-
-const CONFIG_PATH = path.join(__dirname, '../../data/campaignConfig.json');
+import GlobalConfig from '../models/GlobalConfig';
 
 const CSV_URL = 'https://docs.google.com/spreadsheets/d/1UTNIkH7J9xPVrOHHL0RgqsZ0Yuz6r6StQWu6ASVQSww/export?format=csv';
 
@@ -278,7 +275,7 @@ export const launchColdApproach = async (req: Request, res: Response) => {
         const leadsMap = buildLeadsFromCsv(rowsWithoutAdmin);
         console.log("Leads encontrados: ", leadsMap.size);
 
-        // Asociar eventos a cada lead si los traes de otro origen (placeholder)
+        // Asociar eventos a cada lead
         events.forEach((_ev) => {
             return;
         });
@@ -298,7 +295,7 @@ export const launchColdApproach = async (req: Request, res: Response) => {
 
         // Cambiando estado a Corriendo
         try {
-            const sheetRes = await fetch(SHEETS_HOOK_URL, {
+            await fetch(SHEETS_HOOK_URL, {
                 method: "POST",
                 headers: {
                     "Content-Type": "text/plain;charset=utf-8",
@@ -309,24 +306,18 @@ export const launchColdApproach = async (req: Request, res: Response) => {
             console.error('No se pudo actualizar la hoja para', sheetError);
         }
 
-        // Le decimos al admin que se han pasado las validaciones y el proceso está en marcha
-        console.log("Campaña validada, diciendoselo al admin")
         res.status(200).json({ message: 'Cold approach executed' });
-        console.log("Respuesta enviada correctamente")
 
         for (let i = 0; i < leads.length; i++) {
             try {
                 console.log("Empezando el lead numero ", i + 1)
 
-                // Solo refrescamos el CSV cada 10 leads para evitar bloqueos de Google Sheets
                 if (i > 0 && i % 10 === 0) {
                     console.log("Refrescando CSV para comprobar estado de ADMIN...");
                     const [rows] = await Promise.all([fetchCsv()]);
                     const { adminAction: csvAdminAction } = extractAdminControl(rows);
                     adminAction = csvAdminAction;
                 }
-
-                console.log(JSON.stringify(leads[i]))
 
                 const horarios = ['09:15-13:00', '15:00-18:00'];
                 let diaValidado = false;
@@ -357,61 +348,40 @@ export const launchColdApproach = async (req: Request, res: Response) => {
                     if (!(diaSimple === 'sabado' || diaSimple === 'domingo')) diaValidado = true;
 
                     if (diaValidado == false || horarioValidado == false) {
-                        console.log("Horario/Día " + diaValidado + "/" + horarioValidado + "+ no validado, intentando en 30min");
+                        console.log("Horario/Día no validado, intentando en 30min");
                         await new Promise(resolve => setTimeout(resolve, 30 * 60 * 1000));
                     }
                 } while (diaValidado == false || horarioValidado == false);
 
-                console.log("Horario y Día validado")
-
                 const encodedEmail = Buffer.from(leads[i].email).toString('base64');
 
-                console.log("Codificando email de lead... (" + leads[i].email + ")   => " + encodedEmail);
-
-                console.log("Admin action: ", adminAction)
-
                 if (adminAction && adminAction.toLowerCase() === 'stop') {
-                    console.log("Ending process, admin action: ", adminAction)
+                    console.log("Ending process, admin action: Stop")
                     return;
                 }
 
-                console.log("Enviando mail...")
+                // FETCH CONFIG FROM DB
+                const config = await GlobalConfig.findOne();
 
-                let config;
-                try {
-                    config = JSON.parse(fs.readFileSync(CONFIG_PATH, 'utf-8'));
-                } catch (err) {
-                    console.error('Error reading config in cold approach:', err);
-                }
-
-                const subject = resolveSpintax(config?.marketing?.emailSubject || `{Cuando un cliente duda entre dos piezas|Dudas entre dos joyas|Ayudar al cliente a decidir entre piezas|Sobre la duda de los clientes con las joyas}`);
-                const body = resolveSpintax((config?.marketing?.emailBody || `{Hola!|Buenas,|Qué tal?|Buenos días,}<br><br>{Seguro que te pasa a menudo|Te escribo porque seguro que te pasa}: un cliente mira una pulsera o un reloj, le gusta pero no termina de decidirse.<br><br>{He ayudado a joyerías a|Estamos ayudando a joyerías a} cerrar esas ventas en el momento, añadiendo un botón "Pruébatelo" en sus fichas de producto o enviando un enlace por WhatsApp.<br><br><b>¿Me pasas 2 o 3 links de tu catálogo y te preparo una demo hoy mismo?</b><br><br>Así podréis ver el valor real con vuestras propias piezas. Si prefieres probarlo tú mismo con nuestras muestras (apenas 10 segundos):<br><a href="https://visualizalo.es?id=${encodedEmail}">Probar demo con modelos de muestra</a><br><br>Un saludo,<br>Alonso Valls<br><br><img src="https://api.visualizalo.es/api/trigger/cold-abierto?id=${encodedEmail}" alt="" width="1" height="1" style="display:none!important;min-height:0;height:0;max-height:0;width:0;max-width:0;opacity:0;overflow:hidden;mso-hide:all;" />`).replace('${encodedEmail}', encodedEmail));
+                const subject = resolveSpintax((config as any)?.marketing?.emailSubject || `{Cuando un cliente duda entre dos piezas|Dudas entre dos joyas|Ayudar al cliente a decidir entre piezas|Sobre la duda de los clientes con las joyas}`);
+                const body = resolveSpintax(((config as any)?.marketing?.emailBody || `{Hola!|Buenas,|Qué tal?|Buenos días,}<br><br>{Seguro que te pasa a menudo|Te escribo porque seguro que te pasa}: un cliente mira una pulsera o un reloj, le gusta pero no termina de decidirse.<br><br>{He ayudado a joyerías a|Estamos ayudando a joyerías a} cerrar esas ventas en el momento, añadiendo un botón "Pruébatelo" en sus fichas de producto o enviando un enlace por WhatsApp.<br><br><b>¿Me pasas 2 o 3 links de tu catálogo y te preparo una demo hoy mismo?</b><br><br>Así podréis ver el valor real con vuestras propias piezas. Si prefieres probarlo tú mismo con nuestras muestras (apenas 10 segundos):<br><a href="https://visualizalo.es?id=${encodedEmail}">Probar demo con modelos de muestra</a><br><br>Un saludo,<br>Alonso Valls<br><br><img src="https://api.visualizalo.es/api/trigger/cold-abierto?id=${encodedEmail}" alt="" width="1" height="1" style="display:none!important;min-height:0;height:0;max-height:0;width:0;max-width:0;opacity:0;overflow:hidden;mso-hide:all;" />`).replace('${encodedEmail}', encodedEmail));
 
                 await sendMail(`${leads[i].email}`, subject, body);
-
-                console.log("Mail enviado, enviando notificacion de telegram")
-
                 await StorageHelper.updateEvents(leads[i].email, "cold-sent");
-
-                // await sendTelegramNotification(`Mail frio enviado a ${leads[i].email}`);
-
                 await updateLeadEstadoInSheet(leads[i].email, "Cold-Approach enviado");
 
-                // Delay arbitrario para siguiente mail => Entre 10 y 20s
                 if (!(i === leads.length - 1)) {
                     await new Promise(resolve => setTimeout(resolve, (Math.floor(Math.random() * (25 - 15 + 1)) + 15) * 1000));
                 }
             } catch (leadError) {
                 console.error(`Error procesando lead ${leads[i]?.email}:`, leadError);
-                // Si falla un lead, esperamos un poco y seguimos con el siguiente
                 await new Promise(resolve => setTimeout(resolve, 5000));
                 continue;
             }
         }
 
-        // Cambiando estado a Acabado
         try {
-            const sheetRes = await fetch(SHEETS_HOOK_URL, {
+            await fetch(SHEETS_HOOK_URL, {
                 method: "POST",
                 headers: {
                     "Content-Type": "text/plain;charset=utf-8",
@@ -424,8 +394,5 @@ export const launchColdApproach = async (req: Request, res: Response) => {
 
     } catch (error) {
         console.error('Error in launchColdApproach:', error);
-        if (!res.headersSent) {
-            res.status(500).json({ message: 'Failed to execute cold approach' });
-        }
     }
 };

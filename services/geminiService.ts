@@ -19,7 +19,8 @@ export const generateTryOnImage = async (
         itemType,
         tag: config?.tag || window.location.hash.split('/demo/')[1]?.split('/')[0] || 'main',
         isMacro: config?.isMacro,
-        orientationDesc: config?.orientationDesc
+        orientationDesc: config?.orientationDesc,
+        options: config?.options
       }),
     });
 

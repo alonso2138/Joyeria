@@ -15,10 +15,13 @@ const jewelrySchema = new mongoose.Schema({
     isFeatured: { type: Boolean, required: true, default: false },
     catalogId: { type: String, required: true, default: 'main' },
     aiModel: {
-        type: String,
-        required: true,
         enum: ['gemini-2.5-flash-image'],
         default: 'gemini-2.5-flash-image'
+    },
+    options: {
+        type: Map,
+        of: String,
+        default: {}
     },
 }, {
     timestamps: true,

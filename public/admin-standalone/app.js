@@ -11,12 +11,16 @@ const scoreWeights = {
   "open-followup": 1,
   "link-click": 2,
   "cta-primary-click": 3,
-  "intelligent-demo-success": 6,
-  "b2b-links-submit": 10,
-  "roi-calc-interact": 2,
-  "whatsapp-kit-copy": 4,
-  "reply": 6,
-  "meeting": 10,
+  "intelligent-demo-start": 2,
+  "intelligent-demo-success": 8,
+  "ROI_CALC_INTERACT": 2, // New landing page event
+  "roi-calc-interact": 2, // Duplicate for safety
+  "whatsapp-kit-copy": 5,
+  "b2b-links-submit": 15,
+  "reply": 10,
+  "meeting": 20,
+  "landing-view": 1,
+  "pricing-view": 4,
 };
 
 const actionLabels = {
@@ -27,9 +31,9 @@ const actionLabels = {
   "open-followup": "Follow-up abierto",
   "follow-up": "Follow-up abierto",
   "link-click": "Link click (email)",
-  "reply": "Reply",
+  "reply": "Reply / Respuesta",
   "meeting": "Meeting agendada",
-  "try-on": "Try-on demo",
+  "try-on": "Try-on demo (Widget)",
   "try-on-started": "Try-on iniciado",
   "step-1-completed": "Paso 1 completado",
   "step-2-completed": "Paso 2 completado",
@@ -39,16 +43,24 @@ const actionLabels = {
   "step-6-completed": "Paso 6 completado",
   "custom-jewel": "Joya personalizada",
   "landing-view": "Visto Landing B2B",
-  "cta-primary-click": "Click CTA Principal",
+  "cta-primary-click": "Click CTA Principal (Email/Nombre)",
   "intelligent-demo-start": "Inició Demo IA",
-  "intelligent-demo-success": "Vio Demo IA (Modelo)",
+  "intelligent-demo-success": "Vio Demo IA (Correcto)",
   "roi-calc-interact": "Usó Calculadora ROI",
+  "ROI_CALC_INTERACT": "Usó Calculadora ROI",
   "whatsapp-kit-copy": "Copió Kit WhatsApp",
-  "b2b-links-submit": "Envió Links Joyas",
+  "b2b-links-submit": "Envió Links para Demo",
   "pricing-view": "Visto Precios",
 };
 
 const FUNNEL_STEPS = [1, 2, 3, 4, 5, 6];
+const B2B_FUNNEL_EVENTS = [
+  { action: 'landing-view', label: '1. Visto Landing' },
+  { action: 'intelligent-demo-start', label: '2. Inició Demo IA' },
+  { action: 'intelligent-demo-success', label: '3. Vio Resultado IA' },
+  { action: 'cta-primary-click', label: '4. Lead Capturado (Email)' },
+  { action: 'b2b-links-submit', label: '5. Solicitó Demo Real' }
+];
 const RECENT_ACTIONS_LIMIT = 100;
 const SHEET_ACTIONS = {
   "cold-approach": "Aperturas de cold",
@@ -286,6 +298,14 @@ function computeMetrics(leadsMap) {
     };
   });
 
+  const b2bFunnelSteps = B2B_FUNNEL_EVENTS.map((eventObj) => {
+    return {
+      label: eventObj.label,
+      unique: eventStats.uniques[eventObj.action] || 0,
+      total: eventStats.totals[eventObj.action] || 0,
+    };
+  });
+
   return {
     totalLeads,
     coldSent,
@@ -306,6 +326,7 @@ function computeMetrics(leadsMap) {
     tryOnStartedRate,
     progressRate,
     funnelSteps,
+    b2bFunnelSteps,
   };
 }
 
@@ -315,7 +336,7 @@ function renderDashboard(leadsMap = cachedLeads) {
   const metrics = computeMetrics(filteredLeads);
 
   renderMetrics(metrics);
-  renderFunnel(metrics.funnelSteps, metrics.coldSent);
+  renderFunnel(metrics, metrics.coldSent);
   renderAutomationStatus();
   renderActionButtonsState(filteredLeads);
   renderHotLeads(filteredLeads);
@@ -399,10 +420,17 @@ function renderMetrics(metrics) {
   setText("progressRate", formatPercent(metrics.progressRate));
 }
 
-function renderFunnel(funnelSteps = [], baseCount = 0) {
+function renderFunnel(metrics, baseCount = 0) {
   const container = document.getElementById("funnelSteps");
   if (!container) return;
   container.innerHTML = "";
+
+  const isB2B = currentCampaignFilter === "all" || currentCampaignFilter === "main";
+  const funnelSteps = isB2B ? metrics.b2bFunnelSteps : metrics.funnelSteps;
+  const funnelTitle = document.querySelector("#funnelSteps").previousElementSibling.querySelector('h3');
+  if (funnelTitle) {
+    funnelTitle.textContent = isB2B ? "Funnel Landing B2B" : "Pasos completados (Wizard)";
+  }
 
   if (!funnelSteps.length) {
     container.innerHTML = `<p class="muted-text">Sin datos</p>`;
@@ -413,13 +441,14 @@ function renderFunnel(funnelSteps = [], baseCount = 0) {
   funnelSteps.forEach((stepData, index) => {
     const denom = index === 0 ? (baseCount || stepData.unique) : prevCount;
     const rateValue = rate(stepData.unique, denom);
-    const rateLabel = index === 0 && baseCount ? "Vs cold" : "Vs paso anterior";
+    const rateLabel = index === 0 && baseCount ? "Vs reach" : "Vs paso anterior";
+    const label = isB2B ? stepData.label : `Paso ${stepData.step} completado`;
 
     const row = document.createElement("div");
     row.className = "funnel-row";
     row.innerHTML = `
       <div class="funnel-meta">
-        <div class="funnel-title">Paso ${stepData.step} completado</div>
+        <div class="funnel-title">${label}</div>
         <div class="funnel-sub">${stepData.unique} unicos · ${stepData.total} total</div>
       </div>
       <div class="funnel-rate">

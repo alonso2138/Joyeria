@@ -25,7 +25,10 @@ const AdminJewelryEditPage: React.FC = () => {
         isFeatured: false,
         catalogId: 'main',
         aiModel: 'gemini-2.5-flash-image',
+        options: {}
     });
+    const [newOptionKey, setNewOptionKey] = useState('');
+    const [newOptionValue, setNewOptionValue] = useState('');
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
     const [imagePreview, setImagePreview] = useState<string>('');
     const [isLoading, setIsLoading] = useState(false);
@@ -74,6 +77,27 @@ const AdminJewelryEditPage: React.FC = () => {
         setItem(prev => ({ ...prev, hashtags }));
     };
 
+    const handleAddOption = () => {
+        if (!newOptionKey.trim()) return;
+        setItem(prev => ({
+            ...prev,
+            options: {
+                ...(prev.options || {}),
+                [newOptionKey.trim()]: newOptionValue.trim()
+            }
+        }));
+        setNewOptionKey('');
+        setNewOptionValue('');
+    };
+
+    const handleRemoveOption = (key: string) => {
+        setItem(prev => {
+            const newOptions = { ...(prev.options || {}) };
+            delete newOptions[key];
+            return { ...prev, options: newOptions };
+        });
+    };
+
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (file) {
@@ -119,6 +143,8 @@ const AdminJewelryEditPage: React.FC = () => {
             Object.keys(finalItem).forEach(key => {
                 if (key === 'hashtags') {
                     formData.append('hashtags', JSON.stringify(finalItem.hashtags));
+                } else if (key === 'options') {
+                    formData.append('options', JSON.stringify(finalItem.options));
                 } else if (finalItem[key] !== undefined && finalItem[key] !== null) {
                     formData.append(key, finalItem[key].toString());
                 }
@@ -251,6 +277,59 @@ const AdminJewelryEditPage: React.FC = () => {
                             required
                         />
                         <p className="text-[10px] text-gray-400 mt-1">Usa 'main' para la web oficial o el 'tag' del cliente para una demo.</p>
+                    </div>
+
+                    <div className="md:col-span-2 space-y-4">
+                        <label className="block text-sm font-medium text-gray-300">Opciones / Atributos (Metadatos para la IA)</label>
+                        <div className="bg-gray-900/50 p-4 rounded-xl border border-gray-700 space-y-4">
+                            {/* Existing Options List */}
+                            <div className="space-y-2">
+                                {Object.entries(item.options || {}).map(([key, value]) => (
+                                    <div key={key} className="flex items-center gap-2 bg-gray-800 p-2 rounded-lg border border-gray-700">
+                                        <span className="text-xs font-mono text-[var(--primary-color)] flex-1">{key}: {value}</span>
+                                        <button
+                                            type="button"
+                                            onClick={() => handleRemoveOption(key)}
+                                            className="text-red-400 hover:text-red-300 p-1"
+                                        >
+                                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                            </svg>
+                                        </button>
+                                    </div>
+                                ))}
+                                {Object.keys(item.options || {}).length === 0 && (
+                                    <p className="text-[10px] text-gray-500 italic">No hay atributos adicionales definidos.</p>
+                                )}
+                            </div>
+
+                            {/* Add New Option */}
+                            <div className="grid grid-cols-2 gap-2">
+                                <input
+                                    type="text"
+                                    placeholder="Clave (ej: largo)"
+                                    value={newOptionKey}
+                                    onChange={(e) => setNewOptionKey(e.target.value)}
+                                    className="bg-gray-800 border border-gray-700 rounded-lg px-3 py-1.5 text-xs text-white"
+                                />
+                                <input
+                                    type="text"
+                                    placeholder="Valor (ej: 60cm)"
+                                    value={newOptionValue}
+                                    onChange={(e) => setNewOptionValue(e.target.value)}
+                                    className="bg-gray-800 border border-gray-700 rounded-lg px-3 py-1.5 text-xs text-white"
+                                />
+                            </div>
+                            <Button
+                                type="button"
+                                variant="outline"
+                                className="w-full py-2 text-xs"
+                                onClick={handleAddOption}
+                            >
+                                Añadir Atributo
+                            </Button>
+                            <p className="text-[9px] text-gray-500">Estos atributos informarán a la IA sobre características específicas de la pieza (como el largo de un collar) para mejorar la precisión del Try-On.</p>
+                        </div>
                     </div>
                 </div>
 

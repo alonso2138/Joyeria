@@ -1,9 +1,6 @@
 import { Request, Response } from 'express';
-import fs from 'fs';
-import path from 'path';
 import Organization from '../models/Organization';
-
-const CONFIG_PATH = path.join(__dirname, '../../data/campaignConfig.json');
+import GlobalConfig from '../models/GlobalConfig';
 
 const getGenAI = async () => {
     const { GoogleGenAI, Modality } = await import('@google/genai');
@@ -32,11 +29,8 @@ export const generateTryOn = async (req: Request, res: Response) => {
             return res.status(403).json({ message: 'This demo is not authorized for AI generation (Missing Org)' });
         }
 
-        // 2. Load config for AI Prompts
-        let config = { aiPrompts: { categoryPrompts: {} } };
-        if (fs.existsSync(CONFIG_PATH)) {
-            config = JSON.parse(fs.readFileSync(CONFIG_PATH, 'utf-8'));
-        }
+        // 2. Load config for AI Prompts from DB
+        const config = await GlobalConfig.findOne();
 
         const { client, Modality } = await getGenAI();
         const [header, data] = userImageBase64.split(',');
@@ -55,7 +49,7 @@ export const generateTryOn = async (req: Request, res: Response) => {
         };
 
         const itemKey = (itemType || 'ring').toLowerCase();
-        const categoryPrompts = (config as any).aiPrompts?.categoryPrompts || {};
+        const categoryPrompts = (config as any)?.aiPrompts?.categoryPrompts || {};
         let basePrompt = categoryPrompts[itemKey] || `Photorealistic virtual try-on: Place this ${itemKey} on the person accurately. Match lighting and shadows.`;
 
         // Add Macro logic if passed from frontend
@@ -79,6 +73,24 @@ export const generateTryOn = async (req: Request, res: Response) => {
                 2. ${scaleGuidance}
                 ${basePrompt}
             `;
+        }
+
+        // Add dynamic options as context (Professional Startup approach)
+        if (req.body.options && typeof req.body.options === 'object') {
+            const options = req.body.options;
+            const contextItems = Object.entries(options)
+                .map(([key, value]) => `${key} is ${value}`)
+                .join(', ');
+
+            if (contextItems) {
+                basePrompt = `
+                    PRODUCT CONTEXT:
+                    Note that the jewelry piece has the following specific attributes: ${contextItems}.
+                    Adjust scale, positioning, or appearance based on these attributes if relevant.
+                    
+                    ${basePrompt}
+                `;
+            }
         }
 
         const model = 'gemini-2.5-flash-image';

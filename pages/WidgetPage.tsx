@@ -15,28 +15,39 @@ const WidgetPage: React.FC = () => {
     const [searchParams] = useSearchParams();
 
     // Dynamic item from URL or fallback to empty
-    const item = useMemo(() => {
+    const { item, options } = useMemo(() => {
         const imageUrl = searchParams.get('imageUrl') || '';
         const name = searchParams.get('name') || 'Producto';
         const category = (searchParams.get('category') as any) || 'Anillo';
         const apiKey = searchParams.get('apiKey');
+        const optionsStr = searchParams.get('options');
+
+        let parsedOptions = null;
+        try {
+            if (optionsStr) parsedOptions = JSON.parse(optionsStr);
+        } catch (e) {
+            console.warn('[Widget] Failed to parse options:', e);
+        }
 
         return {
-            id: 'widget-dynamic',
-            slug: 'widget-item',
-            name,
-            imageUrl,
-            overlayAssetUrl: imageUrl, // In widget mode, we use the image provided as overlay
-            category,
-            price: 0,
-            currency: 'EUR',
-            description: '',
-            hashtags: [],
-            sku: 'widget',
-            isFeatured: false,
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString()
-        } as JewelryItem;
+            item: {
+                id: 'widget-dynamic',
+                slug: 'widget-item',
+                name,
+                imageUrl,
+                overlayAssetUrl: imageUrl, // In widget mode, we use the image provided as overlay
+                category,
+                price: 0,
+                currency: 'EUR',
+                description: '',
+                hashtags: [],
+                sku: 'widget',
+                isFeatured: false,
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString()
+            } as JewelryItem,
+            options: parsedOptions
+        };
     }, [searchParams]);
 
     const [step, setStep] = useState<TryOnStep>('loading');
@@ -60,7 +71,7 @@ const WidgetPage: React.FC = () => {
         reset
     } = useTryOn({
         selectedItem: item,
-        config,
+        config: { ...config, options },
         onSuccess: (result) => {
             const apiKey = searchParams.get('apiKey');
             if (apiKey) {

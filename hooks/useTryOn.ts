@@ -220,7 +220,12 @@ export const useTryOn = ({
             const category = (selectedItem.category || 'anillo').toLowerCase();
             const aiModel = selectedItem.aiModel;
 
-            const requestConfig = { ...config, isMacro: isCropped, orientationDesc };
+            const requestConfig = {
+                ...config,
+                isMacro: isCropped,
+                orientationDesc,
+                options: { ...(selectedItem?.options || {}), ...(config?.options || {}) }
+            };
 
             setProcessingPhase('rendering');
             const composed = await generateTryOnImage(userImageBase64, overlayUrl, category, requestConfig, aiModel);

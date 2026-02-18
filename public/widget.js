@@ -139,7 +139,8 @@
                     imageUrl,
                     name: name || '',
                     category: category || 'Anillo',
-                    apiKey: apiKey || ''
+                    apiKey: apiKey || '',
+                    options: params.options || ''
                 }).toString();
 
                 iframe.src = `${APP_BASE}/#/widget?${query}`;
@@ -179,8 +180,23 @@
             const category = target.getAttribute('data-category');
             const apiKey = target.getAttribute('data-api-key');
 
+            // Collect generic options (data-opt-*)
+            const options = {};
+            Array.from(target.attributes).forEach(attr => {
+                if (attr.name.startsWith('data-opt-')) {
+                    const key = attr.name.replace('data-opt-', '');
+                    options[key] = attr.value;
+                }
+            });
+
             if (imageUrl) {
-                openVisualizer({ imageUrl, name, category, apiKey });
+                openVisualizer({
+                    imageUrl,
+                    name,
+                    category,
+                    apiKey,
+                    options: Object.keys(options).length > 0 ? JSON.stringify(options) : null
+                });
             } else {
                 console.error('[SaaS] Missing data-image attribute');
             }
