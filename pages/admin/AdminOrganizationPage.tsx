@@ -148,6 +148,7 @@ const AdminOrganizationPage: React.FC = () => {
                                 <th className="px-4 py-3">Dominios</th>
                                 <th className="px-4 py-3">Uso</th>
                                 <th className="px-4 py-3">Estado</th>
+                                <th className="px-4 py-3">Diseño</th>
                                 <th className="px-4 py-3 text-right">Acciones</th>
                             </tr>
                         </thead>
@@ -196,6 +197,12 @@ const AdminOrganizationPage: React.FC = () => {
                                                 {org.isActive ? 'Activo' : 'Inactivo'}
                                             </span>
                                         </div>
+                                    </td>
+                                    <td className="px-4 py-3">
+                                        <span className={`px-2 py-0.5 rounded-[4px] text-[9px] font-bold uppercase ${org.shutterDesign === 'special' ? 'bg-purple-500/10 text-purple-400 border border-purple-500/20' : 'bg-gray-500/10 text-gray-400 border border-gray-500/20'
+                                            }`}>
+                                            {org.shutterDesign === 'special' ? 'Especial' : 'Estándar'}
+                                        </span>
                                     </td>
                                     <td className="px-4 py-3 text-right">
                                         <div className="flex justify-end gap-3">
