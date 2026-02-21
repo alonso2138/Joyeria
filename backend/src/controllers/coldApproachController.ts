@@ -23,6 +23,7 @@ type Lead = {
     eventos: any[];
     score: number;
     ultimaAccion: string | null;
+    queja: string;
 };
 
 type TelegramConfig = {
@@ -75,6 +76,7 @@ const mergeLeadRecords = (a: Lead, b: Lead): Lead => ({
     eventos: [...a.eventos, ...b.eventos],
     score: Math.max(a.score, b.score),
     ultimaAccion: b.ultimaAccion || a.ultimaAccion,
+    queja: b.queja || a.queja,
 });
 
 const fetchCsv = async (): Promise<CsvRow[]> => {
@@ -125,6 +127,7 @@ const buildLeadsFromCsv = (rows: CsvRow[]): Map<string, Lead> => {
             eventos: [],
             score: 0,
             ultimaAccion: null,
+            queja: (row['Queja'] || '').trim() || 'No',
         };
         if (leads.has(email)) {
             const merged = mergeLeadRecords(leads.get(email) as Lead, lead);
@@ -282,7 +285,8 @@ export const launchColdApproach = async (req: Request, res: Response) => {
 
         let leads = Array.from(leadsMap.values()).filter((lead) => {
             const matchesCampaign = campaignID ? lead.campanaId === normalizeCampaignId(campaignID) : false;
-            return lead.email && lead.estado.toLowerCase() === 'no contactado' && matchesCampaign;
+            const notComplained = lead.queja.toLowerCase() === 'no';
+            return lead.email && lead.estado.toLowerCase() === 'no contactado' && matchesCampaign && notComplained;
         });
 
         console.log("Leads filtrados: ", leads.length)
@@ -348,7 +352,7 @@ export const launchColdApproach = async (req: Request, res: Response) => {
                     if (!(diaSimple === 'sabado' || diaSimple === 'domingo')) diaValidado = true;
 
                     if (diaValidado == false || horarioValidado == false) {
-                        console.log("Horario/Día no validado, intentando en 30min");
+                        console.log("Horario/Día no validado, intentando en 30min", horarioValidado, diaValidado);
                         await new Promise(resolve => setTimeout(resolve, 30 * 60 * 1000));
                     }
                 } while (diaValidado == false || horarioValidado == false);
@@ -364,7 +368,7 @@ export const launchColdApproach = async (req: Request, res: Response) => {
                 const config = await GlobalConfig.findOne();
 
                 const subject = resolveSpintax((config as any)?.marketing?.emailSubject || `{Cuando un cliente duda entre dos piezas|Dudas entre dos joyas|Ayudar al cliente a decidir entre piezas|Sobre la duda de los clientes con las joyas}`);
-                const body = resolveSpintax(((config as any)?.marketing?.emailBody || `{Hola!|Buenas,|Qué tal?|Buenos días,}<br><br>{Seguro que te pasa a menudo|Te escribo porque seguro que te pasa}: un cliente mira una pulsera o un reloj, le gusta pero no termina de decidirse.<br><br>{He ayudado a joyerías a|Estamos ayudando a joyerías a} cerrar esas ventas en el momento, añadiendo un botón "Pruébatelo" en sus fichas de producto o enviando un enlace por WhatsApp.<br><br><b>¿Me pasas 2 o 3 links de tu catálogo y te preparo una demo hoy mismo?</b><br><br>Así podréis ver el valor real con vuestras propias piezas. Si prefieres probarlo tú mismo con nuestras muestras (apenas 10 segundos):<br><a href="https://visualizalo.es?id=${encodedEmail}">Probar demo con modelos de muestra</a><br><br>Un saludo,<br>Alonso Valls<br><br><img src="https://api.visualizalo.es/api/trigger/cold-abierto?id=${encodedEmail}" alt="" width="1" height="1" style="display:none!important;min-height:0;height:0;max-height:0;width:0;max-width:0;opacity:0;overflow:hidden;mso-hide:all;" />`).replace('${encodedEmail}', encodedEmail));
+                const body = resolveSpintax(((config as any)?.marketing?.emailBody || `{Hola!|Buenas,|Qué tal?|Buenos días,}<br><br>{Seguro que te pasa a menudo|Te escribo porque seguro que te pasa}: un cliente mira una pulsera o un reloj, le gusta pero no termina de decidirse.<br><br>{He ayudado a joyerías a|Estamos ayudando a joyerías a} cerrar esas ventas en el momento, añadiendo un botón "Pruébatelo" en sus fichas de producto o enviando un enlace por WhatsApp.<br><br><b>¿Me pasas 2 o 3 links de tu catálogo y te preparo una demo hoy mismo?</b><br><br>Así podréis ver el valor real con vuestras propias piezas. Si prefieres probarlo tú mismo con nuestras muestras (apenas 10 segundos):<br><a href="https://visualizalo.es?id=${encodedEmail}">Probar demo con modelos de muestra</a><br><br>Un saludo,<br>Alonso Valls<br><br><a href="https://visualizalo.es/#/baja?id=${encodedEmail}" style="color: #666; font-size: 10px; text-decoration: none;">Darme de baja</a><br><br><img src="https://api.visualizalo.es/api/trigger/cold-abierto?id=${encodedEmail}" alt="" width="1" height="1" style="display:none!important;min-height:0;height:0;max-height:0;width:0;max-width:0;opacity:0;overflow:hidden;mso-hide:all;" />`).replace('${encodedEmail}', encodedEmail));
 
                 await sendMail(`${leads[i].email}`, subject, body);
                 await StorageHelper.updateEvents(leads[i].email, "cold-sent");

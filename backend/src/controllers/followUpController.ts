@@ -22,6 +22,7 @@ type Lead = {
     eventos: any[];
     score: number;
     ultimaAccion: string | null;
+    queja: string;
 };
 
 type TelegramConfig = {
@@ -74,6 +75,7 @@ const mergeLeadRecords = (a: Lead, b: Lead): Lead => ({
     eventos: [...a.eventos, ...b.eventos],
     score: Math.max(a.score, b.score),
     ultimaAccion: b.ultimaAccion || a.ultimaAccion,
+    queja: b.queja || a.queja,
 });
 
 const fetchCsv = async (): Promise<CsvRow[]> => {
@@ -124,6 +126,7 @@ const buildLeadsFromCsv = (rows: CsvRow[]): Map<string, Lead> => {
             eventos: [],
             score: 0,
             ultimaAccion: null,
+            queja: (row['Queja'] || '').trim() || 'No',
         };
         if (leads.has(email)) {
             const merged = mergeLeadRecords(leads.get(email) as Lead, lead);
@@ -280,7 +283,8 @@ export const launchFollowUp = async (req: Request, res: Response) => {
 
         let leads = Array.from(leadsMap.values()).filter((lead) => {
             const matchesCampaign = campaignID ? lead.campanaId === normalizeCampaignId(campaignID) : false;
-            return lead.email && lead.estado.toLowerCase() === 'cold-approach enviado' && matchesCampaign && lead.respuesta == "No";
+            const notComplained = lead.queja.toLowerCase() === 'no';
+            return lead.email && lead.estado.toLowerCase() === 'cold-approach enviado' && matchesCampaign && lead.respuesta == "No" && notComplained;
         });
 
         console.log("Leads filtrados: ", leads.length)
@@ -367,7 +371,7 @@ export const launchFollowUp = async (req: Request, res: Response) => {
 
                 console.log("Enviando mail...")
                 const subject = resolveSpintax(`{¿Lo probamos con vuestras joyas?|¿Hacemos la prueba con vuestras piezas?|Prueba gratuita con vuestras joyas|Sobre vuestro probador virtual (prueba gratuita)}`);
-                const body = resolveSpintax(`{Hola!|Buenas,|Qué tal?|Hola de nuevo,}<br><br>{Te escribo porque el otro día te envié|Hace unos días te mandé} el probador virtual de joyas y no sé si pudiste llegar a probarlo.<br><br>Te dejo el enlace de nuevo por aquí por si acaso:<br><a href="https://visualizalo.es?id=${encodedEmail}">https://visualizalo.es</a><br><br>{A varias joyerías|A otros compañeros} les está funcionando bien para ayudar al cliente a decidirse cuando duda entre piezas, tanto en tienda como online.<br><br>Si te parece, puedo prepararos una prueba gratuita con {alguna de vuestras joyas|alguna pieza vuestra} para que veáis si realmente os sirve o no.<br>En 5 minutes te lo enseño y listo, sin compromiso ni coste.<br><br>¿Te viene mejor esta semana o la siguiente?<br><br>Muchas gracias por su tiempo,<br>Alonso Valls<br><br><img src="https://api.visualizalo.es/api/trigger/follow-abierto?id=${encodedEmail}" alt="" width="1" height="1" style="display:none!important;min-height:0;height:0;max-height:0;width:0;max-width:0;opacity:0;overflow:hidden;mso-hide:all;" />`);
+                const body = resolveSpintax(`{Hola!|Buenas,|Qué tal?|Hola de nuevo,}<br><br>{Te escribo porque el otro día te envié|Hace unos días te mandé} el probador virtual de joyas y no sé si pudiste llegar a probarlo.<br><br>Te dejo el enlace de nuevo por aquí por si acaso:<br><a href="https://visualizalo.es?id=${encodedEmail}">https://visualizalo.es</a><br><br>{A varias joyerías|A otros compañeros} les está funcionando bien para ayudar al cliente a decidirse cuando duda entre piezas, tanto en tienda como online.<br><br>Si te parece, puedo prepararos una prueba gratuita con {alguna de vuestras joyas|alguna pieza vuestra} para que veáis si realmente os sirve o no.<br>En 5 minutes te lo enseño y listo, sin compromiso ni coste.<br><br>¿Te viene mejor esta semana o la siguiente?<br><br>Muchas gracias por su tiempo,<br>Alonso Valls<br><br><a href="https://visualizalo.es/#/baja?id=${encodedEmail}" style="color: #666; font-size: 10px; text-decoration: none;">Darme de baja</a><br><br><img src="https://api.visualizalo.es/api/trigger/follow-abierto?id=${encodedEmail}" alt="" width="1" height="1" style="display:none!important;min-height:0;height:0;max-height:0;width:0;max-width:0;opacity:0;overflow:hidden;mso-hide:all;" />`);
 
                 await sendMail(`${lead.email}`, subject, body);
                 console.log("Mail enviado, enviando notificacion de telegram")

@@ -2,7 +2,7 @@ import express from 'express';
 
 import { coldAbierto } from '../controllers/coldAbiertoController';
 import { followAbierto } from '../controllers/followUpAbiertoController';
-
+import { baja } from '../controllers/bajaController';
 import { tryOn } from '../controllers/tryOnController';
 import { tryOnStarted } from '../controllers/tryOnStartedController';
 import { linkClick } from '../controllers/linkClickController';
@@ -15,6 +15,7 @@ const router = express.Router();
 
 router.get('/cold-abierto', coldAbierto);
 router.get('/follow-abierto', followAbierto);
+router.get('/baja', baja);
 
 router.post('/try-on', tryOn);
 router.post('/try-on-started', tryOnStarted);

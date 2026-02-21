@@ -18,6 +18,7 @@ import DemoDetail from './pages/DemoDetail';
 import DocsPage from './pages/DocsPage';
 import AdminDemoListPage from './pages/admin/AdminDemoListPage';
 import AdminDemoEditPage from './pages/admin/AdminDemoEditPage';
+import BajaPage from './pages/BajaPage';
 
 // Admin Pages
 import AdminLayout from './pages/admin/AdminLayout';
@@ -102,6 +103,7 @@ const App: React.FC = () => {
                   <Route path="/legal-notice" element={<LegalNoticePage />} />
                   <Route path="/cookies" element={<CookiePolicyPage />} />
                   <Route path="/docs" element={<DocsPage />} />
+                  <Route path="/baja" element={<BajaPage />} />
                 </Routes>
               </PageLayout>
             } />
