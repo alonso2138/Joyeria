@@ -38,7 +38,13 @@ export const baja = async (req: Request, res: Response) => {
             console.log("Cambiando entrada en base de datos de Sheets... Status:", sheetsResult.status);
 
             if (sheetsResult.ok) {
-                return res.status(200).json({ status: "OK", message: 'Baja tramitada con éxito' });
+                const data = await sheetsResult.json();
+                if (data.ok) {
+                    return res.status(200).json({ status: "OK", message: 'Baja tramitada con éxito' });
+                } else {
+                    console.error('Error en Script:', data.msg);
+                    return res.status(500).json({ message: data.msg || 'Error en el proceso de baja' });
+                }
             } else {
                 const text = await sheetsResult.text();
                 throw new Error(`Hook HTTP ${sheetsResult.status}: ${text}`);
