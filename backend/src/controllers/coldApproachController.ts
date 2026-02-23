@@ -323,7 +323,7 @@ export const launchColdApproach = async (req: Request, res: Response) => {
                     adminAction = csvAdminAction;
                 }
 
-                const horarios = ['09:15-14:00', '15:00-18:00'];
+                const horarios = ['07:15-14:00', '15:00-18:00'];
                 let diaValidado = false;
                 let horarioValidado = false;
 
@@ -349,7 +349,7 @@ export const launchColdApproach = async (req: Request, res: Response) => {
                         .normalize('NFD')
                         .replace(/[\u0300-\u036f]/g, '');
 
-                    if (!(diaSimple === '' || diaSimple === 'domingo')) diaValidado = true;
+                    if (!(diaSimple === 'sabado' || diaSimple === 'domingo')) diaValidado = true;
 
                     if (diaValidado == false || horarioValidado == false) {
                         console.log("Horario/Día no validado, intentando en 30min", horarioValidado, diaValidado);
