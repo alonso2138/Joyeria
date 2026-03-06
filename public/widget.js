@@ -114,20 +114,10 @@
     overlay.appendChild(container);
     document.body.appendChild(overlay);
 
-    const DEFAULT_API_BASE = 'https://api.visualizalo.es';
-    const DEFAULT_APP_BASE = 'https://www.visualizalo.es';
+    const API_BASE = 'https://api.visualizalo.es';
+    const APP_BASE = 'https://www.visualizalo.es';
     const DEFAULT_WIDGET_SCALE = 0.8;
 
-    function normalizeBaseUrl(rawValue, fallback) {
-        if (!rawValue || typeof rawValue !== 'string') return fallback;
-
-        try {
-            const parsed = new URL(rawValue);
-            return `${parsed.protocol}//${parsed.host}`;
-        } catch {
-            return fallback;
-        }
-    }
 
     function parseWidgetScale(rawValue, fallback) {
         if (rawValue === null || rawValue === undefined || rawValue === '') return fallback;
@@ -139,15 +129,11 @@
     }
 
     const scriptTag = document.currentScript;
-    const WIDGET_API_BASE = normalizeBaseUrl(scriptTag && scriptTag.getAttribute('data-api-base'), DEFAULT_API_BASE);
-    const WIDGET_APP_BASE = normalizeBaseUrl(scriptTag && scriptTag.getAttribute('data-app-base'), DEFAULT_APP_BASE);
     const WIDGET_SCALE = parseWidgetScale(scriptTag && scriptTag.getAttribute('data-widget-scale'), DEFAULT_WIDGET_SCALE);
     container.style.setProperty('--saas-widget-scale', String(WIDGET_SCALE));
 
     function openVisualizer(params) {
         const { imageUrl, name, category, apiKey } = params;
-        const API_BASE = normalizeBaseUrl(params.apiBase, WIDGET_API_BASE);
-        const APP_BASE = normalizeBaseUrl(params.appBase, WIDGET_APP_BASE);
         const widgetScale = parseWidgetScale(params.widgetScale, WIDGET_SCALE);
         container.style.setProperty('--saas-widget-scale', String(widgetScale));
 
@@ -212,8 +198,6 @@
             const name = target.getAttribute('data-name');
             const category = target.getAttribute('data-category');
             const apiKey = target.getAttribute('data-api-key');
-            const apiBase = target.getAttribute('data-api-base');
-            const appBase = target.getAttribute('data-app-base');
             const widgetScale = target.getAttribute('data-widget-scale');
 
             // Collect generic options (data-opt-*)
@@ -231,8 +215,6 @@
                     name,
                     category,
                     apiKey,
-                    apiBase,
-                    appBase,
                     widgetScale,
                     options: Object.keys(options).length > 0 ? JSON.stringify(options) : null
                 });
@@ -247,8 +229,8 @@
         open: openVisualizer,
         close: closeVisualizer,
         config: {
-            apiBase: WIDGET_API_BASE,
-            appBase: WIDGET_APP_BASE,
+            apiBase: API_BASE,
+            appBase: APP_BASE,
             widgetScale: WIDGET_SCALE
         }
     };
