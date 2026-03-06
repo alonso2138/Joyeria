@@ -74,7 +74,12 @@
     </div>
 
     <!-- CARGA DEL WIDGET (Pegar antes del cierre del body) -->
-    <script src="https://www.visualizalo.es/widget.js"></script>
+    <!-- Producción (sin overrides): -->
+    <!-- <script src="https://www.visualizalo.es/widget.js"></script> -->
+
+    <!-- Staging/Local con endpoints personalizados: -->
+    <script src="https://www.visualizalo.es/widget.js" data-api-base="http://localhost:5000"
+        data-app-base="http://localhost:8080"></script>
 
 </body>
 

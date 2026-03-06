@@ -39,6 +39,9 @@
             -webkit-backdrop-filter: blur(25px);
             animation: saas-slide-up 0.6s cubic-bezier(0.16, 1, 0.3, 1);
             margin: 20px;
+            transform: scale(var(--saas-widget-scale, 1));
+            transform-origin: center center;
+            will-change: transform;
         }
         @media (max-width: 768px) {
             .saas-modal-container {
@@ -48,6 +51,7 @@
                 max-height: 100%;
                 margin: 0;
                 border-radius: 0;
+                transform: none;
             }
         }
         .saas-iframe {
@@ -110,12 +114,42 @@
     overlay.appendChild(container);
     document.body.appendChild(overlay);
 
-    const BASE_URL = "https://api.visualizalo.es"; // In production this would be our domain
+    const DEFAULT_API_BASE = 'https://api.visualizalo.es';
+    const DEFAULT_APP_BASE = 'https://www.visualizalo.es';
+    const DEFAULT_WIDGET_SCALE = 0.8;
+
+    function normalizeBaseUrl(rawValue, fallback) {
+        if (!rawValue || typeof rawValue !== 'string') return fallback;
+
+        try {
+            const parsed = new URL(rawValue);
+            return `${parsed.protocol}//${parsed.host}`;
+        } catch {
+            return fallback;
+        }
+    }
+
+    function parseWidgetScale(rawValue, fallback) {
+        if (rawValue === null || rawValue === undefined || rawValue === '') return fallback;
+
+        const parsed = Number(rawValue);
+        if (!Number.isFinite(parsed)) return fallback;
+
+        return Math.min(1, Math.max(0.7, parsed));
+    }
+
+    const scriptTag = document.currentScript;
+    const WIDGET_API_BASE = normalizeBaseUrl(scriptTag && scriptTag.getAttribute('data-api-base'), DEFAULT_API_BASE);
+    const WIDGET_APP_BASE = normalizeBaseUrl(scriptTag && scriptTag.getAttribute('data-app-base'), DEFAULT_APP_BASE);
+    const WIDGET_SCALE = parseWidgetScale(scriptTag && scriptTag.getAttribute('data-widget-scale'), DEFAULT_WIDGET_SCALE);
+    container.style.setProperty('--saas-widget-scale', String(WIDGET_SCALE));
 
     function openVisualizer(params) {
         const { imageUrl, name, category, apiKey } = params;
-        const API_BASE = 'https://api.visualizalo.es';
-        const APP_BASE = 'https://www.visualizalo.es';
+        const API_BASE = normalizeBaseUrl(params.apiBase, WIDGET_API_BASE);
+        const APP_BASE = normalizeBaseUrl(params.appBase, WIDGET_APP_BASE);
+        const widgetScale = parseWidgetScale(params.widgetScale, WIDGET_SCALE);
+        container.style.setProperty('--saas-widget-scale', String(widgetScale));
 
         if (!apiKey) {
             console.error('API Key missing');
@@ -178,6 +212,9 @@
             const name = target.getAttribute('data-name');
             const category = target.getAttribute('data-category');
             const apiKey = target.getAttribute('data-api-key');
+            const apiBase = target.getAttribute('data-api-base');
+            const appBase = target.getAttribute('data-app-base');
+            const widgetScale = target.getAttribute('data-widget-scale');
 
             // Collect generic options (data-opt-*)
             const options = {};
@@ -194,6 +231,9 @@
                     name,
                     category,
                     apiKey,
+                    apiBase,
+                    appBase,
+                    widgetScale,
                     options: Object.keys(options).length > 0 ? JSON.stringify(options) : null
                 });
             } else {
@@ -205,7 +245,12 @@
     // Public API
     window.SaaS = {
         open: openVisualizer,
-        close: closeVisualizer
+        close: closeVisualizer,
+        config: {
+            apiBase: WIDGET_API_BASE,
+            appBase: WIDGET_APP_BASE,
+            widgetScale: WIDGET_SCALE
+        }
     };
 
     console.log('[SaaS] Widget Loaded');

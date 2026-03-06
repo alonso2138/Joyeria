@@ -12,7 +12,29 @@ const docsContent = [
         id: 'quickstart',
         title: 'Inicio Rápido',
         content: 'Para empezar, añade nuestro script de carga antes del cierre de la etiqueta `</body>` en tu sitio web.',
-        code: `<script src="https://www.visualizalo.es/widget.js"></script>`,
+        code: `<script src="https://www.visualizalo.es/widget.js"></script>
+
+<!-- Opcional: forzar entorno (staging/local) -->
+<script
+  src="https://www.visualizalo.es/widget.js"
+  data-api-base="http://localhost:5000"
+  data-app-base="http://localhost:8080"
+></script>`,
+    },
+    {
+        id: 'environments',
+        title: 'Entornos',
+        content: 'Puedes cambiar endpoints por atributo en el script base o en cada botón con `data-api-base` y `data-app-base`.',
+        code: `<button 
+  data-try-on
+  data-api-key="TU_API_KEY"
+  data-image="https://tusitio.com/fotos/anillo-1.jpg"
+  data-category="Anillo"
+  data-api-base="http://localhost:5000"
+  data-app-base="http://localhost:8080"
+>
+  Probar ahora
+</button>`,
     },
     {
         id: 'trigger',

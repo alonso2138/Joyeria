@@ -2,10 +2,57 @@ import { Request, Response } from 'express';
 import Organization from '../models/Organization';
 import GlobalConfig from '../models/GlobalConfig';
 
+const toHeaderString = (value: string | string[] | undefined): string => {
+    if (Array.isArray(value)) return value[0] || '';
+    return value || '';
+};
+
+const extractHostname = (value: string): string => {
+    const trimmed = value.trim().replace(/\/+$/, '');
+    if (!trimmed) return '';
+
+    const hasProtocol = /^[a-zA-Z][a-zA-Z\d+\-.]*:\/\//.test(trimmed);
+    const withProtocol = hasProtocol ? trimmed : `http://${trimmed}`;
+
+    try {
+        return new URL(withProtocol).hostname.toLowerCase();
+    } catch {
+        return trimmed
+            .replace(/^https?:\/\//i, '')
+            .split(/[/?#]/)[0]
+            .split(':')[0]
+            .toLowerCase();
+    }
+};
+
+const normalizeDomainPattern = (value: string): string => {
+    const trimmed = (value || '').trim().toLowerCase();
+    if (!trimmed) return '';
+
+    const hasWildcard = trimmed.startsWith('*.');
+    const host = hasWildcard ? trimmed.substring(2) : trimmed;
+    const normalizedHost = extractHostname(host);
+    if (!normalizedHost) return '';
+
+    return hasWildcard ? `*.${normalizedHost}` : normalizedHost;
+};
+
+const normalizeAllowedDomains = (domains: unknown): string[] => {
+    if (!Array.isArray(domains)) return [];
+
+    const unique = new Set<string>();
+    domains.forEach((domain) => {
+        const normalized = normalizeDomainPattern(String(domain || ''));
+        if (normalized) unique.add(normalized);
+    });
+
+    return Array.from(unique);
+};
+
 export const validateApiKey = async (req: Request, res: Response) => {
     try {
         const { apiKey } = req.body;
-        const origin = req.headers.origin || req.headers.referer || '';
+        const origin = toHeaderString(req.headers.origin) || toHeaderString(req.headers.referer) || '';
 
         if (!apiKey) {
             return res.status(400).json({ valid: false, message: 'API Key missing' });
@@ -66,13 +113,17 @@ export const validateApiKey = async (req: Request, res: Response) => {
                 return res.status(403).json({ valid: false, message: 'Missing origin header' });
             }
 
-            const cleanOrigin = origin.replace(/^https?:\/\//, '').split('/')[0].split(':')[0];
+            const cleanOrigin = normalizeDomainPattern(origin);
+            if (!cleanOrigin) {
+                return res.status(403).json({ valid: false, message: 'Invalid origin header' });
+            }
 
-            const isAllowed = org.allowedDomains.some(pattern => {
+            const normalizedAllowedDomains = normalizeAllowedDomains(org.allowedDomains);
+            const isAllowed = normalizedAllowedDomains.some(pattern => {
                 // Support exact match or wildcard (e.g., *.example.com)
                 if (pattern.startsWith('*.')) {
                     const suffix = pattern.substring(2);
-                    return cleanOrigin.endsWith(suffix);
+                    return cleanOrigin === suffix || cleanOrigin.endsWith(`.${suffix}`);
                 }
                 return cleanOrigin === pattern;
             });
@@ -138,6 +189,7 @@ export const getAllOrganizations = async (req: Request, res: Response) => {
 export const createOrganization = async (req: Request, res: Response) => {
     try {
         const { name, allowedDomains, isActive, plan, ownerEmail, shutterDesign, tryOnInstruction } = req.body;
+        const normalizedAllowedDomains = normalizeAllowedDomains(allowedDomains);
 
         // Generate a random API key
         const apiKey = `ak_${Math.random().toString(36).substring(2, 10)}${Date.now().toString(36).substring(2, 6)}`;
@@ -145,7 +197,7 @@ export const createOrganization = async (req: Request, res: Response) => {
         const newOrg = new Organization({
             name,
             apiKey,
-            allowedDomains: allowedDomains || [],
+            allowedDomains: normalizedAllowedDomains,
             isActive: isActive !== undefined ? isActive : true,
             plan: plan || 'basic',
             ownerEmail,
@@ -164,10 +216,24 @@ export const updateOrganization = async (req: Request, res: Response) => {
     try {
         const { id } = req.params;
         const { name, allowedDomains, isActive, plan, ownerEmail, shutterDesign, tryOnInstruction } = req.body;
+        const normalizedAllowedDomains = allowedDomains === undefined
+            ? undefined
+            : normalizeAllowedDomains(allowedDomains);
+        const updatePayload: Record<string, unknown> = {
+            name,
+            isActive,
+            plan,
+            ownerEmail,
+            shutterDesign,
+            tryOnInstruction
+        };
+        if (normalizedAllowedDomains !== undefined) {
+            updatePayload.allowedDomains = normalizedAllowedDomains;
+        }
 
         const updatedOrg = await Organization.findByIdAndUpdate(
             id,
-            { name, allowedDomains, isActive, plan, ownerEmail, shutterDesign, tryOnInstruction },
+            updatePayload,
             { new: true }
         );
 
