@@ -126,7 +126,8 @@ app.use('/api/launch', executeRoutes);
 app.use('/api/trigger', triggerRoutes);
 app.use('/api/events', eventsRoutes);
 app.use('/api/config', configRoutes);
-app.use('/api/widget', widgetLimiter, widgetRoutes);
+const widgetCors = cors({ origin: true, methods: ['POST', 'OPTIONS'] });
+app.use('/api/widget', widgetCors, widgetLimiter, widgetRoutes);
 app.use('/api/custom-requests', customRequestRoutes);
 
 const PORT = process.env.PORT || 5000;
