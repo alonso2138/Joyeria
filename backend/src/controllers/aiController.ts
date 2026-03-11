@@ -91,6 +91,30 @@ export const generateTryOn = async (req: Request, res: Response) => {
                     ${basePrompt}
                 `;
             }
+
+            // Specific logic for Wedding Bands (Alianzas) with multiple rings in the photo
+            if (itemKey === 'anillo' || itemKey === 'anillo') {
+                const variant = options.ring_variant || options.variant;
+                if (variant === 'mujer') {
+                    basePrompt = `
+                        VISUAL SELECTION:
+                        There are two rings in the product image (a pair of wedding bands). 
+                        You MUST select the WOMAN'S ring (typically the smaller, thinner, or more decorated one).
+                        Render ONLY this ring on the hand. Ignore the other larger ring.
+                        
+                        ${basePrompt}
+                    `;
+                } else if (variant === 'hombre') {
+                    basePrompt = `
+                        VISUAL SELECTION:
+                        There are two rings in the product image (a pair of wedding bands). 
+                        You MUST select the MAN'S ring (typically the larger, wider, or more plain one).
+                        Render ONLY this ring on the hand. Ignore the other smaller ring.
+                        
+                        ${basePrompt}
+                    `;
+                }
+            }
         }
 
         const model = 'gemini-2.5-flash-image';
