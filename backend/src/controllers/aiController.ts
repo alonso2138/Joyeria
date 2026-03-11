@@ -79,14 +79,16 @@ export const generateTryOn = async (req: Request, res: Response) => {
         if (req.body.options && typeof req.body.options === 'object') {
             const options = req.body.options;
             const contextItems = Object.entries(options)
-                .map(([key, value]) => `${key} is ${value}`)
-                .join(', ');
+                .map(([key, value]) => `- ${key.toUpperCase()}: ${value}`)
+                .join('\n                    ');
 
             if (contextItems) {
                 basePrompt = `
-                    PRODUCT CONTEXT:
-                    Note that the jewelry piece has the following specific attributes: ${contextItems}.
-                    Adjust scale, positioning, or appearance based on these attributes if relevant.
+                    CRITICAL PRODUCT SPECIFICATIONS:
+                    You MUST rigidly respect the following physical constraints and attributes for the jewelry piece:
+                    ${contextItems}
+                    
+                    IMPORTANT: If physical dimensions (e.g. "ancho", "largo", "thickness", "width") are provided, you MUST adjust the relative scale of the jewelry on the human body to perfectly match those dimensions in real life. Do not use default scaling.
                     
                     ${basePrompt}
                 `;
@@ -117,11 +119,51 @@ export const generateTryOn = async (req: Request, res: Response) => {
             }
         }
 
+        // --- PASS 1: ISOLATION (Only if ring variant is provided) ---
+        let finalJewelryImagePart = jewelryImagePart;
+
+        if ((itemKey === 'anillo' || itemKey === 'alianza') && req.body.options && typeof req.body.options === 'object') {
+            const variant = req.body.options.ring_variant || req.body.options.variant;
+            
+            if (variant === 'mujer' || variant === 'hombre') {
+                console.log(`[AI Controller] Init Pass 1: Isolating ${variant} ring...`);
+                let separationPrompt = '';
+                
+                if (variant === 'mujer') {
+                    separationPrompt = "Extract the WOMAN'S RING (typically the smaller, thinner, or more decorated one) from this image. Render ONLY this specific ring on a pure perfect white background. Make it completely centered and fill most of the frame. Preserve all lighting, shadows, and details exactly as they are.";
+                } else {
+                    separationPrompt = "Extract the MAN'S RING (typically the larger, wider, or more plain one) from this image. Render ONLY this specific ring on a pure perfect white background. Make it completely centered and fill most of the frame. Preserve all lighting, shadows, and details exactly as they are.";
+                }
+
+                try {
+                    const separationResult = await client.models.generateContent({
+                        model: 'gemini-2.5-flash-image',
+                        contents: [{ role: 'user', parts: [jewelryImagePart, { text: separationPrompt }] }],
+                        config: { responseModalities: [Modality.IMAGE] },
+                    });
+
+                    const separationPart = (separationResult as any)?.candidates?.[0]?.content?.parts?.find((p: any) => p.inlineData);
+                    
+                    if (separationPart) {
+                         console.log(`[AI Controller] Pass 1 Success: Isolated ring generated.`);
+                         finalJewelryImagePart = separationPart;
+                    } else {
+                         console.warn(`[AI Controller] Pass 1 Failed: Fallback to original image.`);
+                    }
+                } catch (sepError) {
+                    console.error('[AI Controller] Error during Pass 1 (Separation):', sepError);
+                    // Fallback to original image if separation fails, don't crash the whole process
+                }
+            }
+        }
+
+        // --- PASS 2: TRY-ON ---
+        console.log(`[AI Controller] Init Pass 2: Main Try-On generation...`);
         const model = 'gemini-2.5-flash-image';
 
         const result = await client.models.generateContent({
             model: model,
-            contents: [{ role: 'user', parts: [userImagePart, jewelryImagePart, { text: basePrompt }] }],
+            contents: [{ role: 'user', parts: [userImagePart, finalJewelryImagePart, { text: basePrompt }] }],
             config: { responseModalities: [Modality.IMAGE] },
         });
 
