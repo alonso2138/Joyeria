@@ -20,8 +20,7 @@ const jewelrySchema = new mongoose.Schema({
         default: 'gemini-2.5-flash-image'
     },
     options: {
-        type: Map,
-        of: String,
+        type: mongoose.Schema.Types.Mixed,
         default: {}
     },
 }, {
