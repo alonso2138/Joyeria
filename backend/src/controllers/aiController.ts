@@ -122,8 +122,13 @@ export const generateTryOn = async (req: Request, res: Response) => {
         // --- PASS 1: ISOLATION (Only if ring variant is provided) ---
         let finalJewelryImagePart = jewelryImagePart;
 
+        if (req.body.options && typeof req.body.options === 'object') {
+            console.log(`[AI Controller] Received specific options:`, JSON.stringify(req.body.options));
+        }
+
         if ((itemKey === 'anillo' || itemKey === 'alianza') && req.body.options && typeof req.body.options === 'object') {
             const variant = req.body.options.ring_variant || req.body.options.variant;
+            console.log(`[AI Controller] Extracted variant: "${variant}" (from options.ring_variant or options.variant)`);
             
             if (variant === 'mujer' || variant === 'hombre') {
                 console.log(`[AI Controller] Init Pass 1: Isolating ${variant} ring...`);
@@ -135,6 +140,7 @@ export const generateTryOn = async (req: Request, res: Response) => {
                     separationPrompt = "Extract the MAN'S RING (typically the larger, wider, or more plain one) from this image. Render ONLY this specific ring on a pure perfect white background. Make it completely centered and fill most of the frame. Preserve all lighting, shadows, and details exactly as they are.";
                 }
 
+                console.log(`[AI Controller] Sending Pass 1 Prompt to Gemini...`);
                 try {
                     const separationResult = await client.models.generateContent({
                         model: 'gemini-2.5-flash-image',
@@ -145,16 +151,20 @@ export const generateTryOn = async (req: Request, res: Response) => {
                     const separationPart = (separationResult as any)?.candidates?.[0]?.content?.parts?.find((p: any) => p.inlineData);
                     
                     if (separationPart) {
-                         console.log(`[AI Controller] Pass 1 Success: Isolated ring generated.`);
+                         console.log(`[AI Controller] Pass 1 Success: Isolated ring generated. Replacing original image.`);
                          finalJewelryImagePart = separationPart;
                     } else {
-                         console.warn(`[AI Controller] Pass 1 Failed: Fallback to original image.`);
+                         console.warn(`[AI Controller] Pass 1 Failed: Gemini responded but couldn't generate an image part. Proceeding with original image.`);
                     }
-                } catch (sepError) {
-                    console.error('[AI Controller] Error during Pass 1 (Separation):', sepError);
+                } catch (sepError: any) {
+                    console.error('[AI Controller] Error during Pass 1 (Separation):', sepError.message || sepError);
                     // Fallback to original image if separation fails, don't crash the whole process
                 }
+            } else {
+                console.log(`[AI Controller] Pass 1 skipped: Required variant is not 'mujer' or 'hombre'. Current value: ${variant}`);
             }
+        } else {
+            console.log(`[AI Controller] Pass 1 skipped: Target is not a ring or no options provided. itemKey: ${itemKey}`);
         }
 
         // --- PASS 2: TRY-ON ---
