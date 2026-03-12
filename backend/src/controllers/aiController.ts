@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+import sharp from 'sharp';
 import Organization from '../models/Organization';
 import GlobalConfig from '../models/GlobalConfig';
 
@@ -121,6 +122,7 @@ export const generateTryOn = async (req: Request, res: Response) => {
 
         // --- PASS 1: ISOLATION (Only if ring variant is provided) ---
         let finalJewelryImagePart = jewelryImagePart;
+        let debugPass1Image: string | null = null;
 
         if (req.body.options && typeof req.body.options === 'object') {
             console.log(`[AI Controller] Received specific options:`, JSON.stringify(req.body.options));
@@ -131,34 +133,88 @@ export const generateTryOn = async (req: Request, res: Response) => {
             console.log(`[AI Controller] Extracted variant: "${variant}" (from options.ring_variant or options.variant)`);
             
             if (variant === 'mujer' || variant === 'hombre') {
-                console.log(`[AI Controller] Init Pass 1: Isolating ${variant} ring...`);
-                let separationPrompt = '';
+                console.log(`[AI Controller] Init Pass 1 (Detection): Finding bounding box for ${variant} ring...`);
+                let detectionPrompt = '';
                 
                 if (variant === 'mujer') {
-                    separationPrompt = "Extract the WOMAN'S RING (typically the smaller, thinner, or more decorated one) from this image. Render ONLY this specific ring on a pure perfect white background. Make it completely centered and fill most of the frame. Preserve all lighting, shadows, and details exactly as they are.";
+                    detectionPrompt = "Return the bounding box coordinates [ymin, xmin, ymax, xmax] for the WOMAN'S RING (typically the smaller, thinner, or more decorated one). Return ONLY a JSON array of 4 numbers between 0 and 1000 representing normalized coordinates (0 is top/left, 1000 is bottom/right). Example: [200, 300, 500, 600]";
                 } else {
-                    separationPrompt = "Extract the MAN'S RING (typically the larger, wider, or more plain one) from this image. Render ONLY this specific ring on a pure perfect white background. Make it completely centered and fill most of the frame. Preserve all lighting, shadows, and details exactly as they are.";
+                    detectionPrompt = "Return the bounding box coordinates [ymin, xmin, ymax, xmax] for the MAN'S RING (typically the larger, wider, or more plain one without diamonds). Return ONLY a JSON array of 4 numbers between 0 and 1000 representing normalized coordinates (0 is top/left, 1000 is bottom/right). Example: [200, 300, 500, 600]";
                 }
 
-                console.log(`[AI Controller] Sending Pass 1 Prompt to Gemini...`);
+                console.log(`[AI Controller] Sending Pass 1 Detection Prompt to Gemini...`);
                 try {
-                    const separationResult = await client.models.generateContent({
-                        model: 'gemini-2.5-flash-image',
-                        contents: [{ role: 'user', parts: [jewelryImagePart, { text: separationPrompt }] }],
-                        config: { responseModalities: [Modality.IMAGE] },
+                    const detectionResult = await client.models.generateContent({
+                        model: 'gemini-2.5-flash',
+                        contents: [{ role: 'user', parts: [jewelryImagePart, { text: detectionPrompt }] }],
+                        config: { 
+                            responseMimeType: "application/json",
+                            temperature: 0.1
+                        },
                     });
 
-                    const separationPart = (separationResult as any)?.candidates?.[0]?.content?.parts?.find((p: any) => p.inlineData);
+                    const responseText = detectionResult.text;
+                    console.log(`[AI Controller] Pass 1 Raw Response:`, responseText);
                     
-                    if (separationPart) {
-                         console.log(`[AI Controller] Pass 1 Success: Isolated ring generated. Replacing original image.`);
-                         finalJewelryImagePart = separationPart;
+                    if (responseText) {
+                        try {
+                            const coords = JSON.parse(responseText);
+                            if (Array.isArray(coords) && coords.length === 4) {
+                                const [ymin, xmin, ymax, xmax] = coords;
+                                
+                                // Pass 1.5: Crop with Sharp
+                                console.log(`[AI Controller] Init Pass 1.5: Cropping image with Sharp...`);
+                                
+                                const imageMetadata = await sharp(jewelryBuffer).metadata();
+                                const width = imageMetadata.width || 1000;
+                                const height = imageMetadata.height || 1000;
+                                
+                                // Convert 0-1000 normalized coordinates to absolute pixels safely
+                                const absoluteYmin = Math.max(0, Math.floor((ymin / 1000) * height));
+                                const absoluteXmin = Math.max(0, Math.floor((xmin / 1000) * width));
+                                const absoluteYmax = Math.min(height, Math.ceil((ymax / 1000) * height));
+                                const absoluteXmax = Math.min(width, Math.ceil((xmax / 1000) * width));
+                                
+                                const cropTop = absoluteYmin;
+                                const cropLeft = absoluteXmin;
+                                const cropHeight = absoluteYmax - absoluteYmin;
+                                const cropWidth = absoluteXmax - absoluteXmin;
+                                
+                                if (cropWidth > 0 && cropHeight > 0) {
+                                    console.log(`[AI Controller] Cropping geometry: top=${cropTop}, left=${cropLeft}, width=${cropWidth}, height=${cropHeight}`);
+
+                                    // Add some padding to the crop (20px) so the ring isn't touching borders
+                                    const paddedTop = Math.max(0, cropTop - 20);
+                                    const paddedLeft = Math.max(0, cropLeft - 20);
+                                    const paddedHeight = Math.min(height - paddedTop, cropHeight + 40);
+                                    const paddedWidth = Math.min(width - paddedLeft, cropWidth + 40);
+
+                                    const croppedBuffer = await sharp(jewelryBuffer)
+                                        .extract({ top: paddedTop, left: paddedLeft, width: paddedWidth, height: paddedHeight })
+                                        .png() // Convert to PNG to maintain transparency if any
+                                        .toBuffer();
+                                    
+                                    finalJewelryImagePart = {
+                                        inlineData: {
+                                            data: croppedBuffer.toString('base64'),
+                                            mimeType: 'image/png'
+                                        }
+                                    };
+                                    
+                                    debugPass1Image = `data:image/png;base64,${croppedBuffer.toString('base64')}`;
+                                    console.log(`[AI Controller] Pass 1.5 Success: Ring perfectly cropped with Sharp.`);
+                                } else {
+                                    console.warn(`[AI Controller] Invalid crop dimensions derived from coordinates.`);
+                                }
+                            }
+                        } catch (parseError) {
+                            console.error(`[AI Controller] Failed to parse coordinates from Gemini response:`, parseError);
+                        }
                     } else {
-                         console.warn(`[AI Controller] Pass 1 Failed: Gemini responded but couldn't generate an image part. Proceeding with original image.`);
+                         console.warn(`[AI Controller] Pass 1 Failed: Gemini responded but with empty text. Proceeding with original image.`);
                     }
                 } catch (sepError: any) {
-                    console.error('[AI Controller] Error during Pass 1 (Separation):', sepError.message || sepError);
-                    // Fallback to original image if separation fails, don't crash the whole process
+                    console.error('[AI Controller] Error during Pass 1 (Detection):', sepError.message || sepError);
                 }
             } else {
                 console.log(`[AI Controller] Pass 1 skipped: Required variant is not 'mujer' or 'hombre'. Current value: ${variant}`);
@@ -183,7 +239,7 @@ export const generateTryOn = async (req: Request, res: Response) => {
         }
 
         const imageBase64 = `data:${part.inlineData.mimeType || 'image/jpeg'};base64,${part.inlineData.data}`;
-        res.json({ imageBase64 });
+        res.json({ imageBase64, ...(debugPass1Image ? { debugPass1Image } : {}) });
 
     } catch (error: any) {
         console.error('[AI Controller] Error:', error);

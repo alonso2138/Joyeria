@@ -14,7 +14,7 @@ export interface JewelryItem {
   sku: string;
   isFeatured: boolean;
   catalogId?: string;
-  aiModel?: 'gemini-2.5-flash-image';
+  aiModel?: 'gemini-2.5-flash-image' | 'gemini-2.0-flash-exp' | 'gemini-2.5-pro-preview-06-05' | 'gemini-2.0-flash' | 'imagen-3.0-generate-002' | 'gemini-3.0-flash-image';
   options?: Record<string, string>;
   createdAt: string;
   updatedAt: string;

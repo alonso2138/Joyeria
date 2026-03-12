@@ -41,7 +41,7 @@ const AdminJewelryEditPage: React.FC = () => {
             setIsFetching(true);
             getJewelryById(id!).then(data => {
                 if (data) {
-                    setItem(data);
+                    setItem({ ...data, options: data.options || {}, hashtags: data.hashtags || [] });
                     setImagePreview(data.imageUrl || '');
                 }
                 setIsFetching(false);
@@ -126,7 +126,7 @@ const AdminJewelryEditPage: React.FC = () => {
             const formData = new FormData();
 
             // Basic slug generation
-            const finalItem = { ...item };
+            const finalItem = { ...item, options: item.options || {}, hashtags: item.hashtags || [] };
             if (!finalItem.slug) {
                 const baseSlug = finalItem.name?.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]+/g, '') || '';
                 const timestamp = Date.now().toString().slice(-6);
@@ -219,7 +219,12 @@ const AdminJewelryEditPage: React.FC = () => {
                     <div>
                         <label className="block text-sm font-medium text-gray-300">Modelo de IA para Try-On</label>
                         <select name="aiModel" value={item.aiModel} onChange={handleChange} className={formInputClasses}>
-                            <option value="gemini-2.5-flash-image">Gemini 2.5 Flash (Velocidad)</option>
+                            <option value="gemini-2.5-flash-image">Gemini 2.5 Flash Image (Velocidad)</option>
+                            <option value="gemini-2.0-flash-exp">Gemini 2.0 Flash Exp (Experimental)</option>
+                            <option value="gemini-2.5-pro-preview-06-05">Gemini 2.5 Pro Preview (Calidad)</option>
+                            <option value="gemini-2.0-flash">Gemini 2.0 Flash (Estándar)</option>
+                            <option value="imagen-3.0-generate-002">Imagen 3.0 (Generación dedicada)</option>
+                            <option value="gemini-3.0-flash-image">Gemini 3.0 Flash Image</option>
                         </select>
                         <p className="text-[10px] text-gray-400 mt-1">Selecciona el modelo optimizado para esta pieza.</p>
                     </div>

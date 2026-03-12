@@ -16,7 +16,7 @@ const jewelrySchema = new mongoose.Schema({
     catalogId: { type: String, required: true, default: 'main' },
     aiModel: {
         type: String,
-        enum: ['gemini-2.5-flash-image'],
+        enum: ['gemini-2.5-flash-image', 'gemini-2.0-flash-exp', 'gemini-2.5-pro-preview-06-05', 'gemini-2.0-flash', 'imagen-3.0-generate-002', 'gemini-3.0-flash-image'],
         default: 'gemini-2.5-flash-image'
     },
     options: {
